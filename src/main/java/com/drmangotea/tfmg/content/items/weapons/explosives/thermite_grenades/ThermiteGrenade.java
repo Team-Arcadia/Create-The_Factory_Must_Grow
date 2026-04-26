@@ -59,7 +59,8 @@ public class ThermiteGrenade extends ThrowableItemProjectile {
     protected void onHit(HitResult hitResult) {
         super.onHit(hitResult);
 
-
+        if (this.level().isClientSide)
+            return;
 
             this.level().broadcastEntityEvent(this, (byte) 3);
 

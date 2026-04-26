@@ -38,6 +38,8 @@ public class FireExtinguisherItem extends Item implements CustomArmPoseItem {
         if(fillLevel == 0) return;
 
         DryIceFlake flake = TFMGEntityTypes.DRY_ICE_FLAKE.create(level);
+        if (flake == null)
+            return;
         flake.setPos(entity.getX(),entity.getY()+1.2f,entity.getZ());
 
         level.playSound(null, entity.getX(), entity.getY(), entity.getZ(), SoundEvents.FIRE_EXTINGUISH, SoundSource.NEUTRAL, 0.1F, 0.04F);

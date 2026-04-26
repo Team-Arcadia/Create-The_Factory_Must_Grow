@@ -36,7 +36,7 @@ public class NeonTubeBlockEntity extends ElectricBlockEntity {
 
             glow.chase(getPowerUsage()*1.5, 0.4, LerpedFloat.Chaser.EXP);
             glow.tickChaser();
-            if (Math.min(getData().getVoltage() / 10, 15) != getBlockState().getValue(LIGHT))
+            if (!level.isClientSide && Math.min(getData().getVoltage() / 10, 15) != getBlockState().getValue(LIGHT))
                 level.setBlock(getBlockPos(), getBlockState().setValue(LIGHT, (int) Math.min(getData().getVoltage() / 10, 15)), 2);
 
     }
