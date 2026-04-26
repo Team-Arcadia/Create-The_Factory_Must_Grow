@@ -160,7 +160,7 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity {
     }
 
     public boolean isController() {
-        return controller == getBlockPos();
+        return controller == null || controller.equals(getBlockPos());
     }
 
     public TFMGForgeEnergyStorage createEnergyStorage(int multiplier) {

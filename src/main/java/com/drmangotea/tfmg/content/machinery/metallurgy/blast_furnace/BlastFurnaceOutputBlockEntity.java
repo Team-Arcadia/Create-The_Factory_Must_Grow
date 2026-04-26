@@ -62,6 +62,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     public LerpedFloat coalCokeHeight = LerpedFloat.linear();
     boolean isReinforced = false;
     private int cachedSize = 0;
+    private IndustrialBlastingRecipe currentRecipe;
 
 
     public BlastFurnaceOutputBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -186,15 +187,18 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
         }
 
         if (timer > -1) {
-            RecipeWrapper inventoryIn = new RecipeWrapper(inputInventory);
-            Optional<RecipeHolder<IndustrialBlastingRecipe>> optional = TFMGRecipeTypes.INDUSTRIAL_BLASTING.find(inventoryIn, level);
-
-            if (optional.isEmpty()) {
-                timer = -1;
-                return;
+            IndustrialBlastingRecipe recipe = currentRecipe;
+            if (recipe == null) {
+                RecipeWrapper inventoryIn = new RecipeWrapper(inputInventory);
+                Optional<RecipeHolder<IndustrialBlastingRecipe>> optional = TFMGRecipeTypes.INDUSTRIAL_BLASTING.find(inventoryIn, level);
+                if (optional.isEmpty()) {
+                    timer = -1;
+                    currentRecipe = null;
+                    return;
+                }
+                recipe = optional.get().value();
+                currentRecipe = recipe;
             }
-
-            IndustrialBlastingRecipe recipe = optional.get().value();
 
             if (timer == 0) {
                 if (canProcess(recipe)) {
@@ -215,6 +219,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
                         secondaryTank.fill(recipe.getSecondaryResult(), IFluidHandler.FluidAction.EXECUTE);
 
                     timer = -1;
+                    currentRecipe = null;
 
                     sendData();
                     setChanged();
@@ -225,13 +230,15 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
                     tuyereBE = null;
                     return;
                 }
-                if (tuyereBE == null && tuyerePos != null)
-                    tuyereBE = (BlastFurnaceHatchBlockEntity) level.getBlockEntity(tuyerePos);
+                if (tuyereBE == null && tuyerePos != null) {
+                    if (level.getBlockEntity(tuyerePos) instanceof BlastFurnaceHatchBlockEntity hatch)
+                        tuyereBE = hatch;
+                }
                 if (tuyereBE!=null)
                     if (tuyereBE.tank.getFluidAmount() < recipe.hotAirUsage || !tuyereBE.tank.getFluid().getFluid().isSame(TFMGFluids.HOT_AIR.getSource()))
                         return;
                 if (tuyereBE!=null) {
-                    tuyereBE.tank.getFluidInTank(0).setAmount(Math.max(tuyereBE.tank.getFluidInTank(0).getAmount() - recipe.hotAirUsage, 0));
+                    tuyereBE.tank.drain(recipe.hotAirUsage, IFluidHandler.FluidAction.EXECUTE);
                 }
                 if (!recipe.getGasByproduct().isEmpty()) {
                     if (level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(FACING).getOpposite()).above(getSize())) instanceof BlastFurnaceHatchBlockEntity be) {
