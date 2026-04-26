@@ -266,7 +266,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             recipe = getMatchingRecipe();
         }
 
-        if (!level.isClientSide && isController())
+        if (!level.isClientSide && isController() && machineMap.isEmpty())
             evaluateNextTick = true;
 
         revalidateMachines();
@@ -753,8 +753,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
         Map<BlockPos, String> oldMachineMap = machineMap;
         machineMap = new HashMap<>();
-        heatLevel = 0;
-        heatCondition = HeatCondition.NONE;
         efficiency = 1;
 
         for (int xOffset = 0; xOffset < width; xOffset++) {
@@ -784,7 +782,11 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 }
             }
         }
-        if (!oldMachineMap.equals(machineMap))
+        java.util.List<String> oldOps = new java.util.ArrayList<>(oldMachineMap.values());
+        java.util.List<String> newOps = new java.util.ArrayList<>(machineMap.values());
+        java.util.Collections.sort(oldOps);
+        java.util.Collections.sort(newOps);
+        if (!oldOps.equals(newOps))
             recipe = null;
 
         notifyUpdate();
