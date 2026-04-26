@@ -61,6 +61,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     public static final int STORAGE_SPACE = 64;
     public LerpedFloat coalCokeHeight = LerpedFloat.linear();
     boolean isReinforced = false;
+    private int cachedSize = 0;
 
 
     public BlastFurnaceOutputBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -121,7 +122,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
 
         TFMGTexts.BlastFurnace.stats(inputInventory.getStackInSlot(0).getCount()).forGoggles(tooltip, 1);
 
-        TFMGTexts.BlastFurnace.height(getSize()).forGoggles(tooltip, 1);
+        TFMGTexts.BlastFurnace.height(cachedSize).forGoggles(tooltip, 1);
         TFMGTexts.BlastFurnace.fuelAmount(fuel).forGoggles(tooltip, 1);
 
         if (timer != -1)
@@ -155,7 +156,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
             return;
 
         int baseDuration = recipe.getProcessingDuration() * 20;
-        int heigth = getSize();
+        int heigth = cachedSize > 0 ? cachedSize : getSize();
         int maxHeigth = TFMGConfigs.common().machines.blastFurnaceMaxHeight.get();
         double maxTimeModifier = TFMGConfigs.common().machines.blastFurnaceHeightSpeedModifier.get();
         double timeModifier = maxHeigth / ((baseDuration / 2) * maxTimeModifier);
@@ -176,7 +177,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
 
         if (inputInventory.isEmpty())
             return;
-        if (getSize() < 3)
+        if (cachedSize < 3)
             return;
 
         if (fuelConsumeTimer >= TFMGConfigs.common().machines.blastFurnaceFuelConsumption.get() && fuel > 0) {
@@ -275,6 +276,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     @Override
     public void lazyTick() {
         super.lazyTick();
+        cachedSize = getSize();
         onContentsChanged();
         collectItems();
     }
@@ -392,7 +394,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
                     FurnaceBlockType wall = isValidWall(checkedPos);
                     FurnaceBlockType support = isValidSupport(checkedPos);
                     if (checkedPos.getX() == middlePos.getX() ^ checkedPos.getZ() == middlePos.getZ()) {
-                        if (!(i == 0 && level.getBlockState(checkedPos).is(TFMGBlocks.BLAST_FURNACE_OUTPUT.get()))) {
+                        if (!level.getBlockState(checkedPos).is(TFMGBlocks.BLAST_FURNACE_OUTPUT.get())) {
                             if (wall == FurnaceBlockType.NONE) {
                                 isReinforced = normalAmount == 0 && reinforcedAmount > 0;
                                 return size;
