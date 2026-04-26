@@ -54,6 +54,7 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
     public boolean headAtFront = false;
     public int crankConnectorDistance = 0;
     public int headBaseDistance = 0;
+    private int findScanCooldown = 0;
 
     public PumpjackBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -276,6 +277,8 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
     private boolean findHeadAndConnector() {
         Direction direction = getBlockState().getValue(FACING);
         BlockPos checkedPos = this.getBlockPos().above();
+        if (!areChunksLoadedForScan(direction))
+            return connectorPosition != null && headPosition != null;
         connectorPosition = null;
         headPosition = null;
         for (int i = 0; i < 7; i++) {
@@ -369,8 +372,16 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
     @Override
     public void tick() {
         super.tick();
-        if (!isRunning())
-            findHeadAndConnector();
+        if (!isRunning()) {
+            if (findScanCooldown <= 0) {
+                findHeadAndConnector();
+                findScanCooldown = 10;
+            } else {
+                findScanCooldown--;
+            }
+        } else {
+            findScanCooldown = 0;
+        }
         if (!isRunning() && isComplete()
                 && !level.isClientSide
         ) {
@@ -410,13 +421,13 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
         }
         if (connectorPosition != null)
             crank = findCrank();
-        if (crank != null)
+        if (crank != null && level.isLoaded(crank.getBlockPos()))
             if (!(level.getBlockEntity(crank.getBlockPos()) instanceof PumpjackCrankBlockEntity))
                 crank = null;
         if (headPosition != null) {
             base = findBase();
         }
-        if (base != null)
+        if (base != null && level.isLoaded(base.getBlockPos()))
             if (!(level.getBlockEntity(base.getBlockPos()) instanceof PumpjackBaseBlockEntity))
                 base = null;
         prevAngle = angle;
@@ -467,6 +478,8 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
         BlockPos checkedPos = connectorPosition.below();
         for (int i = 0; i < 7; i++) {
 
+            if (!level.isLoaded(checkedPos))
+                return crank;
             if (level.getBlockEntity(checkedPos) instanceof PumpjackCrankBlockEntity)
                 if (level.getBlockState(checkedPos).getValue(HorizontalDirectionalBlock.FACING).getAxis() == this.getBlockState().getValue(FACING).getAxis())
                     return (PumpjackCrankBlockEntity) level.getBlockEntity(checkedPos);
@@ -479,12 +492,25 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
         BlockPos checkedPos = headPosition.below();
         for (int i = 0; i < 8; i++) {
 
+            if (!level.isLoaded(checkedPos))
+                return base;
             if (level.getBlockEntity(checkedPos) instanceof PumpjackBaseBlockEntity)
                 return (PumpjackBaseBlockEntity) level.getBlockEntity(checkedPos);
 
             checkedPos = checkedPos.below();
         }
         return null;
+    }
+
+    private boolean areChunksLoadedForScan(Direction direction) {
+        BlockPos origin = getBlockPos().above();
+        for (int i = 0; i < 7; i++) {
+            if (!level.isLoaded(origin.relative(direction, i)))
+                return false;
+            if (!level.isLoaded(origin.relative(direction.getOpposite(), i)))
+                return false;
+        }
+        return true;
     }
 
     @Override

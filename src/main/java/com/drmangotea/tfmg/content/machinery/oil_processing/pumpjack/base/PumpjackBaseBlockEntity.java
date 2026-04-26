@@ -60,14 +60,14 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
         super.tick();
 
 
-        if (controllerHammer != null)
+        if (controllerHammer != null && level.isLoaded(controllerHammer.getBlockPos()))
             if (!(level.getBlockEntity(controllerHammer.getBlockPos()) instanceof PumpjackBlockEntity))
                 controllerHammer = null;
-        if (controllerHammer != null)
+        if (controllerHammer != null && level.isLoaded(controllerHammer.getBlockPos()))
             if (controllerHammer.base == null)
                 controllerHammer = null;
 
-        if (controllerHammer != null)
+        if (controllerHammer != null && level.isLoaded(controllerHammer.getBlockPos()))
             if (!controllerHammer.isRunning())
                 controllerHammer = null;
 
@@ -139,7 +139,6 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
         if (tank.getFluidAmount() + miningRate > tank.getCapacity())
             return;
         int amountPumped = tank.fill(new FluidStack(TFMGFluids.CRUDE_OIL.get().getSource(), miningRate), IFluidHandler.FluidAction.EXECUTE);
-        sendData();
 
         if (amountPumped == 0)
             return;
@@ -183,8 +182,10 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
     }
 
     protected void onFluidStackChanged(FluidStack newFluidStack) {
-        sendData();
+        if (!hasLevel() || level.isClientSide)
+            return;
         setChanged();
+        sendData();
     }
 
     @Override
