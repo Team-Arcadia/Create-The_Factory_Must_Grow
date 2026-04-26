@@ -53,8 +53,12 @@ public class LargeTransformerBlockEntity extends KineticElectricBlockEntity {
         if (super.getPowerUsage() == 0)
             return 0;
 
-        if (isMainPart && level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(HORIZONTAL_FACING))) instanceof LargeTransformerBlockEntity be)
-            return (int) ((int) Math.pow(be.data.getVoltage(), 2) / resistance());
+        if (isMainPart && level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(HORIZONTAL_FACING))) instanceof LargeTransformerBlockEntity be) {
+            float r = resistance();
+            if (r <= 0)
+                return 0;
+            return (int) (Math.pow(be.data.getVoltage(), 2) / r);
+        }
 
         return super.getPowerUsage();
     }
@@ -104,9 +108,10 @@ public class LargeTransformerBlockEntity extends KineticElectricBlockEntity {
 
         if (getLevelAccessor().getBlockEntity(getBlockPos().relative(getBlockState().getValue(HORIZONTAL_FACING).getOpposite())) instanceof LargeTransformerBlockEntity be)
             if (be.getData().getId() != getData().getId())
-                if (be.getData().getVoltage() != 0)
+                if (be.getData().getVoltage() != 0) {
                     voltageGeneration = (int) Math.max(voltageGeneration, be.data.getVoltage() * turnRatio);
-        getData().getsOutsidePower = true;
+                    getData().getsOutsidePower = true;
+                }
 
 
         if (voltageGeneration == 0)
@@ -134,7 +139,14 @@ public class LargeTransformerBlockEntity extends KineticElectricBlockEntity {
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound, registries, clientPacket);
         turnRatio = compound.getFloat("Ratio");
-        constructionState = Enum.valueOf(TransformerConstructionState.class, compound.getString("State"));
+        String stateName = compound.getString("State");
+        if (!stateName.isEmpty()) {
+            try {
+                constructionState = Enum.valueOf(TransformerConstructionState.class, stateName);
+            } catch (IllegalArgumentException ignored) {
+                constructionState = TransformerConstructionState.NEEDS_STEEL;
+            }
+        }
     }
 
     @Override

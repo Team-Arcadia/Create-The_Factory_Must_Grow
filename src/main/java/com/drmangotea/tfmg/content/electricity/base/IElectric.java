@@ -479,7 +479,7 @@ public interface IElectric {
 
     default void setNetworkResistance(float newUsage) {
 
-        getData().networkResistance = (int) newUsage;
+        getData().networkResistance = newUsage > 0 && newUsage < 1 ? 1 : (int) newUsage;
     }
 
 

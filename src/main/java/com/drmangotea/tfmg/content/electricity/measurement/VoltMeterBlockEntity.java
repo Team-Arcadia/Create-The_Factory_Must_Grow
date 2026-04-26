@@ -69,8 +69,14 @@ public class VoltMeterBlockEntity extends SmartBlockEntity implements IHaveGoggl
     @Override
     protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(tag, registries, clientPacket);
-        if (!tag.getString("mode").isEmpty())
-            mode = MeasureMode.valueOf(tag.getString("mode"));
+        String modeName = tag.getString("mode");
+        if (!modeName.isEmpty()) {
+            try {
+                mode = MeasureMode.valueOf(modeName);
+            } catch (IllegalArgumentException ignored) {
+                mode = MeasureMode.VOLTAGE;
+            }
+        }
     }
 
     public float getUnit(IElectric be) {

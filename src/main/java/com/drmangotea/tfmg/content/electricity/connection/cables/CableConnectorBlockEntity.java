@@ -103,7 +103,7 @@ public class CableConnectorBlockEntity extends ElectricBlockEntity implements IH
 
             // level.setBlock(connection.blockPos1.above(), Blocks.GOLD_BLOCK.defaultBlockState(),3);
             if (level.getBlockEntity(pos) instanceof CableConnectorBlockEntity be) {
-                if (be.getBlockPos() == getBlockPos())
+                if (be.getBlockPos().equals(getBlockPos()))
                     continue;
                 be.onPlaced();
                 be.removeWiresNextTick = true;
