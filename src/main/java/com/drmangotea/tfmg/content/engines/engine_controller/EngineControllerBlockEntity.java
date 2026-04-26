@@ -101,13 +101,20 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
     @Override
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound,registries , clientPacket);
-        enginePos = BlockPos.of(compound.getLong("EnginePos"));
+        enginePos = compound.contains("EnginePos") ? BlockPos.of(compound.getLong("EnginePos")) : null;
 
         engineStarted = compound.getBoolean("EngineStarted");
         if (engineStarted && accelerationRate == 0)
             accelerationRate = 4;
         frequencyItems.deserializeNBT(registries,compound.getCompound("FrequencyItems"));
-        shift = TransmissionUpgrade.TransmissionState.valueOf(compound.getString("Shift"));
+        String shiftName = compound.getString("Shift");
+        if (!shiftName.isEmpty()) {
+            try {
+                shift = TransmissionUpgrade.TransmissionState.valueOf(shiftName);
+            } catch (IllegalArgumentException ignored) {
+                // tag was written with a value that no longer exists in the enum
+            }
+        }
         user = compound.hasUUID("User") ? compound.getUUID("User") : null;
         updateEngine();
     }
@@ -147,7 +154,9 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
     @Override
     public void destroy() {
         super.destroy();
-        Entity playerEntity = ((ServerLevel) level).getEntity(user);
+        if (user == null || !(level instanceof ServerLevel sl))
+            return;
+        Entity playerEntity = sl.getEntity(user);
         if (playerEntity instanceof Player)
             stopUsing((Player) playerEntity);
     }
@@ -271,7 +280,9 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
         if (enginePos != null && (engine == null)) {
             if (level.getBlockEntity(enginePos) instanceof AbstractSmallEngineBlockEntity be) {
                 engine = be;
-                engine.getControllerBE().highestSignal = 4/15;
+                AbstractSmallEngineBlockEntity engineController = engine.getControllerBE();
+                if (engineController != null)
+                    engineController.highestSignal = 4f / 15f;
             }
         }
 
