@@ -3,6 +3,7 @@ package com.drmangotea.tfmg.content.machinery.oil_processing.pumpjack.hammer.par
 
 import com.drmangotea.tfmg.base.TFMGShapes;
 import com.mojang.serialization.MapCodec;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.placement.PoleHelper;
 import net.createmod.catnip.placement.IPlacementHelper;
 import net.createmod.catnip.placement.PlacementHelpers;
@@ -28,7 +29,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.function.Predicate;
 
-public class PumpjackHammerPartBlock extends HorizontalDirectionalBlock {
+public class PumpjackHammerPartBlock extends HorizontalDirectionalBlock implements IWrenchable {
     public static final int placementHelperId = PlacementHelpers.register(new PlacementHelper());
    // public static final Property<Direction.Axis> HORIZONTAL_AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     public PumpjackHammerPartBlock(Properties pProperties) {

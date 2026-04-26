@@ -6,6 +6,7 @@ import com.drmangotea.tfmg.content.decoration.concrete.ConcreteloggedBlock;
 import com.drmangotea.tfmg.content.electricity.base.IElectric;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
 import com.drmangotea.tfmg.registry.TFMGBlocks;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import com.simibubi.create.foundation.placement.PoleHelper;
 import net.createmod.catnip.placement.IPlacementHelper;
@@ -37,7 +38,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import java.util.function.Predicate;
 
-public class CableTubeBlock extends RotatedPillarBlock implements IBE<CableTubeBlockEntity>, ConcreteloggedBlock {
+public class CableTubeBlock extends RotatedPillarBlock implements IBE<CableTubeBlockEntity>, ConcreteloggedBlock, IWrenchable {
 
     public static final int placementHelperId = PlacementHelpers.register(new PlacementHelper());
 

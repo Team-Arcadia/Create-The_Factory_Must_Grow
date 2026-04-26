@@ -1,13 +1,14 @@
 package com.drmangotea.tfmg.base.blocks;
 
 import com.mojang.serialization.MapCodec;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 
-public class TFMGHorizontalDirectionalBlock extends HorizontalDirectionalBlock {
+public class TFMGHorizontalDirectionalBlock extends HorizontalDirectionalBlock implements IWrenchable {
     public static final MapCodec<TFMGHorizontalDirectionalBlock> CODEC = simpleCodec(TFMGHorizontalDirectionalBlock::new);
     public TFMGHorizontalDirectionalBlock(Properties p_54120_) {
         super(p_54120_);

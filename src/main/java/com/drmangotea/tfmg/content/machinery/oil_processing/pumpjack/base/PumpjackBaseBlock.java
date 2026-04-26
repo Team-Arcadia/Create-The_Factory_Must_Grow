@@ -3,6 +3,7 @@ package com.drmangotea.tfmg.content.machinery.oil_processing.pumpjack.base;
 
 import com.drmangotea.tfmg.base.TFMGShapes;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
@@ -12,7 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class PumpjackBaseBlock extends Block implements IBE<PumpjackBaseBlockEntity> {
+public class PumpjackBaseBlock extends Block implements IBE<PumpjackBaseBlockEntity>, IWrenchable {
     public PumpjackBaseBlock(Properties pProperties) {
         super(pProperties);
     }

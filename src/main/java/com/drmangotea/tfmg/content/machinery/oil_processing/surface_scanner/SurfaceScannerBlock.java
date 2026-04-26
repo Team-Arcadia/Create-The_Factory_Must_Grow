@@ -2,6 +2,7 @@ package com.drmangotea.tfmg.content.machinery.oil_processing.surface_scanner;
 
 import com.drmangotea.tfmg.base.TFMGShapes;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
@@ -11,7 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class SurfaceScannerBlock extends Block implements IBE<SurfaceScannerBlockEntity> {
+public class SurfaceScannerBlock extends Block implements IBE<SurfaceScannerBlockEntity>, IWrenchable {
     public SurfaceScannerBlock(Properties p_49795_) {
         super(p_49795_);
     }

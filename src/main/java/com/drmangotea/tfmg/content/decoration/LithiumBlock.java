@@ -1,12 +1,13 @@
 package com.drmangotea.tfmg.content.decoration;
 
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class LithiumBlock extends Block {
+public class LithiumBlock extends Block implements IWrenchable {
     public LithiumBlock(Properties p_49795_) {
         super(p_49795_);
     }

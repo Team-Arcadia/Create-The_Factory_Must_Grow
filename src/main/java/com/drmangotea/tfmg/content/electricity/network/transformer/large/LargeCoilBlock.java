@@ -5,6 +5,7 @@ import com.drmangotea.tfmg.registry.TFMGBlockEntities;
 import com.drmangotea.tfmg.registry.TFMGBlocks;
 import com.drmangotea.tfmg.registry.TFMGDataComponents;
 import com.simibubi.create.AllSoundEvents;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,7 +26,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import java.util.Collections;
 import java.util.List;
 
-public class LargeCoilBlock extends Block implements IBE<LargeCoilBlockEntity> {
+public class LargeCoilBlock extends Block implements IBE<LargeCoilBlockEntity>, IWrenchable {
     public LargeCoilBlock(Properties properties) {
         super(properties);
     }

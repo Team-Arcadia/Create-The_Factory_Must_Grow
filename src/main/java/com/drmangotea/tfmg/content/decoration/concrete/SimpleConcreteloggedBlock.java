@@ -1,6 +1,7 @@
 package com.drmangotea.tfmg.content.decoration.concrete;
 
 import com.drmangotea.tfmg.registry.TFMGBlocks;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -18,7 +19,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 
-public class SimpleConcreteloggedBlock extends Block implements ConcreteloggedBlock {
+public class SimpleConcreteloggedBlock extends Block implements ConcreteloggedBlock, IWrenchable {
 
 
     public SimpleConcreteloggedBlock(Properties p_49795_) {

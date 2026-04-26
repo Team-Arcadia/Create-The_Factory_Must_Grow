@@ -1,13 +1,14 @@
 package com.drmangotea.tfmg.base.blocks;
 
 import com.mojang.serialization.MapCodec;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 
-public class TFMGDirectionalBlock extends DirectionalBlock {
+public class TFMGDirectionalBlock extends DirectionalBlock implements IWrenchable {
 
     public TFMGDirectionalBlock(Properties p_54120_) {
         super(p_54120_);

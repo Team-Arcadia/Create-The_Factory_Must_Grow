@@ -1,5 +1,6 @@
 package com.drmangotea.tfmg.base.blocks;
 
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -12,7 +13,7 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 
 import javax.annotation.Nullable;
 
-public class WallMountBlock extends Block {
+public class WallMountBlock extends Block implements IWrenchable {
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
 

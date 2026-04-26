@@ -4,6 +4,7 @@ package com.drmangotea.tfmg.content.machinery.oil_processing.pumpjack.crank;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
 import com.mojang.serialization.MapCodec;
 import com.simibubi.create.AllShapes;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -17,7 +18,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class PumpjackCrankBlock extends HorizontalDirectionalBlock implements IBE<PumpjackCrankBlockEntity> {
+public class PumpjackCrankBlock extends HorizontalDirectionalBlock implements IBE<PumpjackCrankBlockEntity>, IWrenchable {
     public PumpjackCrankBlock(Properties p_54120_) {
         super(p_54120_);
     }

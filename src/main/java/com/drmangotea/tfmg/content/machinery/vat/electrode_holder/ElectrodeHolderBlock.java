@@ -5,6 +5,7 @@ import com.drmangotea.tfmg.base.TFMGUtils;
 import com.drmangotea.tfmg.content.electricity.base.IElectric;
 import com.drmangotea.tfmg.content.machinery.vat.electrode_holder.electrode.Electrode;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -17,7 +18,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-public class ElectrodeHolderBlock extends Block implements IBE<ElectrodeHolderBlockEntity> {
+public class ElectrodeHolderBlock extends Block implements IBE<ElectrodeHolderBlockEntity>, IWrenchable {
     public ElectrodeHolderBlock(Properties p_49795_) {
         super(p_49795_);
     }

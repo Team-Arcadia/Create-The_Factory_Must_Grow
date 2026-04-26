@@ -3,6 +3,7 @@ package com.drmangotea.tfmg.content.machinery.oil_processing.pumpjack.hammer.par
 
 import com.drmangotea.tfmg.base.TFMGShapes;
 import com.mojang.serialization.MapCodec;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -13,7 +14,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class PumpjackHammerHeadBlock extends HorizontalDirectionalBlock {
+public class PumpjackHammerHeadBlock extends HorizontalDirectionalBlock implements IWrenchable {
 
     public PumpjackHammerHeadBlock(Properties pProperties) {
         super(pProperties);

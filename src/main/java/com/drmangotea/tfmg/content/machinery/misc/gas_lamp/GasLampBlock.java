@@ -2,6 +2,7 @@ package com.drmangotea.tfmg.content.machinery.misc.gas_lamp;
 
 import com.drmangotea.tfmg.base.TFMGShapes;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
+import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -17,7 +18,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 
-public class GasLampBlock extends Block implements IBE<GasLampBlockEntity> {
+public class GasLampBlock extends Block implements IBE<GasLampBlockEntity>, IWrenchable {
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
     public GasLampBlock(Properties properties) {
