@@ -634,12 +634,31 @@
     </h3>
     <div class="body">
       <div class="lang-en" style="font-size:12px;color:var(--muted);margin-bottom:8px">
-        Run <code>/test runall</code> in your dev world to validate 4 regression invariants automatically. Each maps to a specific commit on this branch — if any fails, that fix has regressed. You can also run them individually. Saves you ~20 minutes of manual checks for ALT-04, STO-02, STO-03, TNK-01 and the wrench coverage.<br>
+        Run <code>/test runall</code> in your dev world to validate 4 regression invariants automatically. Each maps to a specific commit on this branch — if any fails, that fix has regressed.<br>
         Doc: <code>https://docs.neoforged.net/docs/misc/gametest/</code>
       </div>
       <div class="lang-fr" style="font-size:12px;color:var(--muted);margin-bottom:8px">
-        Lance <code>/test runall</code> dans ton monde dev pour valider automatiquement 4 invariants de régression. Chacun mappe un commit de cette branche — si un échoue, le fix a régressé. Tu peux aussi les lancer individuellement. Te fait gagner ~20 min de retests manuels pour ALT-04, STO-02, STO-03, TNK-01 et la couverture wrench.<br>
+        Lance <code>/test runall</code> dans ton monde dev pour valider automatiquement 4 invariants de régression. Chacun mappe un commit de cette branche — si un échoue, le fix a régressé.<br>
         Doc : <code>https://docs.neoforged.net/docs/misc/gametest/</code>
+      </div>
+
+      <div style="margin:8px 0;padding:8px 12px;background:rgba(229,72,72,0.1);border-left:3px solid var(--fail);border-radius:0 3px 3px 0;font-size:12px">
+        <strong style="color:var(--fail)">⚠</strong>
+        <span class="lang-en"> The <code>/test</code> command does NOT exist by default outside dev. To enable it in a CurseForge / Prism / MultiMC / vanilla launcher, add this JVM argument and restart Minecraft:</span>
+        <span class="lang-fr"> La commande <code>/test</code> n'existe PAS par défaut hors dev. Pour l'activer dans un launcher CurseForge / Prism / MultiMC / vanilla, ajoute cet argument JVM et redémarre Minecraft :</span>
+        <div class="cmd-row" style="margin-top:6px"><code>-Dneoforge.enableGameTest=true</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+        <div style="font-size:11px;margin-top:4px">
+          <span class="lang-en"><strong>Where:</strong> CurseForge → profile Settings → Java/Memory → Additional Arguments. Prism/MultiMC → Edit Instance → Settings → Java → JVM arguments. Vanilla launcher → Installations → ⋮ → Edit → JVM Arguments.</span>
+          <span class="lang-fr"><strong>Où :</strong> CurseForge → Settings du profil → Java/Memory → Additional Arguments. Prism/MultiMC → Edit Instance → Settings → Java → JVM arguments. Vanilla launcher → Installations → ⋮ → Edit → JVM Arguments.</span>
+        </div>
+        <div style="font-size:11px;margin-top:4px">
+          <span class="lang-en">Then open a world in <strong>creative</strong> and the <code>/test</code> commands appear.</span>
+          <span class="lang-fr">Ouvre ensuite un monde en <strong>créatif</strong> et les commandes <code>/test</code> apparaissent.</span>
+        </div>
+        <div style="font-size:11px;margin-top:6px">
+          <span class="lang-en"><strong>No launcher access?</strong> Run headless from the repo: <code>./gradlew runGameTestServer</code> (exits with code 0 = pass, ≠ 0 = fail).</span>
+          <span class="lang-fr"><strong>Pas d'accès launcher ?</strong> Lance en headless depuis le repo : <code>./gradlew runGameTestServer</code> (exit code 0 = OK, ≠ 0 = fail).</span>
+        </div>
       </div>
       <div class="cmds-label">Run all 4 at once</div>
       <div class="cmd-row"><code>/test runall</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
