@@ -1,10 +1,10 @@
 package com.drmangotea.tfmg.base.blocks;
 
-import com.drmangotea.tfmg.content.electricity.base.IElectric;
 import com.mojang.serialization.MapCodec;
 import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -35,9 +35,13 @@ public class TFMGHorizontalDirectionalBlock extends HorizontalDirectionalBlock i
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean moved) {
         super.onPlace(state, level, pos, oldState, moved);
         if (!moved && oldState.getBlock() == state.getBlock() && oldState != state) {
-            if (level.getBlockEntity(pos) instanceof IElectric ie) {
-                ie.getData().connectNextTick = true;
-            }
+            TFMGDirectionalBlock.ElectricRotationHook.onRotated(level, pos);
         }
+    }
+
+    @Override
+    public BlockState updateAfterWrenched(BlockState newState, UseOnContext context) {
+        TFMGDirectionalBlock.ElectricRotationHook.beforeRotation(context.getLevel(), context.getClickedPos());
+        return Block.updateFromNeighbourShapes(newState, context.getLevel(), context.getClickedPos());
     }
 }
