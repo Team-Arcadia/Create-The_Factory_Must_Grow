@@ -106,8 +106,14 @@ public abstract class AbstractEngineBlockEntity extends KineticElectricBlockEnti
             updateRotation();
             analogSignalChanged();
         }
+        if (level == null || !level.isLoaded(getBlockPos()))
+            return;
         sendData();
-        setChanged();
+        try {
+            setChanged();
+        } catch (UnsupportedOperationException ignored) {
+            // VirtualRenderWorld (engine on a contraption) does not support setChanged.
+        }
     }
 
     public boolean hasEngineController() {

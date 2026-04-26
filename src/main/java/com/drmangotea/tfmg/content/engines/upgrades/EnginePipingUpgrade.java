@@ -58,7 +58,7 @@ public class EnginePipingUpgrade extends EngineUpgrade {
             int amount = Math.min(maxInput, Math.min(maxOutput, controller.fuelTank.getSpace()));
 
             tankBE.getTankInventory().drain(amount, IFluidHandler.FluidAction.EXECUTE);
-            controller.getControllerBE().fuelTank.fill(new FluidStack(tankBE.getFluid(0).getFluidHolder(), amount), IFluidHandler.FluidAction.EXECUTE);
+            controller.fuelTank.fill(new FluidStack(tankBE.getFluid(0).getFluidHolder(), amount), IFluidHandler.FluidAction.EXECUTE);
 
         } else findTank(engine);
 

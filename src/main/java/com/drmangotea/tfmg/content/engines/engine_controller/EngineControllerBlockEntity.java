@@ -130,11 +130,14 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
     public void updateShift() {
         if (enginePos != null)
             if (level.getBlockEntity(enginePos) instanceof AbstractSmallEngineBlockEntity be) {
-                be.getControllerBE().shift = shift;
-                be.getControllerBE().clutchPressed = clutch;
-                be.getControllerBE().updateGeneratedRotation();
-                if(be.getControllerBE().engineLength()>1){
-                    if(level.getBlockEntity(BlockPos.of(be.getControllerBE().engines.get(be.getControllerBE().engineLength()-1)))instanceof AbstractSmallEngineBlockEntity be2){
+                AbstractSmallEngineBlockEntity controller = be.getControllerBE();
+                if (controller == null)
+                    return;
+                controller.shift = shift;
+                controller.clutchPressed = clutch;
+                controller.updateGeneratedRotation();
+                if (controller.engineLength() > 1) {
+                    if (level.getBlockEntity(BlockPos.of(controller.engines.get(controller.engineLength() - 1))) instanceof AbstractSmallEngineBlockEntity be2) {
                         be2.updateGeneratedRotation();
                     }
                 }
