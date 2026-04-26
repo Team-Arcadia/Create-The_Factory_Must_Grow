@@ -54,7 +54,7 @@ public class RotorBlockEntity extends KineticElectricBlockEntity {
 
     @Override
     public int getMaxVoltage() {
-        return 10000;
+        return TFMGConfigs.common().machines.largeGeneratorMaxVoltage.get();
     }
 
     @Override
@@ -83,7 +83,7 @@ public class RotorBlockEntity extends KineticElectricBlockEntity {
 
     @Override
     public int voltageGeneration() {
-        return (int) Math.min(3000, generation() * 3);
+        return (int) Math.min(getMaxVoltage(), generation() * 3);
     }
 
     public int generation() {

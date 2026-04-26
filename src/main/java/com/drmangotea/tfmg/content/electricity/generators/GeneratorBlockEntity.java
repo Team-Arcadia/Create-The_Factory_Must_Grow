@@ -16,7 +16,12 @@ public class GeneratorBlockEntity extends KineticElectricBlockEntity  {
 
     @Override
     public int voltageGeneration() {
-        return (int) Math.min(255,generation());
+        return (int) Math.min(getMaxVoltage(), generation());
+    }
+
+    @Override
+    public int getMaxVoltage() {
+        return TFMGConfigs.common().machines.generatorMaxVoltage.get();
     }
 
     @Override

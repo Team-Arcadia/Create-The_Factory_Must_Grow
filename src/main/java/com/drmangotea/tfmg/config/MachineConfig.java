@@ -35,9 +35,11 @@ public class MachineConfig extends ConfigBase {
     public final ConfigGroup generators = group(1, "generators", "Generators");
     public final ConfigFloat largeGeneratorModifier = f(4, 0, "largeGeneratorModifier", Comments.largeGenerator);
     public final ConfigFloat largeGeneratorMinSpeed = f(70, 0, "largeGeneratorMinSpeed", Comments.largeGeneratorMinSpeed);
+    public final ConfigInt largeGeneratorMaxVoltage = i(10000, 1, "largeGeneratorMaxVoltage", Comments.largeGeneratorMaxVoltage);
     //
     public final ConfigFloat generatorModifier = f(1.4f, 0, "GeneratorModifier", Comments.generator);
     public final ConfigFloat generatorMinSpeed = f(40, 0, "generatorMinSpeed", Comments.generatorMinSpeed);
+    public final ConfigInt generatorMaxVoltage = i(1000, 1, "generatorMaxVoltage", Comments.generatorMaxVoltage);
 
     public final ConfigGroup blast_furnace = group(1, "blast_furnace", "Blast Furnace");
     public final ConfigInt blastFurnaceMaxHeight = i(10, 3, "blastFurnaceMaxHeight", Comments.blastFurnaceHeight);
@@ -55,7 +57,9 @@ public class MachineConfig extends ConfigBase {
         static String largeGenerator = "Determines how powerful the large generator is.";
         static String generator = "Determines how powerful the generator is.";
         static String largeGeneratorMinSpeed = "Changes the lowest speed the large generator can work on.";
+        static String largeGeneratorMaxVoltage = "Maximum output voltage of the large generator. Increase to extend the usable RPM range.";
         static String generatorMinSpeed = "Changes the lowest speed the generator can work on.";
+        static String generatorMaxVoltage = "Maximum output voltage of the regular generator. Increase to extend the usable RPM range.";
         static String blastFurnaceHeight = "Changes the maximum height of the blast furnace.";
         static String blastFurnaceHeightSpeedModifier = "Sets the maximum time that can be saved by increasing blast furnace height.";
         static String blastFurnaceFuelConsumption = "Determines how many ticks does it take to consume one fuel.";
