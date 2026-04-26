@@ -43,11 +43,12 @@ public class FluidTankBlockEntityMixin extends SmartBlockEntity {
         FluidTankBlockEntity be = getControllerBE();
         if (be == null)
             return;
-        if (be.boiler.isActive())
+        if (be.boiler.isActive()) {
+            ci.cancel();
             return;
+        }
         be.setWindows(((FluidTankBlockEntityAccessor)be).tfmg$getWindow());
-
-        return;
+        ci.cancel();
     }
 
     @Inject(at = @At("HEAD"), method = "notifyMultiUpdated",cancellable = true , remap = false)
@@ -57,7 +58,7 @@ public class FluidTankBlockEntityMixin extends SmartBlockEntity {
             state = state.setValue(FluidTankBlock.BOTTOM, getController().getY() == getBlockPos().getY());
             state = state.setValue(FluidTankBlock.TOP, getController().getY() + height - 1 == getBlockPos().getY());
             level.setBlock(getBlockPos(), state, 6);
-
+            ci.cancel();
         }
     }
     @Inject(at = @At("HEAD"), method = "removeController",cancellable = true , remap = false)
@@ -71,6 +72,7 @@ public class FluidTankBlockEntityMixin extends SmartBlockEntity {
             state = state.setValue(FluidTankBlock.TOP, true);
             state = state.setValue(FluidTankBlock.SHAPE, window ? FluidTankBlock.Shape.WINDOW : FluidTankBlock.Shape.PLAIN);
             getLevel().setBlock(worldPosition, state, 22);
+            ci.cancel();
         }
 
     }
@@ -107,7 +109,7 @@ public class FluidTankBlockEntityMixin extends SmartBlockEntity {
                     }
                 }
             }
-            return;
+            ci.cancel();
         }
     }
 
