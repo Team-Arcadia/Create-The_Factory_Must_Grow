@@ -81,6 +81,7 @@ public class TransformerBlockEntity extends VoltageAlteringBlockEntity {
             ItemEntity item = new ItemEntity(level, pos.getX()+.5f,pos.getY()+.5f,pos.getZ()+.5f,secondaryCoil);
             level.addFreshEntity(item);
         }
+        updateInFront();
     }
 
     @Override
@@ -174,7 +175,7 @@ public class TransformerBlockEntity extends VoltageAlteringBlockEntity {
     public void remove() {
 
         super.remove();
-        updateInFront();
+        // Subnetwork notification only on real block break — see ElectricBlockEntity.
     }
 
     @Override

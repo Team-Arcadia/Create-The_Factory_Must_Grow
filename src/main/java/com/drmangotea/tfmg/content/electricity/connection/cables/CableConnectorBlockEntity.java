@@ -68,6 +68,14 @@ public class CableConnectorBlockEntity extends ElectricBlockEntity implements IH
     @Override
     public void remove() {
         super.remove();
+        // notifyRemoval() drops the wire items and reorganises the connected
+        // cable connectors. We only want this on an actual break, not on
+        // chunk unload — handled by destroy() now.
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
         notifyRemoval();
     }
 

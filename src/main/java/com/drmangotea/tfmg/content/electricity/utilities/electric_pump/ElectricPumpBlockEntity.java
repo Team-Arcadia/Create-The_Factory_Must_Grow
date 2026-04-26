@@ -237,6 +237,12 @@ public class ElectricPumpBlockEntity extends PumpBlockEntity implements IElectri
     @Override
     public void remove() {
         super.remove();
+        // Teardown moved to destroy() — see ElectricBlockEntity.
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
         onRemoved();
     }
 

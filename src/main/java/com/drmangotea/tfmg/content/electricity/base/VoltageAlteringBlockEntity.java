@@ -116,6 +116,13 @@ public class VoltageAlteringBlockEntity extends ElectricBlockEntity{
     public void remove() {
 
         super.remove();
+        // Downstream notification moved to destroy() so chunk unload doesn't
+        // disturb the subnetwork.
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
         updateInFront();
     }
 
