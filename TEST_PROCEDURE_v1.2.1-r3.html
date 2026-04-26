@@ -644,21 +644,28 @@
 
       <div style="margin:8px 0;padding:8px 12px;background:rgba(229,72,72,0.1);border-left:3px solid var(--fail);border-radius:0 3px 3px 0;font-size:12px">
         <strong style="color:var(--fail)">⚠</strong>
-        <span class="lang-en"> The <code>/test</code> command does NOT exist by default outside dev. To enable it in a CurseForge / Prism / MultiMC / vanilla launcher, add this JVM argument and restart Minecraft:</span>
-        <span class="lang-fr"> La commande <code>/test</code> n'existe PAS par défaut hors dev. Pour l'activer dans un launcher CurseForge / Prism / MultiMC / vanilla, ajoute cet argument JVM et redémarre Minecraft :</span>
-        <div class="cmd-row" style="margin-top:6px"><code>-Dneoforge.enableGameTest=true</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
-        <div style="font-size:11px;margin-top:4px">
-          <span class="lang-en"><strong>Where:</strong> CurseForge → profile Settings → Java/Memory → Additional Arguments. Prism/MultiMC → Edit Instance → Settings → Java → JVM arguments. Vanilla launcher → Installations → ⋮ → Edit → JVM Arguments.</span>
-          <span class="lang-fr"><strong>Où :</strong> CurseForge → Settings du profil → Java/Memory → Additional Arguments. Prism/MultiMC → Edit Instance → Settings → Java → JVM arguments. Vanilla launcher → Installations → ⋮ → Edit → JVM Arguments.</span>
-        </div>
-        <div style="font-size:11px;margin-top:4px">
-          <span class="lang-en">Then open a world in <strong>creative</strong> and the <code>/test</code> commands appear.</span>
-          <span class="lang-fr">Ouvre ensuite un monde en <strong>créatif</strong> et les commandes <code>/test</code> apparaissent.</span>
-        </div>
-        <div style="font-size:11px;margin-top:6px">
-          <span class="lang-en"><strong>No launcher access?</strong> Run headless from the repo: <code>./gradlew runGameTestServer</code> (exits with code 0 = pass, ≠ 0 = fail).</span>
-          <span class="lang-fr"><strong>Pas d'accès launcher ?</strong> Lance en headless depuis le repo : <code>./gradlew runGameTestServer</code> (exit code 0 = OK, ≠ 0 = fail).</span>
-        </div>
+        <span class="lang-en"> <code>/test</code> is hard-blocked in production launchers (CurseForge, Prism, MultiMC, vanilla, dedicated server). NeoForge's <code>GameTestHooks.isGametestEnabled()</code> checks <code>!FMLLoader.isProduction()</code> first, so the <code>-Dneoforge.enableGameTest=true</code> JVM arg has zero effect on a shipped jar. There is no supported way to expose <code>/test</code> in your normal modpack.</span>
+        <span class="lang-fr"> <code>/test</code> est bloqué en dur dans les launchers de production (CurseForge, Prism, MultiMC, vanilla, serveur dédié). <code>GameTestHooks.isGametestEnabled()</code> de NeoForge check <code>!FMLLoader.isProduction()</code> en premier, donc l'argument JVM <code>-Dneoforge.enableGameTest=true</code> n'a aucun effet sur un jar shippé. Aucune façon supportée d'exposer <code>/test</code> dans ton modpack normal.</span>
+      </div>
+
+      <div style="margin:8px 0;padding:8px 12px;background:rgba(76,175,80,0.07);border-left:3px solid var(--pass);border-radius:0 3px 3px 0;font-size:12px">
+        <strong style="color:var(--pass)">✓</strong>
+        <span class="lang-en"> <strong>Working alternatives</strong> to run the 4 regression checks:</span>
+        <span class="lang-fr"> <strong>Alternatives qui marchent</strong> pour lancer les 4 régressions :</span>
+        <ol style="margin:6px 0 0 18px;padding:0">
+          <li>
+            <span class="lang-en"><strong>Headless via gradle</strong> from a clone of the repo. Recommended — no Minecraft client needed, returns exit code 0 / 1, ideal for CI:</span>
+            <span class="lang-fr"><strong>Headless via gradle</strong> depuis un clone du repo. Recommandé — pas de client Minecraft nécessaire, exit code 0 / 1, idéal pour CI :</span>
+          </li>
+        </ol>
+        <div class="cmd-row" style="margin-top:6px"><code>./gradlew runGameTestServer</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+        <ol start="2" style="margin:6px 0 0 18px;padding:0">
+          <li>
+            <span class="lang-en"><strong>Dev client</strong> from a clone of the repo. <code>/test</code> is auto-enabled because the IDE flag is detected:</span>
+            <span class="lang-fr"><strong>Client dev</strong> depuis un clone du repo. <code>/test</code> est auto-activé car le flag IDE est détecté :</span>
+          </li>
+        </ol>
+        <div class="cmd-row" style="margin-top:6px"><code>./gradlew runClient</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
       </div>
       <div class="cmds-label">Run all 4 at once</div>
       <div class="cmd-row"><code>/test runall</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
