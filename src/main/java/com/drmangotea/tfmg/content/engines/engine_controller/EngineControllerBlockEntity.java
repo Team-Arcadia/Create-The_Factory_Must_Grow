@@ -310,11 +310,12 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
     public void updateEngine() {
         if (engine == null)
             return;
-        engine.getControllerBE().engineController = this.getBlockPos();
-        engine.getControllerBE().highestSignal = accelerationRate/15;
-        engine.getControllerBE().updateRotation();
-
-
+        AbstractSmallEngineBlockEntity controller = engine.getControllerBE();
+        if (controller == null)
+            return;
+        controller.engineController = this.getBlockPos();
+        controller.highestSignal = accelerationRate / 15f;
+        controller.updateRotation();
     }
 
     public void disconnectEngine() {

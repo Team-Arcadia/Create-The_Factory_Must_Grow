@@ -267,7 +267,7 @@ public abstract class AbstractEngineBlockEntity extends KineticElectricBlockEnti
 
         reverse = compound.getBoolean("Reverse");
         signal = compound.getInt("Signal");
-        if (hasEngineController())
+        if (compound.contains("EngineController"))
             engineController = BlockPos.of(compound.getLong("EngineController"));
 
         fuelTank.readFromNBT(registries, compound.getCompound("FuelTank"));
