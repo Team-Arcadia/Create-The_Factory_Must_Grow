@@ -168,8 +168,9 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
 
         BlockEntity beBehind = level.getBlockEntity(getBlockPos().relative(getFacing(getBlockState()).getOpposite()));
         if (beBehind instanceof SteelTankBlockEntity be) {
+            SteelTankBlockEntity controllerBE = be.getControllerBE();
             TFMGTexts.header("distillation_tower").style(ChatFormatting.GRAY).forGoggles(tooltip, 1);
-            TFMGTexts.Distillation.level(be.getControllerBE().activeHeat).forGoggles(tooltip, 1);
+            TFMGTexts.Distillation.level(controllerBE != null ? controllerBE.activeHeat : be.activeHeat).forGoggles(tooltip, 1);
             TFMGTexts.Distillation.outputs(getOutputs().toArray().length).forGoggles(tooltip, 1);
         } else
             TFMGTexts.Distillation.tankNotFound().forGoggles(tooltip, 1);

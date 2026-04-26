@@ -415,12 +415,13 @@ public class SteelTankBlockEntity extends FluidTankBlockEntity implements IHaveG
         SteelTankBlockEntity controllerTE = getControllerBE();
         if (isDistillationTower)
             return false;
-        if (getControllerBE() != null)
-            if (getControllerBE().isDistillationTower)
-                return false;
+        if (controllerTE != null && controllerTE.isDistillationTower)
+            return false;
+        if (controllerTE == null)
+            return false;
 
         return containedFluidTooltip(tooltip, isPlayerSneaking,
-                level.getCapability(Capabilities.FluidHandler.BLOCK, getControllerBE().getBlockPos(), null));
+                level.getCapability(Capabilities.FluidHandler.BLOCK, controllerTE.getBlockPos(), null));
     }
 
     @Override
