@@ -93,7 +93,7 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         CokingRecipe recipe = optional.get().value();
 
         if(recipe.getIngredients().get(0).test(inventory.getItem(0)))
-            timer = recipe.getProcessingDuration()/(Math.max(size/2,1));
+            timer = (int) (recipe.getProcessingDuration() / Math.max(size / 2f, 1f));
     }
 
     private void onFluidChanged(FluidStack stack) {
@@ -234,13 +234,13 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         for(int i =0; i< size;i++){
             BlockPos pos = getBlockPos().above(i);
 
-            if(level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be&&pos != getBlockPos()){
+            if(level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be && !pos.equals(getBlockPos())){
                 be.forceOpen = open;
             }
         }
     }
     public boolean isController(){
-        return controller == getBlockPos();
+        return controller == null || controller.equals(getBlockPos());
     }
     public void createMultiblock(){
 
@@ -278,7 +278,7 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         for(BlockPos pos : BlockPos.betweenClosed(getBlockPos(), getBlockPos().above(this.size-1).relative(facing.getOpposite(),this.size-1))){
             if(level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be){
                 if(Math.abs(getBlockPos().getX()-be.getBlockPos().getX())>=size || Math.abs(getBlockPos().getY()-be.getBlockPos().getY())>=size || Math.abs(getBlockPos().getZ()-be.getBlockPos().getZ())>=size)
-                    if (be.controller == getBlockPos()||be.controller!=be.getBlockPos()) {
+                    if (be.controller != null && (be.controller.equals(getBlockPos()) || !be.controller.equals(be.getBlockPos()))) {
                         be.controller = be.getBlockPos();
                         be.refreshCapability();
                         be.forceOpen = false;

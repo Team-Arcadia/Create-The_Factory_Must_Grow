@@ -114,28 +114,34 @@ public class RotorBlockEntity extends KineticElectricBlockEntity {
         Axis axis = getBlockState().getValue(AXIS);
 
         Map<StatorOffset, BlockState> position = statorPosition.get(axis);
-        stators = new ArrayList<>();
-        position.forEach(((offset, state) -> {
+        ArrayList<BlockPos> found = new ArrayList<>();
+        boolean ok = true;
+        for (StatorOffset offset : position.keySet()) {
             BlockPos pos = getBlockPos().relative(offset.direction1);
             if (offset.direction2.isPresent())
                 pos = pos.relative(offset.direction2.get());
 
-            if (level.getBlockEntity(pos) instanceof StatorBlockEntity be) {
-
-                if (be.rotor == null || be.rotor == getBlockPos()) {
-
-                    stators.add(pos);
-                    level.setBlock(pos, state, 2);
-                    be.rotor = getBlockPos();
-
-                } else {
-                    stators = new ArrayList<>();
-                }
-            } else {
-                stators = new ArrayList<>();
+            if (!(level.getBlockEntity(pos) instanceof StatorBlockEntity be) || (be.rotor != null && !be.rotor.equals(getBlockPos()))) {
+                ok = false;
+                break;
             }
-
-        }));
+            found.add(pos);
+        }
+        if (!ok) {
+            stators = new ArrayList<>();
+            return;
+        }
+        stators = found;
+        for (Map.Entry<StatorOffset, BlockState> entry : position.entrySet()) {
+            StatorOffset offset = entry.getKey();
+            BlockPos pos = getBlockPos().relative(offset.direction1);
+            if (offset.direction2.isPresent())
+                pos = pos.relative(offset.direction2.get());
+            if (level.getBlockEntity(pos) instanceof StatorBlockEntity be) {
+                level.setBlock(pos, entry.getValue(), 2);
+                be.rotor = getBlockPos();
+            }
+        }
     }
 
     public void manageRotation() {
