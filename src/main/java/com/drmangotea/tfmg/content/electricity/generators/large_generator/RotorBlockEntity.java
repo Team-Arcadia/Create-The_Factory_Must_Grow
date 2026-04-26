@@ -83,7 +83,8 @@ public class RotorBlockEntity extends KineticElectricBlockEntity {
 
     @Override
     public int voltageGeneration() {
-        return (int) Math.min(getMaxVoltage(), generation() * 3);
+        float multiplier = TFMGConfigs.common().machines.largeGeneratorVoltageMultiplier.getF();
+        return (int) Math.min(getMaxVoltage(), generation() * multiplier);
     }
 
     public int generation() {
