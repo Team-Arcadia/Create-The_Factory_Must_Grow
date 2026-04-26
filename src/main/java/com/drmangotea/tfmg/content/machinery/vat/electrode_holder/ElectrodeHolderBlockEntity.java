@@ -110,13 +110,14 @@ public class ElectrodeHolderBlockEntity extends ElectricBlockEntity implements I
 
 
     @Override
-    public void remove() {
+    public void destroy() {
+        super.destroy();
 
-        if (level.isClientSide || electrode.getItem()==null)
+        if (level == null || level.isClientSide || electrode.getItem() == null)
             return;
 
 
-        ItemEntity itemToDrop = new ItemEntity(level, getBlockPos().getX() + 0.5f, getBlockPos().getY() + 0.5f, getBlockPos().getZ() + 0.5f, electrode.getStack());
+        ItemEntity itemToDrop = new ItemEntity(level, getBlockPos().getX() + 0.5f, getBlockPos().getY() + 0.5f, getBlockPos().getZ() + 0.5f, electrode.getStack().copy());
 
         level.addFreshEntity(itemToDrop);
 

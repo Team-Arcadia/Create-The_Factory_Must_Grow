@@ -83,13 +83,14 @@ public class IndustrialMixerBlockEntity extends KineticBlockEntity implements IV
 
 
     @Override
-    public void remove() {
+    public void destroy() {
+        super.destroy();
 
-        if (level.isClientSide || mixerMode == MixerMode.NONE)
+        if (level == null || level.isClientSide || mixerMode == MixerMode.NONE)
             return;
 
 
-        ItemEntity itemToDrop = new ItemEntity(level, getBlockPos().getX() + 0.5f, getBlockPos().getY() + 0.5f, getBlockPos().getZ() + 0.5f, mixerMode.item);
+        ItemEntity itemToDrop = new ItemEntity(level, getBlockPos().getX() + 0.5f, getBlockPos().getY() + 0.5f, getBlockPos().getZ() + 0.5f, mixerMode.item.copy());
 
         level.addFreshEntity(itemToDrop);
 
