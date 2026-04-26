@@ -317,15 +317,13 @@ public class LargeEngineBlockEntity extends AbstractEngineBlockEntity {
     }
     @Override
     public int getFuelConsumption() {
-        if(getShaft()==null)
+        PoweredShaftBlockEntity shaft = getShaft();
+        if (shaft == null)
             return 0;
-
-        if(isSimpleEngine()&&getShaft()!=null)
-            return (int) getShaft().getGeneratedSpeed()/10;
-
-        if(getShaft()==null)
-            return 0;
-        return (int) getShaft().getGeneratedSpeed()/40;
+        float speed = Math.abs(shaft.getGeneratedSpeed());
+        if (isSimpleEngine())
+            return Math.max(1, (int) (speed / 10f));
+        return Math.max(1, (int) (speed / 40f));
     }
 
     @Override

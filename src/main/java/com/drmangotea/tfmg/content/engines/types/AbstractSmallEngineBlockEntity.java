@@ -616,7 +616,7 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
                         return;
                     }
 
-                    level.setBlock(be.getBlockPos(), be.getBlockState().setValue(SHAFT_FACING, be.getBlockPos() == this.getBlockPos() ? facing : updateDirection), 2);
+                    level.setBlock(be.getBlockPos(), be.getBlockState().setValue(SHAFT_FACING, be.getBlockPos().equals(this.getBlockPos()) ? facing : updateDirection), 2);
 
                     //if (be instanceof RegularEngineBlockEntity be1 && this instanceof RegularEngineBlockEntity be2 && be1.type != be2.type) {
                     //    setBlockStates(this, getBlockPos().relative(updateDirection, i - 1));
