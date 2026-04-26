@@ -645,6 +645,8 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         sendData();
         if (level.isClientSide)
             invalidateRenderBoundingBox();
+        if (!level.isClientSide)
+            evaluateNextTick = true;
     }
 
     private void onPositionChanged() {
