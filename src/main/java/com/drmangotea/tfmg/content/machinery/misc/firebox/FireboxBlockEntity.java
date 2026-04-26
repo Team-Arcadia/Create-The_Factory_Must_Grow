@@ -301,10 +301,8 @@ public class FireboxBlockEntity extends SmartBlockEntity implements IHaveGoggleI
 
         compound.getBoolean("IsRunning");
 
-        if (compound.contains("LastKnownPos"))
-            lastKnownPos = NbtUtils.readBlockPos(compound,"LastKnownPos").get();
-        if (compound.contains("Controller"))
-            controller = NbtUtils.readBlockPos(compound,"Controller").get();
+        NbtUtils.readBlockPos(compound, "LastKnownPos").ifPresent(p -> lastKnownPos = p);
+        NbtUtils.readBlockPos(compound, "Controller").ifPresent(p -> controller = p);
 
         if (isController()) {
             width = compound.getInt("Size");

@@ -46,6 +46,8 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
     private static final Object DistillationRecipesKey = new Object();
 
     public DistillationRecipe recipe;
+    private ArrayList<DistillationOutputBlockEntity> cachedOutputs;
+    private int outputsCacheCooldown;
 
     LerpedFloat angle = LerpedFloat.angular();
 
@@ -99,7 +101,7 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         if (level.isClientSide)
             return;
 
-        ArrayList<DistillationOutputBlockEntity> outputs = getOutputs();
+        ArrayList<DistillationOutputBlockEntity> outputs = getOutputsCached();
         BlockEntity beBehind = level.getBlockEntity(getBlockPos().relative(getFacing(getBlockState()).getOpposite()));
         if (!(beBehind instanceof SteelTankBlockEntity be))
             return;
@@ -215,6 +217,8 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
             DistillationRecipe recipe = (DistillationRecipe) holder.value();
             if (recipe.getFluidResults().size() != outputCount)
                 continue;
+            if (recipe.getFluidIngredients().isEmpty())
+                continue;
             SizedFluidIngredient firstIngredient = recipe.getFluidIngredients().getFirst();
             if (tank.getFluidAmount() < firstIngredient.amount())
                 continue;
@@ -237,6 +241,21 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
     //        return fluidCapability.cast();
     //    return super.getCapability(cap, side);
     //}
+
+    public ArrayList<DistillationOutputBlockEntity> getOutputsCached() {
+        if (cachedOutputs == null || outputsCacheCooldown <= 0) {
+            cachedOutputs = getOutputs();
+            outputsCacheCooldown = 20;
+        } else {
+            outputsCacheCooldown--;
+        }
+        return cachedOutputs;
+    }
+
+    public void invalidateOutputsCache() {
+        cachedOutputs = null;
+        outputsCacheCooldown = 0;
+    }
 
     public ArrayList<DistillationOutputBlockEntity> getOutputs() {
         ArrayList<DistillationOutputBlockEntity> outputs = new ArrayList<>();

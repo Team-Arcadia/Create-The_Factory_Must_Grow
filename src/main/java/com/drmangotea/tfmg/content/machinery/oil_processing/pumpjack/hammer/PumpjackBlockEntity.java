@@ -279,76 +279,53 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
         BlockPos checkedPos = this.getBlockPos().above();
         if (!areChunksLoadedForScan(direction))
             return connectorPosition != null && headPosition != null;
+        BlockPos prevConnector = connectorPosition;
+        BlockPos prevHead = headPosition;
+        boolean prevConnectorAtFront = connectorAtFront;
+        boolean prevHeadAtFront = headAtFront;
         connectorPosition = null;
         headPosition = null;
+        boolean foundBoth = scanDirection(checkedPos, direction, true);
+        if (!foundBoth) {
+            checkedPos = this.getBlockPos().above();
+            foundBoth = scanDirection(checkedPos, direction.getOpposite(), false);
+        }
+        boolean changed = !java.util.Objects.equals(prevConnector, connectorPosition)
+                || !java.util.Objects.equals(prevHead, headPosition)
+                || prevConnectorAtFront != connectorAtFront
+                || prevHeadAtFront != headAtFront;
+        if (changed)
+            sendData();
+        return foundBoth;
+    }
+
+    private boolean scanDirection(BlockPos checkedPos, Direction direction, boolean front) {
         for (int i = 0; i < 7; i++) {
-            if (connectorPosition != null && headPosition != null
-            ) {
-                sendData();
+            if (connectorPosition != null && headPosition != null)
                 return true;
+            if (i != 0 && isHead(checkedPos)) {
+                headPosition = checkedPos;
+                headAtFront = front;
+                checkedPos = checkedPos.relative(direction);
+                continue;
             }
-            if (i != 0)
-                if (isHead(checkedPos)) {
-                    headPosition = checkedPos;
-                    headAtFront = true;
+            if (i != 0 && isConnector(checkedPos)) {
+                if (level.getBlockState(checkedPos).getValue(HorizontalDirectionalBlock.FACING).getAxis() == this.getBlockState().getValue(FACING).getAxis()) {
+                    connectorPosition = checkedPos;
+                    connectorAtFront = front;
                     checkedPos = checkedPos.relative(direction);
-                    sendData();
                     continue;
                 }
-            if (i != 0)
-                if (isConnector(checkedPos)) {
-                    if (level.getBlockState(checkedPos).getValue(HorizontalDirectionalBlock.FACING).getAxis() == this.getBlockState().getValue(FACING).getAxis()) {
-                        connectorPosition = checkedPos;
-                        connectorAtFront = true;
-                        checkedPos = checkedPos.relative(direction);
-                        sendData();
-                        continue;
-                    }
-                }
+            }
             if (!isPart(checkedPos)) {
-                break;
-            } else {
-                if (level.getBlockState(checkedPos).getValue(HorizontalDirectionalBlock.FACING).getAxis() != this.getBlockState().getValue(FACING).getAxis()) {
-                    break;
-                }
+                return connectorPosition != null && headPosition != null;
+            }
+            if (level.getBlockState(checkedPos).getValue(HorizontalDirectionalBlock.FACING).getAxis() != this.getBlockState().getValue(FACING).getAxis()) {
+                return connectorPosition != null && headPosition != null;
             }
             checkedPos = checkedPos.relative(direction);
         }
-        checkedPos = this.getBlockPos().above();
-        for (int i = 0; i < 7; i++) {
-            if (connectorPosition != null && headPosition != null) {
-                sendData();
-                return true;
-            }
-            if (i != 0)
-                if (isHead(checkedPos)) {
-                    headPosition = checkedPos;
-                    headAtFront = false;
-                    checkedPos = checkedPos.relative(direction.getOpposite());
-                    sendData();
-                    continue;
-                }
-            if (i != 0)
-                if (isConnector(checkedPos)) {
-                    if (level.getBlockState(checkedPos).getValue(HorizontalDirectionalBlock.FACING).getAxis() == this.getBlockState().getValue(FACING).getAxis()) {
-                        connectorPosition = checkedPos;
-                        connectorAtFront = false;
-                        checkedPos = checkedPos.relative(direction.getOpposite());
-                        sendData();
-                        continue;
-                    }
-                }
-            if (!isPart(checkedPos)) {
-                break;
-            } else {
-                if (level.getBlockState(checkedPos).getValue(HorizontalDirectionalBlock.FACING).getAxis() != this.getBlockState().getValue(FACING).getAxis()) {
-                    break;
-                }
-            }
-            checkedPos = checkedPos.relative(direction.getOpposite());
-        }
-        sendData();
-        return false;
+        return connectorPosition != null && headPosition != null;
     }
 
     public void disassemble() {
@@ -445,7 +422,7 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
         if (!running)
             return;
         if (!(movedContraption != null && movedContraption.isStalled())) {
-            if (crank != null) {
+            if (crank != null && connectorDistance > 0) {
                 int x = 1;
                 if (connectorAtFront)
                     x = -1;
