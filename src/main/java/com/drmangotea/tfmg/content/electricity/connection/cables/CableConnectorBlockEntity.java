@@ -157,40 +157,32 @@ public class CableConnectorBlockEntity extends ElectricBlockEntity implements IH
     }
 
     public List<CableConnectorBlockEntity> getConnectedWires() {
-        return getConnectedWires(new ArrayList<>());
+        List<CableConnectorBlockEntity> list = new ArrayList<>();
+        collectConnectedWires(list);
+        // Send a single update per visited node at the end of the walk
+        // instead of N×2 packets per recursion level.
+        for (CableConnectorBlockEntity wire : list)
+            wire.sendStuff();
+        return list;
     }
 
     public List<CableConnectorBlockEntity> getConnectedWires(List<CableConnectorBlockEntity> foundList) {
+        collectConnectedWires(foundList);
+        return foundList;
+    }
 
-
-        if (!foundList.contains(this)) {
-            foundList.add(this);
-        }
-
+    private void collectConnectedWires(List<CableConnectorBlockEntity> foundList) {
+        if (foundList.contains(this))
+            return;
+        foundList.add(this);
         for (CableConnection connection : connections) {
             BlockPos pos = connection.blockPos1;
-
-
-            //level.setBlockAndUpdate(pos.above(), Blocks.GOLD_BLOCK.defaultBlockState());
-            //level.setBlockAndUpdate(pos2.above(2), Blocks.DIAMOND_BLOCK.defaultBlockState());
-
-
-            if (pos == getBlockPos()) {
+            if (pos.equals(getBlockPos()))
                 continue;
-            }
-            //  TFMGUtils.debugMessage(level, "Eﴤ "+connections.size());
-
-
             if (level.getBlockEntity(pos) instanceof CableConnectorBlockEntity be && !foundList.contains(be)) {
-                // TFMGUtils.debugMessage(level, "Bﴤ "+connections.size());
-                be.getConnectedWires(foundList);
-                sendStuff();
-                be.sendStuff();
-
+                be.collectConnectedWires(foundList);
             }
         }
-        sendStuff();
-        return foundList;
     }
 
 

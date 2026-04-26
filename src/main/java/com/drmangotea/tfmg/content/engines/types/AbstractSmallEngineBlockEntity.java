@@ -634,9 +634,6 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
                     be.refreshCapability();
 
                     setBlockStates(be, null);
-                    updateGeneratedRotation();
-                    onUpdated();
-                    be.sendData();
                     be.setChanged();
 
                     if (be.getBlockState().getValue(ENGINE_STATE) != NORMAL && i != 0) {
@@ -649,7 +646,7 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
 
                 } else {
                     setBlockStates(this, getBlockPos().relative(updateDirection, i - 1));
-                    return;
+                    break;
                 }
             }
 
