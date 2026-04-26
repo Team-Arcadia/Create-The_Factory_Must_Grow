@@ -182,7 +182,8 @@ public class LargeTransformerBlockEntity extends KineticElectricBlockEntity {
                         case NEEDS_OIL -> 50000;
                         case NEEDS_STEEL -> 30000;
                     };
-                    int available = Math.min(maxPower, be.getNetworkPowerGeneration());
+                    int cachedGen = be.getData().networkPowerGeneration;
+                    int available = cachedGen > 0 ? Math.min(maxPower, cachedGen) : maxPower;
                     powerGeneration = Math.max(powerGeneration, available);
                 }
         getData().getsOutsidePower = true;

@@ -127,7 +127,8 @@ public class LargeSwitchBlockEntity extends KineticElectricBlockEntity {
             if (be.getData().getId() != getData().getId())
                 if (be.getData().getVoltage() != 0)
                     if (be.closed) {
-                        int available = Math.min(10000, be.getNetworkPowerGeneration());
+                        int cachedGen = be.getData().networkPowerGeneration;
+                        int available = cachedGen > 0 ? Math.min(10000, cachedGen) : 10000;
                         powerGeneration = Math.max(powerGeneration, available);
                         getData().getsOutsidePower = true;
                     }

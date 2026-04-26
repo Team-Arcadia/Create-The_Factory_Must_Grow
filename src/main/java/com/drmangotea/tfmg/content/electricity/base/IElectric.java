@@ -429,8 +429,9 @@ public interface IElectric {
                     if (be.getData().getId() != getData().getId())
                         if (be.getData().getVoltage() != 0)
                             if (be.hasElectricitySlot(direction)) {
-                                int sourceGeneration = be.getNetworkPowerGeneration();
-                                int available = Math.min(be.getMaxPowerOutput(), sourceGeneration);
+                                int cachedGen = be.getData().networkPowerGeneration;
+                                int maxOut = be.getMaxPowerOutput();
+                                int available = cachedGen > 0 ? Math.min(maxOut, cachedGen) : maxOut;
                                 powerGeneration = Math.max(powerGeneration, available);
                             }
                 }
