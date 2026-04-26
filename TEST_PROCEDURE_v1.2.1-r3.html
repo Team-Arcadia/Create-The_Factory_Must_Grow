@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFMG Test Procedure v1.2.1-r3</title>
+<style>
+  :root {
+    --bg: #15181d;
+    --panel: #1f2329;
+    --panel2: #272c34;
+    --panel3: #313742;
+    --border: #3a404d;
+    --text: #e6e8eb;
+    --muted: #8a93a3;
+    --accent: #f0a050;
+    --accent-soft: rgba(240,160,80,0.12);
+    --pass: #4caf50;
+    --fail: #e54848;
+    --skip: #7a828f;
+    --warn: #f0a050;
+    --critical: #e54848;
+    --info: #5fa8e8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 5px; }
+
+  header {
+    background: linear-gradient(135deg, #2a2f38, #15181d);
+    padding: 20px 28px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 22px; color: var(--accent); flex: 0 0 auto; }
+  header .sub { color: var(--muted); font-size: 12px; flex: 1; }
+  .lang-switch { display: flex; gap: 4px; }
+  .lang-switch button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #15181d;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .container { padding: 20px 28px 140px; max-width: 1500px; margin: 0 auto; }
+
+  .meta {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .meta label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .meta input, .meta select, .meta textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .meta textarea { grid-column: 1 / -1; resize: vertical; min-height: 50px; }
+
+  .regressions {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--info);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .regressions h3 {
+    margin: 0 0 10px;
+    color: var(--info);
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .regressions h3 .toggle {
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .regressions ul { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
+  .regressions li { margin-bottom: 3px; }
+  .regressions code { background: var(--bg); padding: 1px 6px; border-radius: 3px; font-size: 11px; color: var(--accent); }
+  .regressions.collapsed .body { display: none; }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 50;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    flex-wrap: wrap;
+  }
+  .toolbar button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .toolbar button.primary { background: var(--accent); color: #15181d; border-color: var(--accent); }
+  .toolbar button.danger { background: var(--fail); color: #fff; border-color: var(--fail); }
+  .toolbar button:hover { filter: brightness(1.15); }
+  .toolbar input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    min-width: 180px;
+  }
+  .progress {
+    flex: 1;
+    min-width: 180px;
+    height: 22px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--pass), var(--accent));
+    transition: width 0.3s;
+  }
+  .progress-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    text-shadow: 0 0 4px rgba(0,0,0,0.7);
+  }
+  .stats { display: flex; gap: 12px; font-size: 12px; }
+  .stats span { display: flex; align-items: center; gap: 4px; }
+  .stats .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+  .save-indicator {
+    font-size: 11px;
+    color: var(--muted);
+    padding: 4px 8px;
+    border-radius: 3px;
+    background: var(--bg);
+  }
+  .save-indicator.saved { color: var(--pass); }
+
+  .filters {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    font-size: 12px;
+  }
+  .filters label { color: var(--muted); margin-right: 4px; }
+  .filters .chip {
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .filters .chip.active { background: var(--accent); color: #15181d; border-color: var(--accent); }
+
+  .section {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .section-head {
+    padding: 12px 16px;
+    background: var(--panel2);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-head h2 { margin: 0; font-size: 15px; color: var(--accent); flex: 1; display: flex; align-items: center; gap: 8px; }
+  .section-head .arrow { transition: transform 0.2s; display: inline-block; width: 14px; }
+  .section.collapsed .section-head .arrow { transform: rotate(-90deg); }
+  .section.collapsed .section-body { display: none; }
+  .section-head .mini-stats {
+    display: flex;
+    gap: 6px;
+    font-size: 11px;
+  }
+  .section-head .mini-stats span {
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--bg);
+  }
+  .section-head .mini-stats .pass { color: var(--pass); }
+  .section-head .mini-stats .fail { color: var(--fail); }
+  .section-head .mini-stats .skip { color: var(--skip); }
+  .section-head .quick-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .section-head .quick-actions button {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 10px;
+  }
+  .section-head .quick-actions button:hover { filter: brightness(1.15); }
+  .section-desc {
+    padding: 10px 16px;
+    color: var(--muted);
+    font-size: 12px;
+    background: rgba(0,0,0,0.15);
+    border-bottom: 1px solid var(--border);
+    font-style: italic;
+  }
+
+  .test-row {
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 14px;
+    transition: background 0.15s;
+  }
+  .test-row:last-child { border-bottom: none; }
+  .test-row:hover { background: rgba(255,255,255,0.015); }
+  .test-row.critical { border-left: 3px solid var(--critical); padding-left: 13px; }
+  .test-row.regression { background: linear-gradient(90deg, rgba(95,168,232,0.06) 0%, transparent 30%); }
+  .test-row.hidden { display: none; }
+  .test-row .test-id {
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-right: 6px;
+  }
+  .test-row .crit-tag, .test-row .reg-tag {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+  .test-row .crit-tag { background: var(--critical); color: #fff; }
+  .test-row .reg-tag { background: var(--info); color: #fff; }
+  .test-row h4 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+  .test-row .setup {
+    font-size: 11px;
+    color: var(--info);
+    margin: 4px 0;
+  }
+  .test-row .setup::before { content: "🔧 "; }
+  .test-row .steps { font-size: 12px; color: var(--muted); margin: 4px 0; }
+  .test-row .expected {
+    font-size: 12px;
+    color: #b8d4a8;
+    margin-top: 4px;
+    padding: 4px 8px;
+    background: rgba(76,175,80,0.07);
+    border-left: 2px solid var(--pass);
+    border-radius: 0 3px 3px 0;
+  }
+  .test-row .commit-ref {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+  }
+  .test-row .commit-ref code {
+    color: var(--accent);
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  .cmds {
+    margin-top: 6px;
+    padding: 6px 8px;
+    background: rgba(95,168,232,0.06);
+    border-left: 2px solid var(--info);
+    border-radius: 0 3px 3px 0;
+    font-size: 11px;
+  }
+  .cmds-label {
+    color: var(--info);
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .cmd-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 2px 0;
+  }
+  .cmd-row code {
+    flex: 1;
+    background: var(--bg);
+    color: #b8d4e8;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .cmd-row .cmd-copy {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    flex: 0 0 auto;
+  }
+  .cmd-row .cmd-copy:hover { color: var(--text); }
+  .cmd-row .cmd-copy.copied { background: var(--pass); color: #fff; border-color: var(--pass); }
+
+  .bootstrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--pass);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+  }
+  .bootstrap h3 {
+    margin: 0 0 10px;
+    color: var(--pass);
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .bootstrap h3 .toggle {
+    cursor: pointer;
+    user-select: none;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .bootstrap.collapsed .body { display: none; }
+  .test-row textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+    min-height: 38px;
+    margin-top: 6px;
+  }
+  .verdict {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
+  }
+  .verdict-buttons { display: flex; gap: 4px; }
+  .verdict-buttons label {
+    flex: 1;
+    text-align: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    overflow: hidden;
+    transition: transform 0.1s;
+  }
+  .verdict-buttons label:active { transform: scale(0.97); }
+  .verdict-buttons input { display: none; }
+  .verdict-buttons input[value="pass"]:checked + span { background: var(--pass); color: #fff; }
+  .verdict-buttons input[value="fail"]:checked + span { background: var(--fail); color: #fff; }
+  .verdict-buttons input[value="skip"]:checked + span { background: var(--skip); color: #fff; }
+  .verdict-buttons label span {
+    display: block;
+    padding: 7px 4px;
+    border-radius: 3px;
+    transition: all 0.15s;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .severity-tag {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+    background: var(--panel3);
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .severity-tag.p0 { background: var(--critical); color: #fff; }
+  .severity-tag.p1 { background: var(--warn); color: #15181d; }
+  .severity-tag.p2 { background: var(--info); color: #fff; }
+
+  .lang-fr { display: none; }
+  body.fr .lang-en { display: none; }
+  body.fr .lang-fr { display: inline; }
+  body.fr .test-row .lang-en { display: none; }
+  body.fr .test-row .lang-fr { display: block; }
+  body.fr .regressions .lang-en { display: none; }
+  body.fr .regressions .lang-fr { display: inline; }
+
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 22px;
+    max-width: 800px;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+  }
+  .modal-content h2 { margin-top: 0; color: var(--accent); }
+  .modal-content textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 4px;
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 11px;
+    min-height: 320px;
+    resize: vertical;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; flex-wrap: wrap; }
+  .instr {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+  .instr code {
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .instr-toggle {
+    cursor: pointer;
+    user-select: none;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .instr.collapsed .body { display: none; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  @media print {
+    body { background: white; color: black; }
+    .toolbar, .filters, .modal, .lang-switch, .verdict-buttons, .instr-toggle, button { display: none !important; }
+    .section, .regressions, .meta, .test-row { background: white; border-color: #ccc; }
+    .test-row { break-inside: avoid; }
+    .test-row .expected { background: #f0f7ed; }
+    h1, h2, h3, h4 { color: black !important; }
+  }
+  @media (max-width: 700px) {
+    .test-row { grid-template-columns: 1fr; }
+    .verdict { flex-direction: row; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TFMG Test Procedure v1.2.1-r3</h1>
+  <div class="sub">
+    <span class="lang-en">Create: The Factory Must Grow — Team Arcadia Fork — Minecraft 1.21.1 / NeoForge 21.1.213 — branch <code style="font-family:monospace">fixes/issues-332-360</code></span>
+    <span class="lang-fr">Create: The Factory Must Grow — Fork Team Arcadia — Minecraft 1.21.1 / NeoForge 21.1.213 — branche <code style="font-family:monospace">fixes/issues-332-360</code></span>
+  </div>
+  <div class="lang-switch">
+    <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+    <button id="btn-fr" onclick="setLang('fr')">FR</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="meta">
+    <div>
+      <label>
+        <span class="lang-en">Tester name</span>
+        <span class="lang-fr">Nom du testeur</span>
+      </label>
+      <input type="text" id="meta-tester" placeholder="vyrriox">
+    </div>
+    <div>
+      <label>
+        <span class="lang-en">Test date</span>
+        <span class="lang-fr">Date du test</span>
+      </label>
+      <input type="date" id="meta-date">
+    </div>
+    <div>
+      <label>
+        <span class="lang-en">Environment</span>
+        <span class="lang-fr">Environnement</span>
+      </label>
+      <select id="meta-env">
+        <option value="singleplayer">Singleplayer</option>
+        <option value="lan">LAN</option>
+        <option value="dedicated">Dedicated server</option>
+        <option value="creative">Creative test world</option>
+      </select>
+    </div>
+    <div>
+      <label>
+        <span class="lang-en">Modpack / version</span>
+        <span class="lang-fr">Modpack / version</span>
+      </label>
+      <input type="text" id="meta-pack" placeholder="Arcadia V2.0.16">
+    </div>
+    <div>
+      <label>
+        <span class="lang-en">Java version</span>
+        <span class="lang-fr">Version Java</span>
+      </label>
+      <input type="text" id="meta-java" placeholder="21">
+    </div>
+    <div>
+      <label>RAM</label>
+      <input type="text" id="meta-ram" placeholder="8G">
+    </div>
+    <div>
+      <label>
+        <span class="lang-en">Build commit</span>
+        <span class="lang-fr">Commit testé</span>
+      </label>
+      <input type="text" id="meta-commit" placeholder="5e352477" value="5e352477">
+    </div>
+    <div style="grid-column:1/-1">
+      <label>
+        <span class="lang-en">General notes / mod conflicts / crash logs</span>
+        <span class="lang-fr">Notes générales / conflits de mods / logs de crash</span>
+      </label>
+      <textarea id="meta-notes" placeholder=""></textarea>
+    </div>
+  </div>
+
+  <div class="bootstrap" id="gametests" style="border-left-color:var(--accent)">
+    <h3 style="color:var(--accent)">
+      <span>
+        <span class="lang-en">🤖 Automated GameTests — 4 regressions validated in &lt; 1 second</span>
+        <span class="lang-fr">🤖 GameTests automatiques — 4 régressions validées en &lt; 1 seconde</span>
+      </span>
+      <span class="toggle" onclick="document.getElementById('gametests').classList.toggle('collapsed')">▸</span>
+    </h3>
+    <div class="body">
+      <div class="lang-en" style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        Run <code>/test runall</code> in your dev world to validate 4 regression invariants automatically. Each maps to a specific commit on this branch — if any fails, that fix has regressed. You can also run them individually. Saves you ~20 minutes of manual checks for ALT-04, STO-02, STO-03, TNK-01 and the wrench coverage.<br>
+        Doc: <code>https://docs.neoforged.net/docs/misc/gametest/</code>
+      </div>
+      <div class="lang-fr" style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        Lance <code>/test runall</code> dans ton monde dev pour valider automatiquement 4 invariants de régression. Chacun mappe un commit de cette branche — si un échoue, le fix a régressé. Tu peux aussi les lancer individuellement. Te fait gagner ~20 min de retests manuels pour ALT-04, STO-02, STO-03, TNK-01 et la couverture wrench.<br>
+        Doc : <code>https://docs.neoforged.net/docs/misc/gametest/</code>
+      </div>
+      <div class="cmds-label">Run all 4 at once</div>
+      <div class="cmd-row"><code>/test runall</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Run individually</div>
+      <div class="cmd-row"><code>/test run tfmg:network_resistance_rounds_sub_ohm_up_to_one</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/test run tfmg:aluminum_tank_extends_fluid_tank_block</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/test run tfmg:wrench_support_on_common_blocks</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/test run tfmg:creative_generator_places_and_ticks</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Other useful /test commands</div>
+      <div class="cmd-row"><code>/test runclosest</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/test runfailed</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/test runthese</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/test pos</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Headless run via gradle (CI)</div>
+      <div class="cmd-row"><code>./gradlew runGameTestServer</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div style="margin-top:10px;padding:6px 8px;background:rgba(76,175,80,0.07);border-left:2px solid var(--pass);border-radius:0 3px 3px 0;font-size:11px">
+        <strong style="color:var(--pass)">PASS expected:</strong>
+        <span class="lang-en"> "All 4 required tests passed :)" — runs in ~800 ms.</span>
+        <span class="lang-fr"> "All 4 required tests passed :)" — tourne en ~800 ms.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bootstrap" id="bootstrap">
+    <h3>
+      <span>
+        <span class="lang-en">⚡ Quick world bootstrap — paste once, save 30 minutes</span>
+        <span class="lang-fr">⚡ Bootstrap monde de test — colle une fois, gagne 30 min</span>
+      </span>
+      <span class="toggle" onclick="document.getElementById('bootstrap').classList.toggle('collapsed')">▸</span>
+    </h3>
+    <div class="body">
+      <div class="lang-en" style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        Run these commands in a creative test world before starting. They give you every TFMG block / item the procedure asks for, set the time, and remove darkness so you can focus on testing.
+      </div>
+      <div class="lang-fr" style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        Lance ces commandes dans un monde créatif de test avant de commencer. Elles te donnent tous les blocs/items TFMG demandés, fixent le temps et le ciel.
+      </div>
+      <div class="cmds-label">Setup</div>
+      <div class="cmd-row"><code>/gamemode creative</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/gamerule doDaylightCycle false</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/time set day</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/weather clear 1000000</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/effect give @s minecraft:night_vision infinite 0 true</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/effect give @s minecraft:saturation infinite 0 true</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Tools</div>
+      <div class="cmd-row"><code>/give @s tfmg:multimeter</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:electricians_wrench</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s create:wrench</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s create:goggles</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">All electricity blocks (creative tab)</div>
+      <div class="cmd-row"><code>/give @s tfmg:creative_generator 16</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:potentiometer 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:resistor 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:converter 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:accumulator 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:electric_switch 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:electric_diode 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:transformer 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:cable_hub 16</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:cable_connector 32</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:copper_wire 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:heavy_copper_wire 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:rotor 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:stator 32</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:large_switch 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:large_transformer 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:voltmeter 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:electric_motor 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:electric_pump 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:polarizer 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:light_bulb 16</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:neon_tube 16</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Engines</div>
+      <div class="cmd-row"><code>/give @s tfmg:regular_engine 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:large_engine 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:radial_engine 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:turbine_engine 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:engine_controller 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:engine_cylinder 16</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Oil &amp; metallurgy</div>
+      <div class="cmd-row"><code>/give @s tfmg:pumpjack 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:pumpjack_base 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:pumpjack_crank 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:industrial_pipe 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:distillation_controller 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:distillation_output 12</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:steel_fluid_tank 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:aluminum_fluid_tank 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:cast_iron_fluid_tank 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:coke_oven 32</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:blast_stove 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:blast_furnace_hatch 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:blast_furnace_output 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:reinforced_blast_furnace_wall 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:casting_basin 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:firebox 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Vat</div>
+      <div class="cmd-row"><code>/give @s tfmg:chemical_vat 32</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:industrial_mixer 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:compressor 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:freezer 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:electrode_holder 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Items &amp; weapons</div>
+      <div class="cmd-row"><code>/give @s tfmg:fire_extinguisher</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:flamethrower</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:pipe_bomb 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:thermite_grenade 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:blue_thermite_grenade 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:green_thermite_grenade 8</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:lithium_blade</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">Common fluids (for tank/distillation/vat tests — apply to a held bucket)</div>
+      <div class="cmd-row"><code>/give @s tfmg:crude_oil_bucket 16</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:creosote_oil_bucket 16</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+      <div class="cmd-row"><code>/give @s tfmg:lubrication_oil_bucket 4</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>
+
+      <div class="cmds-label" style="margin-top:8px">All-in-one (paste in chat history then up-arrow through them)</div>
+      <div class="cmd-row" style="align-items:flex-start">
+        <code id="all-in-one-cmd">/gamemode creative
+/gamerule doDaylightCycle false
+/time set day
+/weather clear 1000000
+/effect give @s minecraft:night_vision infinite 0 true
+/give @s tfmg:multimeter
+/give @s tfmg:electricians_wrench
+/give @s create:wrench
+/give @s create:goggles
+/give @s tfmg:creative_generator 16
+/give @s tfmg:potentiometer 8
+/give @s tfmg:resistor 8
+/give @s tfmg:accumulator 8
+/give @s tfmg:cable_connector 32
+/give @s tfmg:copper_wire 64
+/give @s tfmg:chemical_vat 32
+/give @s tfmg:steel_fluid_tank 64
+/give @s tfmg:aluminum_fluid_tank 64
+/give @s tfmg:cast_iron_fluid_tank 64
+/give @s tfmg:distillation_controller 4
+/give @s tfmg:distillation_output 12
+/give @s tfmg:industrial_pipe 64</code><button class="cmd-copy" onclick="copyCmd(this)">Copy bundle</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="regressions" id="regressions">
+    <h3>
+      <span>
+        <span class="lang-en">🛠 What changed since v1.2.1-r1 — verify these specifically</span>
+        <span class="lang-fr">🛠 Ce qui a changé depuis v1.2.1-r1 — à valider en priorité</span>
+      </span>
+      <span class="toggle" onclick="document.getElementById('regressions').classList.toggle('collapsed')">▸</span>
+    </h3>
+    <div class="body">
+      <div class="lang-en">22 fixes shipped across 8 commits. <strong>Tests tagged 🔵 REGR target a specific fix from this batch — make sure to run them.</strong></div>
+      <div class="lang-fr">22 correctifs sur 8 commits. <strong>Les tests taggés 🔵 REGR ciblent un fix spécifique de ce lot — à passer en priorité.</strong></div>
+      <ul>
+        <li><code>056086a2</code> Wrench rotation: detach BE before setBlock, reconnect 6 neighbours after — fixes the "wrong direction → break everything" pattern</li>
+        <li><code>cf2a3e9c</code> NeoForge GameTest harness with 4 regression tests (run via <code>/test runall</code>)</li>
+        <li><code>5e352477</code> Lights flicker, thermite client desync, fire extinguisher NPE</li>
+        <li><code>31e55201</code> Air intake BlockPos==, firebox NBT IsRunning, deposit count NBT key, surface scanner inverted</li>
+        <li><code>d4cb1ed9</code> Vat draining input only + extractItem (Asuka REC-07)</li>
+        <li><code>f867118c</code> Aluminum / cast iron tanks now extend FluidTankBlock (Asuka TNK-01)</li>
+        <li><code>b9fb162f</code> Engine cylinder dupe, shaft-facing, large engine fuel int division</li>
+        <li><code>fab70eb9</code> Voltage alterers reconnect on wrench rotation (the "place in wrong direction" bug)</li>
+        <li><code>01d80abf</code> setNetworkResistance float-to-int truncation, large transformer guards</li>
+        <li><code>ec9ba240</code> Wrench shift+click pickup on ~75% of TFMG blocks</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="instr">
+    <div class="instr-toggle" onclick="document.getElementById('instr').classList.toggle('collapsed')">
+      <span class="lang-en">▾ How to run this procedure</span>
+      <span class="lang-fr">▾ Comment utiliser cette procédure</span>
+    </div>
+    <div id="instr">
+      <div class="body">
+        <div class="lang-en">
+          For each test, pick <code>PASS</code>, <code>FAIL</code> or <code>SKIP</code> and add a comment if needed (logs, repro steps, screenshots referenced by name). Progress auto-saves every change. When done, click <code>Export JSON</code>, copy the output and paste it back to me in chat.<br>
+          <strong>Filters</strong> let you focus on critical-only, regression-only, or anything not yet tested. <strong>Search</strong> matches test ID and title. <strong>Quick actions</strong> on each section header skip or fail-all the remaining items in that section.
+        </div>
+        <div class="lang-fr">
+          Pour chaque test, choisis <code>PASS</code>, <code>FAIL</code> ou <code>SKIP</code> et ajoute un commentaire si besoin (logs, étapes de repro, noms de captures). Auto-save à chaque changement. Quand t'as fini, clique <code>Export JSON</code>, copie et colle-moi le résultat dans le chat.<br>
+          <strong>Filtres</strong> pour cibler critical-only, regressions-only, ou tests non passés. <strong>Recherche</strong> sur l'ID et le titre. <strong>Actions rapides</strong> par section pour skip ou fail-all en masse.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="progress">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+      <div class="progress-text" id="progress-text">0 / 0</div>
+    </div>
+    <div class="stats">
+      <span><i class="dot" style="background:var(--pass)"></i><span id="stat-pass">0</span></span>
+      <span><i class="dot" style="background:var(--fail)"></i><span id="stat-fail">0</span></span>
+      <span><i class="dot" style="background:var(--skip)"></i><span id="stat-skip">0</span></span>
+      <span><i class="dot" style="background:var(--panel3)"></i><span id="stat-untested">0</span></span>
+    </div>
+    <span class="save-indicator" id="save-indicator">●</span>
+    <input type="text" id="search-input" placeholder="🔍 Search ID or title…" oninput="applyFilters()">
+    <button onclick="expandAll(true)">
+      <span class="lang-en">Expand all</span><span class="lang-fr">Tout ouvrir</span>
+    </button>
+    <button onclick="expandAll(false)">
+      <span class="lang-en">Collapse all</span><span class="lang-fr">Tout fermer</span>
+    </button>
+    <button onclick="window.print()">🖨</button>
+    <button class="danger" onclick="resetAll()">
+      <span class="lang-en">Reset</span><span class="lang-fr">Réinit.</span>
+    </button>
+    <button class="primary" onclick="exportJSON()">
+      <span class="lang-en">Export JSON</span><span class="lang-fr">Exporter JSON</span>
+    </button>
+  </div>
+
+  <div class="filters">
+    <label><span class="lang-en">Filter:</span><span class="lang-fr">Filtrer :</span></label>
+    <span class="chip active" data-filter="all" onclick="toggleFilter(this)">
+      <span class="lang-en">All</span><span class="lang-fr">Tous</span>
+    </span>
+    <span class="chip" data-filter="critical" onclick="toggleFilter(this)">🔴 Critical</span>
+    <span class="chip" data-filter="regression" onclick="toggleFilter(this)">🔵 Regression</span>
+    <span class="chip" data-filter="untested" onclick="toggleFilter(this)">
+      <span class="lang-en">Untested</span><span class="lang-fr">Non passés</span>
+    </span>
+    <span class="chip" data-filter="fail" onclick="toggleFilter(this)">
+      <span class="lang-en">Failed only</span><span class="lang-fr">Échecs seuls</span>
+    </span>
+  </div>
+
+  <div id="sections"></div>
+</div>
+
+<div class="modal" id="export-modal">
+  <div class="modal-content">
+    <h2>
+      <span class="lang-en">Export &mdash; copy and send back</span>
+      <span class="lang-fr">Export &mdash; copie et renvoie-moi le résultat</span>
+    </h2>
+    <p style="color:var(--muted);font-size:12px">
+      <span class="lang-en">Click <strong>Copy</strong>, then paste into the Claude chat. You can also <strong>Download</strong> the file.</span>
+      <span class="lang-fr">Clique <strong>Copier</strong>, puis colle dans le chat Claude. Tu peux aussi <strong>Télécharger</strong> le fichier.</span>
+    </p>
+    <textarea id="export-textarea" readonly></textarea>
+    <div class="modal-actions">
+      <button onclick="downloadJSON()">
+        <span class="lang-en">Download .json</span><span class="lang-fr">Télécharger .json</span>
+      </button>
+      <button class="primary" onclick="copyJSON(event)">
+        <span class="lang-en">Copy</span><span class="lang-fr">Copier</span>
+      </button>
+      <button onclick="closeModal()">
+        <span class="lang-en">Close</span><span class="lang-fr">Fermer</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'tfmg-test-v1.2.1-r3';
+let activeFilter = 'all';
+
+const TESTS = [
+  {
+    id: 'install',
+    title_en: 'Installation & boot',
+    title_fr: 'Installation & lancement',
+    desc_en: 'Mod loads cleanly with no missing registries, mixin failures or duplicate mod errors.',
+    desc_fr: 'Le mod charge proprement, aucun registry manquant, mixin en échec ou doublon de mod.',
+    tests: [
+      { id: 'INST-01', sev: 'p0', title_en: 'Client launches without crash', title_fr: 'Le client se lance sans crash', steps_en: 'Launch the client with the mod installed.', steps_fr: 'Lance le client avec le mod installé.', expected_en: 'Title screen, no error popup, no FML mods missing.', expected_fr: 'Écran titre OK, aucune popup d\'erreur, aucun mod FML manquant.', critical: true },
+      { id: 'INST-02', sev: 'p0', title_en: 'Dedicated server launches', title_fr: 'Le serveur dédié démarre', steps_en: 'Run a NeoForge dedicated server with TFMG.', steps_fr: 'Démarre un serveur dédié NeoForge avec TFMG.', expected_en: 'Server reaches "Done" with no exceptions in logs.', expected_fr: 'Serveur atteint "Done" sans exception.', critical: true },
+      { id: 'INST-03', sev: 'p2', title_en: 'No registry / lang duplicate warnings', title_fr: 'Aucun warning duplicate registry / lang', steps_en: 'Check latest.log for warnings related to TFMG.', steps_fr: 'Vérifie latest.log pour les warnings liés à TFMG.', expected_en: 'No "duplicate" warnings tied to tfmg namespace.', expected_fr: 'Aucun warning "duplicate" lié au namespace tfmg.' },
+      { id: 'INST-04', sev: 'p0', title_en: 'World creation works', title_fr: 'La création de monde fonctionne', steps_en: 'Create a new world with default settings.', steps_fr: 'Crée un nouveau monde avec les paramètres par défaut.', expected_en: 'World loads, no missing biome / feature errors.', expected_fr: 'Monde chargé, aucune erreur de biome / feature manquant.', critical: true },
+      { id: 'INST-05', sev: 'p2', title_en: 'French translation present', title_fr: 'Traduction française présente', steps_en: 'Switch language to Français (France) and check creative tabs / item names.', steps_fr: 'Change la langue en Français (France), vérifie tabs créatives / noms d\'items.', expected_en: 'TFMG items show French names, no untranslated tfmg.* keys.', expected_fr: 'Items TFMG en français, aucune clé tfmg.* non traduite.' }
+    ]
+  },
+  {
+    id: 'electricity_gen',
+    title_en: 'Electricity — generators',
+    title_fr: 'Électricité — générateurs',
+    desc_en: 'All generator types produce power consistent with the rebalanced multipliers (post stack-overflow fix).',
+    desc_fr: 'Tous les générateurs produisent une puissance cohérente avec les multiplicateurs rééquilibrés (post fix stack overflow).',
+    tests: [
+      { id: 'GEN-01', sev: 'p1', title_en: 'Creative generator outputs power', title_fr: 'Le générateur créatif produit du courant', setup_en: 'Place a creative generator + cable + voltmeter.', setup_fr: 'Pose 1 generator créatif + câble + voltmètre.', steps_en: 'Right-click generator to set voltage, attach load.', steps_fr: 'Clic droit pour régler la tension, branche une charge.', expected_en: 'Configured voltage shown, current flows on load.', expected_fr: 'Tension configurée affichée, courant circule sous charge.' },
+      { id: 'GEN-02', sev: 'p1', title_en: 'Standard engine + alternator runs', title_fr: 'Moteur standard + alternateur fonctionne', setup_en: 'Build engine + fuel + alternator + cable.', setup_fr: 'Monte moteur + fuel + alternateur + câble.', steps_en: 'Provide fuel, observe RPM and amperage.', steps_fr: 'Donne du fuel, observe RPM et ampérage.', expected_en: 'Engine ticks, alternator outputs amperage.', expected_fr: 'Moteur tourne, l\'alternateur sort un ampérage.' },
+      { id: 'GEN-03', sev: 'p1', title_en: 'Large engine variants run', title_fr: 'Variantes large engine fonctionnent', steps_en: 'Test large/radial/turbine engines if available.', steps_fr: 'Teste large/radial/turbine si dispo.', expected_en: 'Each engine starts, RPM matches doc.', expected_fr: 'Chaque moteur démarre, RPM conforme.' },
+      { id: 'GEN-04', sev: 'p0', title_en: 'Large generator (rotor + 8 stators)', title_fr: 'Large generator (rotor + 8 stators)', setup_en: 'Build the multiblock with 1 rotor and exactly 8 stators around.', setup_fr: 'Monte le multibloc avec 1 rotor et exactement 8 stators autour.', steps_en: 'Provide rotation; verify formation; intentionally remove 1 stator and check it un-forms.', steps_fr: 'Fais tourner ; vérifie la formation ; retire 1 stator et vérifie que ça se défait.', expected_en: 'Generator forms with 8 stators only — partial setups do NOT form.', expected_fr: 'Generator formé avec 8 stators uniquement — setups partiels NE forment PAS.', critical: true,
+        cmds: [
+          '/setblock ~ ~1 ~ tfmg:rotor[axis=y]',
+          '/fill ~-1 ~1 ~-1 ~1 ~1 ~1 tfmg:stator[facing=up] replace minecraft:air',
+          '/setblock ~ ~1 ~ tfmg:rotor[axis=y]'
+        ] },
+      { id: 'GEN-05', sev: 'p0', regression: true, title_en: 'Power scaling sane (Asuka GEN-05 retest)', title_fr: 'Scaling de puissance correct (retest Asuka GEN-05)', setup_en: 'Large generator + creative motor at 80 RPM.', setup_fr: 'Large generator + moteur créatif à 80 RPM.', steps_en: 'Read multimeter on the output cable.', steps_fr: 'Lis le multimètre sur le câble sortie.', expected_en: 'Output around 40 A — NOT 0 A and NOT 80 A. Stack-overflow recursion is fixed, voltage*3 power*2 defaults active.', expected_fr: 'Sortie ~40 A — PAS 0 A et PAS 80 A. La récursion stack-overflow est fixée, défauts voltage*3 power*2 actifs.', critical: true, commit: '57e3106c',
+        cmds: [
+          '/give @s create:creative_motor',
+          '/give @s tfmg:multimeter'
+        ] },
+      { id: 'GEN-06', sev: 'p0', title_en: 'Generator survives chunk reload', title_fr: 'Le générateur survit au reload de chunk', steps_en: 'Run for 30s, walk 200 blocks away, return.', steps_fr: 'Lance 30s, va à 200 blocs, reviens.', expected_en: 'Generator continues without needing rebreak.', expected_fr: 'Le générateur continue, sans cassage.', critical: true }
+    ]
+  },
+  {
+    id: 'electricity_net',
+    title_en: 'Electricity — network & transport',
+    title_fr: 'Électricité — réseau & transport',
+    desc_en: 'Cables, hubs, switches, transformers route current correctly across world events.',
+    desc_fr: 'Câbles, hubs, switches, transformers routent le courant correctement.',
+    tests: [
+      { id: 'NET-01', sev: 'p2', title_en: 'All cable types connect', title_fr: 'Tous les types de câble se connectent', steps_en: 'Place copper / aluminum / constantan cables side-by-side.', steps_fr: 'Pose des câbles copper / aluminum / constantan côte à côte.', expected_en: 'Cables visually connect, network ID shared.', expected_fr: 'Câbles connectés visuellement, network ID partagé.' },
+      { id: 'NET-02', sev: 'p2', title_en: 'Cable hub joins networks', title_fr: 'Cable hub joint les réseaux', steps_en: 'Connect 2 networks via cable hub, read multimeter.', steps_fr: 'Connecte 2 réseaux via cable hub, lis le multimètre.', expected_en: 'Both networks merge into one.', expected_fr: 'Les 2 réseaux fusionnent.' },
+      { id: 'NET-03', sev: 'p0', title_en: 'Cable hub survives chunk unload', title_fr: 'Cable hub survit au déchargement de chunk', steps_en: 'Build hub setup, leave 300 blocks, return.', steps_fr: 'Monte un setup hub, éloigne-toi 300 blocs, reviens.', expected_en: 'Hub still routing power, no rebreak needed.', expected_fr: 'Hub route toujours le courant, pas de cassage.', critical: true },
+      { id: 'NET-04', sev: 'p2', title_en: 'Diagonal cables route correctly', title_fr: 'Câbles diagonaux routent correctement', steps_en: 'Use diagonal cable in a vertical run.', steps_fr: 'Utilise un câble diagonal dans une montée verticale.', expected_en: 'Connection holds across the diagonal segment.', expected_fr: 'Connexion tient à travers le segment diagonal.' },
+      { id: 'NET-05', sev: 'p1', regression: true, title_en: 'Electric switch toggles AND survives rotation', title_fr: 'Electric switch coupe le courant ET survit à la rotation', setup_en: 'Wire a powered line through a switch.', setup_fr: 'Câble une ligne alimentée à travers un switch.', steps_en: '1) Toggle switch on/off — verify current. 2) Wrench-rotate the switch 180° — verify current still flows when ON.', steps_fr: '1) Bascule on/off — vérifie le courant. 2) Tourne le switch 180° avec wrench — vérifie le courant passe encore en ON.', expected_en: 'Current drops to 0 when off, restored when on. After rotation, no need to break/replace the circuit.', expected_fr: 'Courant tombe à 0 si off, restauré si on. Après rotation, aucun besoin de casser/replacer le circuit.', commit: 'fab70eb9',
+        cmds: [
+          '/setblock ~ ~ ~1 tfmg:creative_generator[facing=south]',
+          '/setblock ~ ~ ~3 tfmg:electric_switch[facing=south]',
+          '/setblock ~ ~ ~5 tfmg:resistor[facing=south]'
+        ] },
+      { id: 'NET-06', sev: 'p1', regression: true, title_en: 'Large switch handles high power AND rotation', title_fr: 'Large switch supporte forte puissance ET rotation', setup_en: 'Pass >5000 W through large switch.', setup_fr: 'Fais passer >5000 W par le large switch.', steps_en: '1) Verify load passes. 2) Wrench-rotate the multiblock; verify it re-forms cleanly.', steps_fr: '1) Charge passe OK. 2) Rotate le multibloc avec wrench ; vérifie qu\'il reforme proprement.', expected_en: 'Switch passes the load, output capped at source generation. Rotation does NOT break the network.', expected_fr: 'Switch laisse passer, sortie plafonnée à la prod source. La rotation NE casse PAS le réseau.', commit: '144ba07b' },
+      { id: 'NET-07', sev: 'p2', title_en: 'Diode enforces direction', title_fr: 'Diode impose la direction', steps_en: 'Place diode, try to push current backward.', steps_fr: 'Pose une diode, essaie de pousser le courant en arrière.', expected_en: 'Reverse direction blocks current.', expected_fr: 'Sens inverse bloque le courant.' },
+      { id: 'NET-08', sev: 'p1', title_en: 'Small transformer steps voltage', title_fr: 'Small transformer change la tension', steps_en: 'Wire input/output sides, compare voltmeter readings.', steps_fr: 'Câble entrée/sortie, compare le voltmètre.', expected_en: 'Output voltage scaled per ratio, no zero output bug.', expected_fr: 'Tension sortie scalée selon le ratio, pas de bug 0V.' },
+      { id: 'NET-09', sev: 'p1', regression: true, title_en: 'Large transformer multiblock forms and survives reload', title_fr: 'Multibloc large transformer forme et survit au reload', setup_en: 'Build large transformer, fully assembled.', setup_fr: 'Monte un large transformer complet.', steps_en: 'Save & reload world. Check the BE didn\'t crash on cold load with empty State NBT.', steps_fr: 'Sauvegarde & recharge. Vérifie que le BE ne crash pas au cold load avec State NBT vide.', expected_en: 'Multiblock detected, output capped at source generation, no crash on reload.', expected_fr: 'Multibloc détecté, sortie plafonnée, aucun crash au reload.', commit: '01d80abf' },
+      { id: 'NET-10', sev: 'p1', regression: true, title_en: 'Resistor adds resistance, doesn\'t cap current to 0', title_fr: 'Resistor ajoute de la résistance, ne plafonne pas I à 0', setup_en: 'Place a resistor inline on a powered cable, attach a load.', setup_fr: 'Pose un resistor en ligne sur un câble alimenté, branche une charge.', steps_en: 'Test parallel resistors (two resistors at 1 Ω each in parallel). The /test run below validates the rounding logic automatically.', steps_fr: 'Teste deux resistors en parallèle (1 Ω chacun). Le /test run ci-dessous valide automatiquement la logique de rounding.', expected_en: 'Resistance is non-zero (sub-1 Ω rounds to 1, NOT 0). Accumulator/converter still discharge.', expected_fr: 'Résistance non nulle (sub-1 Ω arrondi à 1, PAS 0). Accumulator/converter se déchargent encore.', commit: '01d80abf',
+        cmds: [
+          '/test run tfmg:network_resistance_rounds_sub_ohm_up_to_one'
+        ] }
+    ]
+  },
+  {
+    id: 'electricity_alter',
+    title_en: 'Electricity — voltage alterers (regression hot zone)',
+    title_fr: 'Électricité — modificateurs de tension (zone régression critique)',
+    desc_en: 'Both testers reported voltage alterers break when wrench-rotated. Validate the rotation reconnect fix.',
+    desc_fr: 'Les deux testeurs ont signalé que les voltage alterers cassent quand on les tourne avec wrench. Valider le fix.',
+    tests: [
+      { id: 'ALT-01', sev: 'p0', regression: true, title_en: 'Potentiometer at 100% passes through (post rotation)', title_fr: 'Potentio à 100% transmet tout (après rotation)', setup_en: 'Build powered line: gen → cable → potentiometer → load.', setup_fr: 'Ligne alimentée : gen → câble → potentio → charge.', steps_en: '1) Place potentiometer pointing OUT to load. 2) Set 100%, verify pass-through. 3) Wrench-rotate 180°, then rotate back. 4) Re-measure.', steps_fr: '1) Pose potentio pointant vers la charge. 2) Règle 100%, vérifie passe. 3) Wrench rotate 180° puis re-rotate. 4) Re-mesure.', expected_en: 'Output ≈ input voltage AND current both before and after rotation — no need to break the circuit.', expected_fr: 'Sortie ≈ tension et courant entrée avant ET après rotation — pas besoin de casser.', critical: true, commit: 'fab70eb9',
+        cmds: [
+          '/setblock ~ ~ ~1 tfmg:creative_generator[facing=south]',
+          '/setblock ~ ~ ~3 tfmg:potentiometer[facing=south]',
+          '/setblock ~ ~ ~5 tfmg:resistor[facing=south]'
+        ] },
+      { id: 'ALT-02', sev: 'p0', regression: true, title_en: 'Potentiometer at 50% halves voltage (post rotation)', title_fr: 'Potentio à 50% divise la tension (après rotation)', steps_en: 'Set 50%, check output, then rotate, re-check.', steps_fr: 'Règle à 50%, vérifie, tourne, re-vérifie.', expected_en: 'Output voltage ≈ half, current still flows. Rotation does not break it.', expected_fr: 'Tension sortie ≈ moitié, courant circule. Rotation ne casse pas.', critical: true, commit: 'fab70eb9' },
+      { id: 'ALT-03', sev: 'p0', regression: true, title_en: 'Potentiometer at low % keeps current', title_fr: 'Potentio à faible % garde du courant', steps_en: 'Set 10-25%, attach a load, read amperage.', steps_fr: 'Règle à 10-25%, branche charge, lis I.', expected_en: 'Current is reduced but NOT zero (post stack-overflow fix).', expected_fr: 'Courant réduit mais PAS zéro (post fix stack overflow).', critical: true, commit: '57e3106c' },
+      { id: 'ALT-04', sev: 'p1', regression: true, title_en: 'Converter outputs voltage from stored FE', title_fr: 'Converter sort de la tension à partir de FE stockés', setup_en: 'Place converter in OUTPUT mode (toggle with wrench). Charge it via FE source first.', setup_fr: 'Pose converter en mode OUTPUT (toggle avec wrench). Charge-le via FE en premier.', steps_en: 'Once charged, attach a load to the OUTPUT side. Check voltmeter shows configured voltage immediately.', steps_fr: 'Une fois chargé, branche charge sur le côté OUTPUT. Vérifie que le voltmètre affiche la tension configurée tout de suite.', expected_en: 'Voltage shows up on output as soon as energy is stored, regardless of load.', expected_fr: 'Tension visible côté output dès qu\'il y a de l\'énergie, indépendamment de la charge.', commit: 'ca077992' },
+      { id: 'ALT-05', sev: 'p2', title_en: 'Subnetwork separation', title_fr: 'Séparation sous-réseaux', steps_en: 'Place voltage alterer between 2 networks, multimeter both sides.', steps_fr: 'Pose un modificateur entre 2 réseaux, multimètre des 2 côtés.', expected_en: 'Different network IDs each side.', expected_fr: 'IDs différents de chaque côté.' }
+    ]
+  },
+  {
+    id: 'electricity_storage',
+    title_en: 'Electricity — storage (accumulators)',
+    title_fr: 'Électricité — stockage (accumulateurs)',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'STO-01', sev: 'p2', title_en: 'Single accumulator stores energy', title_fr: 'Un accumulateur stocke l\'énergie', steps_en: 'Charge an accumulator, read its bar.', steps_fr: 'Charge un accu, lis sa barre.', expected_en: 'Bar fills 0→full at the documented rate.', expected_fr: 'Barre se remplit 0→plein.' },
+      { id: 'STO-02', sev: 'p0', title_en: 'Accumulator chain capacity = N×base (not N²)', title_fr: 'Capacité chaîne d\'accus = N×base (pas N²)', steps_en: 'Stack 3 accumulators, observe goggle / multimeter capacity.', steps_fr: 'Empile 3 accus, observe la capacité.', expected_en: 'Capacity = 3 × single, NOT 9 × single.', expected_fr: 'Capacité = 3 × seul, PAS 9 × seul.', critical: true,
+        cmds: [
+          '/setblock ~ ~ ~ tfmg:accumulator[facing=up]',
+          '/setblock ~ ~1 ~ tfmg:accumulator[facing=up]',
+          '/setblock ~ ~2 ~ tfmg:accumulator[facing=up]'
+        ] },
+      { id: 'STO-03', sev: 'p1', regression: true, title_en: 'Accumulator discharges to network (Asuka retest)', title_fr: 'Accumulateur se décharge dans le réseau (retest Asuka)', setup_en: 'Charge accumulator, then disconnect generator and leave only accumulator + load (e.g. light bulb or motor).', setup_fr: 'Charge accumulateur, coupe générateur, laisse accumulateur + charge (ampoule ou moteur).', steps_en: 'Watch the accumulator discharge while the load runs.', steps_fr: 'Regarde l\'accu se décharger pendant que la charge tourne.', expected_en: 'Load runs from accumulator until empty. Sub-1Ω resistance no longer truncates to 0 (network resistance fix).', expected_fr: 'Charge tourne sur l\'accu jusqu\'à vide. La résistance sub-1Ω ne tombe plus à 0.', commit: '01d80abf' },
+      { id: 'STO-04', sev: 'p2', title_en: 'Accumulator NBT persists after reload', title_fr: 'NBT accu persiste après reload', steps_en: 'Charge to ~50%, save & reload world.', steps_fr: 'Charge à ~50%, save & reload.', expected_en: 'Charge level preserved.', expected_fr: 'Niveau de charge préservé.' },
+      { id: 'STO-05', sev: 'p2', title_en: 'FE/RF compatibility', title_fr: 'Compatibilité FE/RF', steps_en: 'Wire to a FE-using mod block (mekanism etc).', steps_fr: 'Branche à un bloc FE d\'un autre mod.', expected_en: 'Energy transfers correctly.', expected_fr: 'Energie transférée.' }
+    ]
+  },
+  {
+    id: 'electricity_meter',
+    title_en: 'Electricity — measurement & display',
+    title_fr: 'Électricité — mesure & affichage',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'MET-01', sev: 'p1', regression: true, title_en: 'Multimeter shows R / U / I / P (incl. R fallback)', title_fr: 'Multimètre R / U / I / P (avec fallback R)', setup_en: 'Hold multimeter, hover any cable on a powered network.', setup_fr: 'Tiens le multimètre, hover n\'importe quel câble alimenté.', steps_en: 'Verify resistance line shows even on a cable (which has resistance()=0 — should fall back to network resistance).', steps_fr: 'Vérifie que la résistance s\'affiche même sur un câble (resistance()=0 — fallback réseau).', expected_en: 'All four values displayed. R falls back to network resistance when local is 0.', expected_fr: '4 valeurs affichées. R utilise la résistance réseau si la locale est 0.', commit: 'a4339d97' },
+      { id: 'MET-02', sev: 'p0', title_en: 'Multimeter overlay coexists with goggles', title_fr: 'Overlay multimètre coexiste avec goggles', steps_en: 'Wear goggles + hold multimeter, look at a machine.', steps_fr: 'Porte goggles + tiens multimètre, regarde une machine.', expected_en: 'Both overlays render without overlap glitch.', expected_fr: 'Les 2 overlays s\'affichent sans glitch.', critical: true },
+      { id: 'MET-03', sev: 'p2', title_en: 'Voltmeter block reads voltage and survives reload', title_fr: 'Voltmètre lit la tension et survit au reload', steps_en: 'Place voltmeter, reload world, ensure no crash from stale "mode" enum.', steps_fr: 'Pose voltmètre, recharge le monde, pas de crash sur stale "mode".', expected_en: 'Display matches multimeter, no crash on cold load.', expected_fr: 'Affichage conforme, aucun crash au cold load.', commit: '01d80abf' },
+      { id: 'MET-04', sev: 'p1', title_en: 'Display links — current / voltage / resistance', title_fr: 'Display links — courant / tension / résistance', setup_en: 'Place a Create display board + display link on a TFMG cable.', setup_fr: 'Pose display board Create + display link sur un câble TFMG.', steps_en: 'Configure display link to read current, then voltage, then resistance.', steps_fr: 'Configure display link pour lire current, voltage, résistance.', expected_en: 'All metrics print to a Create display board.', expected_fr: 'Métriques s\'affichent sur display board.' },
+      { id: 'MET-05', sev: 'p1', title_en: 'Display links — net consumption / generation', title_fr: 'Display links — conso / prod nette', steps_en: 'Set up gen + load, observe net values.', steps_fr: 'Setup prod + charge, observe nets.', expected_en: 'Net values match logically (gen-load).', expected_fr: 'Valeurs nettes logiques.' }
+    ]
+  },
+  {
+    id: 'electricity_motors',
+    title_en: 'Electricity — motors, lights, utilities',
+    title_fr: 'Électricité — moteurs, lumières, utilitaires',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'MOT-01', sev: 'p2', title_en: 'Electric motor produces SU', title_fr: 'Moteur électrique produit du SU', steps_en: 'Power motor, attach kinetic load.', steps_fr: 'Alimente moteur, branche charge kinetic.', expected_en: 'Rotation propagates, SU consumption sane.', expected_fr: 'Rotation se propage.' },
+      { id: 'MOT-02', sev: 'p2', title_en: 'Electric pump moves fluid', title_fr: 'Pompe électrique déplace fluide', steps_en: 'Insert in fluid network, supply electricity.', steps_fr: 'Insère dans réseau fluide, alimente.', expected_en: 'Fluid flows in expected direction.', expected_fr: 'Fluide circule.' },
+      { id: 'MOT-03', sev: 'p2', title_en: 'Polarizer creates magnets', title_fr: 'Polarizer crée des aimants', steps_en: 'Drop magnetic alloy on polarizer, supply power.', steps_fr: 'Lâche magnetic alloy sur polarizer, alimente.', expected_en: 'Alloy converts to magnet item.', expected_fr: 'Alloy devient magnet.' },
+      { id: 'MOT-04', sev: 'p1', regression: true, title_en: 'Light bulbs no longer flicker on the client', title_fr: 'Ampoules ne flickent plus côté client', setup_en: 'Wire 5+ light bulbs to a fluctuating-voltage source.', setup_fr: 'Câble 5+ ampoules sur une source à tension variable.', steps_en: 'Watch carefully for visual flicker / lighting recompute storms.', steps_fr: 'Regarde s\'il y a flicker / recalculs lumière.', expected_en: 'Smooth lighting transitions, no per-tick block updates on the client.', expected_fr: 'Transitions lumière fluides, aucun update par tick côté client.', commit: '5e352477' },
+      { id: 'MOT-05', sev: 'p2', regression: true, title_en: 'Neon tubes no longer flicker on the client', title_fr: 'Tubes néon ne flickent plus côté client', steps_en: 'Same as MOT-04 with neon tubes.', steps_fr: 'Pareil que MOT-04 mais avec néons.', expected_en: 'Smooth lighting, no per-tick chunk re-renders.', expected_fr: 'Transitions fluides, aucun re-render par tick.', commit: '5e352477' },
+      { id: 'MOT-06', sev: 'p1', regression: true, title_en: 'Electrician\'s wrench rotates AND picks up TFMG blocks', title_fr: 'Wrench électricien tourne ET ramasse les blocs TFMG', setup_en: 'Try wrench rotation and shift+click pickup on a wide variety of TFMG blocks.', setup_fr: 'Essaie rotation et shift+click sur un large échantillon de blocs TFMG.', steps_en: 'Test: stator, lithium block, accumulator, large coil, blast furnace hatch, gas lamp, smokestack, surface scanner, pumpjack base/crank/hammer, electrode holder, freezer. The /test run below confirms the IWrenchable interface is wired on the most-used 5 blocks.', steps_fr: 'Test : stator, lithium block, accumulator, large coil, blast furnace hatch, gas lamp, smokestack, surface scanner, pumpjack base/crank/hammer, electrode holder, freezer. Le /test run ci-dessous confirme que IWrenchable est branché sur les 5 blocs les plus utilisés.', expected_en: 'Most blocks pick up + rotate; specifically, no longer "1 of 2 blocks fail" pattern.', expected_fr: 'Majorité ramasse + tourne ; plus de pattern "1 sur 2 fail".', commit: 'ec9ba240',
+        cmds: [
+          '/test run tfmg:wrench_support_on_common_blocks'
+        ] }
+    ]
+  },
+  {
+    id: 'oil',
+    title_en: 'Oil processing — pumpjack & distillation',
+    title_fr: 'Pétrole — pumpjack & distillation',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'OIL-01', sev: 'p2', title_en: 'Oil deposit generates underground', title_fr: 'Gisement se génère sous terre', steps_en: 'Use surface scanner or explore.', steps_fr: 'Surface scanner ou explore.', expected_en: 'At least one deposit per several chunks.', expected_fr: 'Au moins un gisement / quelques chunks.' },
+      { id: 'OIL-02', sev: 'p0', title_en: 'Pumpjack base scans down to bedrock', title_fr: 'Base pumpjack scanne jusqu\'au bedrock', steps_en: 'Place pumpjack over a deposit at Y < 0.', steps_fr: 'Pose pumpjack sur gisement à Y < 0.', expected_en: 'Deposit found, pumping starts.', expected_fr: 'Gisement trouvé, pompage démarre.', critical: true,
+        cmds: [
+          '/setblock ~ -50 ~ tfmg:oil_deposit',
+          '/fill ~ -49 ~ ~ ~-1 ~ tfmg:industrial_pipe[axis=y]',
+          '/setblock ~ ~ ~ tfmg:pumpjack_base'
+        ] },
+      { id: 'OIL-03', sev: 'p1', title_en: 'Pumpjack multiblock assembly', title_fr: 'Assemblage multibloc pumpjack', steps_en: 'Build base, hammer, connector, crank.', steps_fr: 'Monte base, hammer, connector, crank.', expected_en: 'All parts link, animation plays.', expected_fr: 'Toutes les pièces liées, animation joue.' },
+      { id: 'OIL-04', sev: 'p1', title_en: 'Pumpjack outputs crude oil', title_fr: 'Pumpjack sort du brut', steps_en: 'Connect output tank, run for 30s.', steps_fr: 'Connecte cuve sortie, lance 30s.', expected_en: 'Tank fills with crude oil.', expected_fr: 'Cuve se remplit.' },
+      { id: 'OIL-05', sev: 'p1', title_en: 'Distillation controller forms with steel tank', title_fr: 'Distillation controller forme avec steel tank', steps_en: 'Place controller against the steel tank multiblock.', steps_fr: 'Pose controller contre multibloc steel tank.', expected_en: 'Controller links, dial animates.', expected_fr: 'Controller lié, cadran s\'anime.' },
+      { id: 'OIL-06', sev: 'p0', regression: true, title_en: 'Distillation pulls without locking at 240B', title_fr: 'Distillation aspire sans bloquer à 240B', steps_en: 'Fill steel tank, run distillation through full 6 outputs.', steps_fr: 'Remplis steel tank, lance distillation sur 6 outputs.', expected_en: 'Controller pulls fluid, no jam, all 6 outputs fill (post overflow check fix).', expected_fr: 'Pull OK, pas de blocage, 6 outputs se remplissent (post fix overflow check).', critical: true, commit: '51110bc1',
+        cmds: [
+          '/fill ~ ~ ~ ~ ~3 ~ tfmg:steel_fluid_tank',
+          '/setblock ~1 ~ ~ tfmg:distillation_controller[facing=west]',
+          '/setblock ~1 ~1 ~ tfmg:distillation_output',
+          '/setblock ~1 ~2 ~ tfmg:industrial_pipe[axis=y]',
+          '/setblock ~1 ~3 ~ tfmg:distillation_output',
+          '/give @s tfmg:crude_oil_bucket 16'
+        ] },
+      { id: 'OIL-07', sev: 'p1', title_en: 'Distillation outputs in correct order', title_fr: 'Distillation sort dans le bon ordre', steps_en: 'Stack 6 outputs above controller.', steps_fr: 'Empile 6 sorties au-dessus du controller.', expected_en: 'Each output gets correct fluid product.', expected_fr: 'Chaque sortie reçoit le bon fluide.' },
+      { id: 'OIL-08', sev: 'p0', title_en: 'Tower survives chunk reload', title_fr: 'Tour survit au reload', steps_en: 'Run, walk away, return, check state.', steps_fr: 'Lance, éloigne-toi, reviens.', expected_en: 'No crash on rebreak, recipe progresses.', expected_fr: 'Pas de crash, recette continue.', critical: true },
+      { id: 'OIL-09', sev: 'p2', title_en: 'Heat source modifies speed', title_fr: 'Chaleur modifie la vitesse', steps_en: 'Apply blaze burner / firebox heat.', steps_fr: 'Applique blaze / firebox.', expected_en: 'Distillation rate scales with heat.', expected_fr: 'Vitesse scale avec chaleur.' },
+      { id: 'OIL-10', sev: 'p1', regression: true, title_en: 'Pumpjack deposit memberships persist on world reload', title_fr: 'Adhésion gisement pumpjack persiste après reload', setup_en: 'Run a pumpjack on a deposit until oil flows.', setup_fr: 'Lance un pumpjack sur un gisement jusqu\'à ce que l\'huile coule.', steps_en: 'Save & quit. Reload world. Walk back to the pumpjack.', steps_fr: 'Sauvegarde & quitte. Recharge. Reviens au pumpjack.', expected_en: 'Pumpjack still recognises the deposit (deposit count NBT was being read from the wrong tag — fixed).', expected_fr: 'Pumpjack reconnaît encore le gisement (deposit count NBT lu du mauvais tag — fix).', commit: '31e55201' }
+    ]
+  },
+  {
+    id: 'metallurgy',
+    title_en: 'Metallurgy — coke oven, blast stove, blast furnace, casting',
+    title_fr: 'Métallurgie — coke oven, blast stove, blast furnace, casting',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'MET-CO-01', sev: 'p1', title_en: 'Coke oven multiblock forms', title_fr: 'Multibloc coke oven se forme', steps_en: 'Build coke oven structure.', steps_fr: 'Monte coke oven.', expected_en: 'Controller detected, doors visible.', expected_fr: 'Controller détecté, portes visibles.' },
+      { id: 'MET-CO-02', sev: 'p0', title_en: 'Coke oven processes coal → coke', title_fr: 'Coke oven transforme charbon → coke', steps_en: 'Insert coal, wait full cycle.', steps_fr: 'Insère charbon, attend cycle.', expected_en: 'Coal coke produced, no duplication.', expected_fr: 'Coke produit, pas de dupe.', critical: true,
+        cmds: [
+          '/fill ~ ~ ~ ~1 ~1 ~1 tfmg:coke_oven',
+          '/give @s minecraft:coal 64'
+        ] },
+      { id: 'MET-CO-03', sev: 'p1', title_en: 'Coke oven controller equality fix', title_fr: 'Fix égalité controller coke oven', steps_en: 'Break controller in 2x2x2+ multiblock.', steps_fr: 'Casse controller dans multibloc 2x2x2+.', expected_en: 'Other blocks reset cleanly.', expected_fr: 'Autres blocs reset propre.' },
+      { id: 'MET-CO-04', sev: 'p2', title_en: 'Coke oven timer scales with size', title_fr: 'Timer scale avec taille', steps_en: 'Compare 2x2 vs 4x4 cycle time.', steps_fr: 'Compare 2x2 vs 4x4.', expected_en: 'Larger oven = faster per-cycle.', expected_fr: 'Plus grand = plus rapide.' },
+      { id: 'MET-BS-01', sev: 'p2', title_en: 'Blast stove heats up', title_fr: 'Blast stove chauffe', setup_en: 'Note from Asuka: requires creosote oil, not coal/coke.', setup_fr: 'Note Asuka : demande creosote oil, pas charbon/coke.', steps_en: 'Fuel a blast stove with creosote oil.', steps_fr: 'Alimente avec creosote oil.', expected_en: 'Heat indicator climbs.', expected_fr: 'Indicateur de chaleur monte.' },
+      { id: 'MET-BS-02', sev: 'p0', regression: true, title_en: 'Blast stove processes one recipe per cycle (Asuka MET-BS-02 retest)', title_fr: 'Blast stove une recette par cycle (retest Asuka)', steps_en: 'Insert one input, wait, count outputs over multiple cycles.', steps_fr: 'Insère 1 input, attend, compte outputs sur plusieurs cycles.', expected_en: 'Exactly one output per recipe — NO duplication, NO infinite spam.', expected_fr: 'Exactement 1 output / recette — PAS de dupe, PAS de spam.', critical: true, commit: 'c0756f14',
+        cmds: [
+          '/setblock ~ ~ ~ tfmg:blast_stove',
+          '/give @s tfmg:creosote_oil_bucket 4'
+        ] },
+      { id: 'MET-BS-03', sev: 'p2', title_en: 'Blast stove pauses without input', title_fr: 'Blast stove en pause sans input', steps_en: 'Run with no input.', steps_fr: 'Lance sans input.', expected_en: 'No phantom recipe, no log spam.', expected_fr: 'Aucune recette fantôme, pas de spam.' },
+      { id: 'MET-BF-01', sev: 'p1', title_en: 'Blast furnace multiblock forms', title_fr: 'Multibloc blast furnace forme', steps_en: 'Build blast furnace with hatches and walls.', steps_fr: 'Monte blast furnace avec hatches/murs.', expected_en: 'Multiblock detected.', expected_fr: 'Multibloc détecté.' },
+      { id: 'MET-BF-02', sev: 'p1', title_en: 'Blast furnace processes ore', title_fr: 'Blast furnace traite minerai', steps_en: 'Feed ore + heat.', steps_fr: 'Insère minerai + chaleur.', expected_en: 'Outputs molten metal.', expected_fr: 'Métal en fusion sort.' },
+      { id: 'MET-CA-01', sev: 'p1', title_en: 'Casting basin solidifies metal', title_fr: 'Casting basin solidifie métal', steps_en: 'Pour molten metal into basin.', steps_fr: 'Verse métal en basin.', expected_en: 'Solid ingot/block produced.', expected_fr: 'Lingot/bloc solide.' }
+    ]
+  },
+  {
+    id: 'machinery',
+    title_en: 'Other machinery — vat, centrifuge, intake, etc.',
+    title_fr: 'Autres machines — vat, centrifuge, intake',
+    desc_en: 'Hot zone: vat had multiple regression bugs (drain via combined wrapper, item mutation).',
+    desc_fr: 'Zone hot : vat avait plusieurs régressions (drain wrapper combined, mutation items).',
+    tests: [
+      { id: 'MAC-VAT-01', sev: 'p1', title_en: 'Mechanical vat multiblock forms', title_fr: 'Multibloc vat se forme', steps_en: 'Build vat with sides + electrodes.', steps_fr: 'Monte vat avec côtés + électrodes.', expected_en: 'Vat assembles, GUI accessible.', expected_fr: 'Vat assemblée, GUI accessible.' },
+      { id: 'MAC-VAT-02', sev: 'p0', regression: true, title_en: 'Vat actually processes recipes (Asuka REC-07 retest)', title_fr: 'Vat traite réellement les recettes (retest Asuka REC-07)', setup_en: 'Build a 2x2 vat with mixer + electrodes. Provide fluid input + items.', setup_fr: 'Monte vat 2x2 avec mixer + électrodes. Fluide input + items.', steps_en: 'Run any vat recipe (mixer / centrifuge / electrolysis).', steps_fr: 'Lance recette vat (mixer / centrifuge / électrolyse).', expected_en: 'Recipe completes, input drained from INPUT tank only, items extracted via inventory API.', expected_fr: 'Recette OK, input drainé de la cuve INPUT seulement, items extraits via API.', critical: true, commit: 'd4cb1ed9',
+        cmds: [
+          '/fill ~ ~ ~ ~1 ~2 ~1 tfmg:chemical_vat',
+          '/setblock ~ ~3 ~ tfmg:industrial_mixer[facing=down]',
+          '/setblock ~ ~-1 ~ minecraft:furnace[facing=up,lit=true]'
+        ] },
+      { id: 'MAC-VAT-03', sev: 'p1', title_en: 'Vat scan height correct', title_fr: 'Hauteur scan vat correcte', steps_en: 'Build a 3-tall vat, check accepted dimensions.', steps_fr: 'Monte vat de 3 de haut, check dim.', expected_en: 'Scans correctly.', expected_fr: 'Scan correct.' },
+      { id: 'MAC-VAT-04', sev: 'p0', regression: true, title_en: 'Vat drains exactly the ingredient amount', title_fr: 'Vat draine exactement la quantité ingrédient', steps_en: 'Run fluid recipe, watch input tank fluid drop by ingredient.amount() per cycle.', steps_fr: 'Lance recette fluide, regarde fluide input chuter de ingredient.amount() / cycle.', expected_en: 'No silent over-drain, no drain on items in output tank.', expected_fr: 'Pas de sur-drain silencieux, pas de drain sur items en sortie.', critical: true, commit: 'd4cb1ed9' },
+      { id: 'MAC-VAT-05', sev: 'p0', regression: true, title_en: 'Vat survives chunk reload mid-recipe', title_fr: 'Vat survit au reload chunk en cours de recette', steps_en: 'Start recipe, walk far away, return, verify recipe continues.', steps_fr: 'Lance recette, éloigne-toi, reviens, vérifie continue.', expected_en: 'Vat re-evaluates and continues without rebreak.', expected_fr: 'Vat reprend sans cassage.', critical: true, commit: 'a4f4b7d2' },
+      { id: 'MAC-VAT-06', sev: 'p2', title_en: 'Vat fill state per tank index', title_fr: 'Niveau remplissage par cuve', steps_en: 'Compare each tank fill display.', steps_fr: 'Compare affichage / cuve.', expected_en: 'Each tank shows its own fill.', expected_fr: 'Chaque cuve son propre niveau.' },
+      { id: 'MAC-CMP-01', sev: 'p2', title_en: 'Compressor compresses gases', title_fr: 'Compresseur compresse gaz', steps_en: 'Feed compressible fluid.', steps_fr: 'Insère fluide compressible.', expected_en: 'Output is compressed variant.', expected_fr: 'Sortie compressée.' },
+      { id: 'MAC-FRZ-01', sev: 'p2', title_en: 'Freezer cools fluids', title_fr: 'Congélateur refroidit', steps_en: 'Feed freezable fluid + power.', steps_fr: 'Fluide gelable + alim.', expected_en: 'Output cooled product.', expected_fr: 'Sortie refroidie.' },
+      { id: 'MAC-MIX-01', sev: 'p2', title_en: 'Industrial mixer combines inputs', title_fr: 'Industrial mixer combine inputs', steps_en: 'Feed 2+ ingredients.', steps_fr: 'Insère 2+ ingrédients.', expected_en: 'Recipe consumes inputs, produces output.', expected_fr: 'Recette consomme et produit.' },
+      { id: 'MAC-AIR-01', sev: 'p1', regression: true, title_en: 'Air intake controller detection (BlockPos equality)', title_fr: 'Air intake détection controller (égalité BlockPos)', steps_en: 'Place each size, observe intake rate, intentionally break and re-place to test detection.', steps_fr: 'Pose chaque taille, observe débit, casse et re-place pour tester la détection.', expected_en: 'Larger = faster; controller detection works after re-place (post BlockPos == fix).', expected_fr: 'Plus grand = plus rapide ; détection controller marche après re-place.', commit: '31e55201' },
+      { id: 'MAC-FB-01', sev: 'p1', regression: true, title_en: 'Firebox restores running state on world reload', title_fr: 'Firebox restaure état running au reload', setup_en: 'Light a firebox, save & exit, reload.', setup_fr: 'Allume firebox, save & quitte, recharge.', steps_en: 'Verify firebox is still running on first lazyTick after reload.', steps_fr: 'Vérifie que firebox tourne dès le 1er lazyTick après reload.', expected_en: 'Heat persists across world reload (NBT IsRunning now actually loaded).', expected_fr: 'Chaleur persiste au reload (NBT IsRunning chargé).', commit: '31e55201' },
+      { id: 'MAC-FLR-01', sev: 'p2', title_en: 'Flarestack burns gas safely', title_fr: 'Flarestack brûle gaz', steps_en: 'Pump combustible gas in.', steps_fr: 'Pompe gaz combustible.', expected_en: 'Gas consumed, flame visual.', expected_fr: 'Gaz consommé, flamme.' },
+      { id: 'MAC-WND-01', sev: 'p2', title_en: 'Winding machine produces coils', title_fr: 'Winding machine produit bobines', steps_en: 'Feed wire + spool.', steps_fr: 'Insère fil + spool.', expected_en: 'Coil item produced.', expected_fr: 'Bobine produite.' }
+    ]
+  },
+  {
+    id: 'tanks_pipes',
+    title_en: 'Tanks, pipes, fluid handling',
+    title_fr: 'Cuves, tuyaux, fluides',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'TNK-01', sev: 'p1', regression: true, title_en: 'Aluminum / cast iron tanks form a multi-block', title_fr: 'Tanks alu / cast iron forment un multibloc', setup_en: 'Build 1×1×1, 2×2×3, 3×3×4 each in aluminum AND cast iron. Asuka Imgur: https://imgur.com/a/Owd7PuF', setup_fr: 'Monte 1×1×1, 2×2×3, 3×3×4 en alu ET cast iron. Imgur Asuka : https://imgur.com/a/Owd7PuF', steps_en: 'Look at the rendered model + check capacity. The /test run below validates the class hierarchy automatically.', steps_fr: 'Regarde le rendu + check capacité. Le /test run ci-dessous valide automatiquement la hiérarchie de classes.', expected_en: 'No more visual breakage; capacity scales with volume; no mixed alu+cast-iron multiblock.', expected_fr: 'Plus de bug visuel ; capacité scale ; pas de multibloc mixte alu+ci.', commit: 'f867118c',
+        cmds: [
+          '/test run tfmg:aluminum_tank_extends_fluid_tank_block',
+          '/fill ~ ~ ~ ~2 ~2 ~2 tfmg:aluminum_fluid_tank',
+          '/fill ~5 ~ ~ ~7 ~2 ~2 tfmg:cast_iron_fluid_tank'
+        ] },
+      { id: 'TNK-02', sev: 'p1', title_en: 'Steel tank multiblock forms (3D scaling)', title_fr: 'Multibloc steel tank scale 3D', steps_en: 'Build 1x1, 2x2, 3x3 of varying heights.', steps_fr: 'Monte 1x1, 2x2, 3x3 hauteurs variées.', expected_en: 'All combine, capacity scales.', expected_fr: 'Tous fusionnent, capacité scale.' },
+      { id: 'TNK-03', sev: 'p2', title_en: 'Tank persists fluid after reload', title_fr: 'Cuve garde fluide après reload', steps_en: 'Fill, save, reload.', steps_fr: 'Remplis, save, reload.', expected_en: 'Fluid amount preserved.', expected_fr: 'Quantité préservée.' },
+      { id: 'PIP-01', sev: 'p2', title_en: 'Pipe variants route fluid', title_fr: 'Variantes tuyau routent fluide', steps_en: 'Run fluid through each pipe type.', steps_fr: 'Fais passer du fluide.', expected_en: 'All pipes carry identical.', expected_fr: 'Tous identiques.' },
+      { id: 'PIP-02', sev: 'p2', title_en: 'Smart fluid pipe filters', title_fr: 'Smart pipe filtre', steps_en: 'Configure fluid filter.', steps_fr: 'Configure filtre.', expected_en: 'Only matching fluid passes.', expected_fr: 'Seul le bon fluide passe.' },
+      { id: 'PIP-03', sev: 'p2', title_en: 'Fluid valve cuts flow', title_fr: 'Valve coupe flux', steps_en: 'Toggle valve mid-flow.', steps_fr: 'Bascule valve.', expected_en: 'Flow stops/restarts.', expected_fr: 'Flux stoppe/redémarre.' }
+    ]
+  },
+  {
+    id: 'engine_persist',
+    title_en: 'Engines — components, dupe, persistence',
+    title_fr: 'Engines — composants, dupe, persistence',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'PER-01', sev: 'p0', title_en: 'Engine state survives world reload', title_fr: 'État moteur survit au reload', steps_en: 'Build engine + controller, save, reload.', steps_fr: 'Monte moteur + controller, save, recharge.', expected_en: 'Controller link still active.', expected_fr: 'Lien controller actif.', critical: true },
+      { id: 'PER-02', sev: 'p2', title_en: 'Engine controller acceleration ramps smoothly', title_fr: 'Accélération fluide', steps_en: 'Watch acceleration over time.', steps_fr: 'Regarde l\'accélération.', expected_en: 'Smooth ramp.', expected_fr: 'Rampe fluide.' },
+      { id: 'PER-03', sev: 'p0', title_en: 'Engine survives chunk unload', title_fr: 'Moteur survit unload', steps_en: 'Run, walk away, return.', steps_fr: 'Lance, éloigne, reviens.', expected_en: 'Engine resumes.', expected_fr: 'Moteur reprend.', critical: true },
+      { id: 'PER-04', sev: 'p0', regression: true, title_en: 'Engine cylinder insertion is no longer dupe-able', title_fr: 'Insertion cylindre moteur ne peut plus dupe', setup_en: 'Insert one engine cylinder into the engine controller.', setup_fr: 'Insère 1 cylindre dans le controller.', steps_en: 'Remove via screwdriver. Verify exactly 1 cylinder is returned.', steps_fr: 'Retire via screwdriver. Vérifie que 1 cylindre est rendu.', expected_en: '1 inserted = 1 returned. No more 2-for-1 dupe.', expected_fr: '1 inséré = 1 rendu. Plus de dupe 2-pour-1.', critical: true, commit: 'b9fb162f' },
+      { id: 'PER-05', sev: 'p1', regression: true, title_en: 'Large engine does not run fuel-free at low RPM', title_fr: 'Large engine ne tourne pas gratuit à low RPM', setup_en: 'Run a large engine at <40 RPM (low signal).', setup_fr: 'Lance large engine <40 RPM (faible signal).', steps_en: 'Watch fuel tank — verify it drains over time, not 0 mB/cycle.', steps_fr: 'Regarde fuel tank — il doit drainer, pas 0 mB/cycle.', expected_en: 'Fuel consumed at minimum 1 mB/cycle, no infinite-free-power.', expected_fr: 'Fuel consommé min 1 mB/cycle, pas d\'énergie gratuite infinie.', commit: 'b9fb162f' }
+    ]
+  },
+  {
+    id: 'worldgen',
+    title_en: 'Worldgen — ores & deposits',
+    title_fr: 'Worldgen — minerais & gisements',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'WG-01', sev: 'p2', title_en: 'Lithium ore generates', title_fr: 'Minerai lithium se génère', steps_en: 'Explore underground.', steps_fr: 'Explore sous terre.', expected_en: 'Veins found.', expected_fr: 'Filons trouvés.' },
+      { id: 'WG-02', sev: 'p2', title_en: 'Lead ore generates', title_fr: 'Minerai plomb se génère', steps_en: 'Same.', steps_fr: 'Idem.', expected_en: 'Veins exist.', expected_fr: 'Filons existent.' },
+      { id: 'WG-03', sev: 'p2', title_en: 'Nickel / custom metals', title_fr: 'Nickel / métaux custom', steps_en: 'Explore.', steps_fr: 'Explore.', expected_en: 'Veins exist.', expected_fr: 'Filons existent.' },
+      { id: 'WG-04', sev: 'p2', regression: true, title_en: 'Surface scanner detects deposits (server-side)', title_fr: 'Surface scanner détecte les gisements (côté serveur)', setup_en: 'Place a surface scanner over a known deposit area.', setup_fr: 'Pose surface scanner sur zone gisement.', steps_en: 'Power it via machine input below, hover with goggles.', steps_fr: 'Alimente via machine input dessous, hover avec goggles.', expected_en: 'Deposit count > 0 (scanner runs server-side now, AABB inflated to actually intersect blocks).', expected_fr: 'Nombre gisements > 0 (scanner serveur, AABB inflate intersect blocs).', commit: '31e55201' },
+      { id: 'WG-05', sev: 'p2', title_en: 'No worldgen lag spike', title_fr: 'Pas de lag worldgen', steps_en: 'Run /neoforge tps while flying / loading new chunks.', steps_fr: '/neoforge tps en volant / loadant chunks.', expected_en: 'TPS stays > 18.', expected_fr: 'TPS > 18.' },
+      { id: 'WG-06', sev: 'p2', title_en: 'Worldgen disable config respected', title_fr: 'Désactivation worldgen config respectée', setup_en: 'Edit config/tfmg-common.toml, set worldgen.* options to false.', setup_fr: 'Édite config/tfmg-common.toml, désactive worldgen.*.', steps_en: 'Generate new chunks.', steps_fr: 'Génère neufs chunks.', expected_en: 'No TFMG ores in fresh chunks.', expected_fr: 'Aucun minerai TFMG dans chunks neufs.' }
+    ]
+  },
+  {
+    id: 'recipes',
+    title_en: 'Recipe types — coverage smoke test',
+    title_fr: 'Types de recettes — smoke test',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'REC-01', sev: 'p1', title_en: 'Casting recipe', title_fr: 'Recette casting', steps_en: 'Pour metal in basin.', steps_fr: 'Verse métal en basin.', expected_en: 'Recipe completes.', expected_fr: 'Recette OK.' },
+      { id: 'REC-02', sev: 'p1', title_en: 'Industrial blasting recipe', title_fr: 'Recette industrial blasting', steps_en: 'Run blast furnace recipe.', steps_fr: 'Lance recette blast furnace.', expected_en: 'Output produced.', expected_fr: 'Sortie produite.' },
+      { id: 'REC-03', sev: 'p1', title_en: 'Coking recipe', title_fr: 'Recette coking', steps_en: 'Coal in coke oven.', steps_fr: 'Charbon en coke oven.', expected_en: 'Coke produced.', expected_fr: 'Coke produit.' },
+      { id: 'REC-04', sev: 'p1', title_en: 'Distillation recipe', title_fr: 'Recette distillation', steps_en: 'Distill crude oil.', steps_fr: 'Distille brut.', expected_en: 'Multi-fluid output.', expected_fr: 'Sortie multi-fluide.' },
+      { id: 'REC-05', sev: 'p2', title_en: 'Hot blast recipe', title_fr: 'Recette hot blast', steps_en: 'Reinforced blast furnace recipe.', steps_fr: 'Reinforced blast furnace recette.', expected_en: 'Output produced.', expected_fr: 'Sortie produite.' },
+      { id: 'REC-06', sev: 'p1', title_en: 'Winding recipe', title_fr: 'Recette winding', steps_en: 'Wind wire to coil.', steps_fr: 'Enroule fil → bobine.', expected_en: 'Coil produced.', expected_fr: 'Bobine produite.' },
+      { id: 'REC-07', sev: 'p0', regression: true, title_en: 'Vat machine recipe completes (Asuka REC-07)', title_fr: 'Recette vat fonctionne (Asuka REC-07)', steps_en: 'Run any vat recipe end-to-end.', steps_fr: 'Lance recette vat de bout en bout.', expected_en: 'Output produced; input consumed correctly.', expected_fr: 'Output produit ; input consommé correctement.', critical: true, commit: 'd4cb1ed9' },
+      { id: 'REC-08', sev: 'p1', title_en: 'Polarizing recipe', title_fr: 'Recette polarizing', steps_en: 'Polarize magnetic alloy.', steps_fr: 'Polarise magnetic alloy.', expected_en: 'Magnet produced.', expected_fr: 'Aimant produit.' },
+      { id: 'REC-09', sev: 'p1', title_en: 'JEI/EMI/REI shows TFMG recipes', title_fr: 'JEI/EMI/REI affiche recettes TFMG', steps_en: 'Search a TFMG item in recipe viewer.', steps_fr: 'Cherche item TFMG dans recipe viewer.', expected_en: 'Categories visible.', expected_fr: 'Catégories visibles.' }
+    ]
+  },
+  {
+    id: 'items',
+    title_en: 'Items, tools & weapons',
+    title_fr: 'Items, outils & armes',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'ITM-01', sev: 'p1', title_en: 'Multimeter inspects networks', title_fr: 'Multimètre inspecte réseaux', steps_en: 'Hover cables / machines.', steps_fr: 'Hover câbles / machines.', expected_en: 'Readout matches network state.', expected_fr: 'Lecture conforme.' },
+      { id: 'ITM-02', sev: 'p2', title_en: 'Coal coke smelt fuel value', title_fr: 'Valeur fuel coal coke', steps_en: 'Use coke as fuel.', steps_fr: 'Utilise coke comme fuel.', expected_en: 'Burn time conforms.', expected_fr: 'Burn time conforme.' },
+      { id: 'ITM-03', sev: 'p2', title_en: 'Synthetic leather craft chain', title_fr: 'Chaîne synthetic leather', steps_en: 'Follow recipe.', steps_fr: 'Suis recette.', expected_en: 'Final item produced.', expected_fr: 'Item final produit.' },
+      { id: 'ITM-04', sev: 'p2', title_en: 'Spool / transmission / cylinder craftable', title_fr: 'Spool/transmission/cylindre craftables', steps_en: 'Craft each.', steps_fr: 'Crafte chaque.', expected_en: 'Recipes resolve.', expected_fr: 'Recettes OK.' },
+      { id: 'ITM-05', sev: 'p2', title_en: 'Lead / lithium tools usable', title_fr: 'Outils plomb/lithium utilisables', steps_en: 'Mine/attack with each.', steps_fr: 'Mine/attaque.', expected_en: 'Works, durability decreases.', expected_fr: 'OK, durabilité descend.' },
+      { id: 'ITM-06', sev: 'p2', title_en: 'Lithium blade lit form attack rate sane (Asuka ITM-06)', title_fr: 'Vitesse attaque lithium blade lit raisonnable (Asuka ITM-06)', steps_en: 'Activate lit form, attack a mob; verify hit rate is not absurd.', steps_fr: 'Active lit form, attaque mob ; vérifie vitesse pas absurde.', expected_en: 'Hit rate similar to a regular sword in lit form.', expected_fr: 'Cadence proche d\'une épée normale en lit form.' },
+      { id: 'ITM-07', sev: 'p2', regression: true, title_en: 'Fire extinguisher does not crash on missing entity type', title_fr: 'Extincteur ne crash pas si entity type absent', steps_en: 'Use the fire extinguisher in a custom dimension or with restricted entity registry.', steps_fr: 'Utilise extincteur en dimension custom ou registry restreint.', expected_en: 'No NPE on EntityType.create returning null.', expected_fr: 'Aucune NPE si EntityType.create retourne null.', commit: '5e352477' },
+      { id: 'ITM-08', sev: 'p2', title_en: 'Flamethrower lights blocks', title_fr: 'Lance-flammes met le feu', steps_en: 'Fire at flammable blocks.', steps_fr: 'Tire sur blocs inflammables.', expected_en: 'Blocks ignite, fuel consumed.', expected_fr: 'Blocs s\'allument.' },
+      { id: 'ITM-09', sev: 'p2', title_en: 'Pipe bomb explodes', title_fr: 'Pipe bomb explose', steps_en: 'Light + throw.', steps_fr: 'Allume + lance.', expected_en: 'Explosion, no crash.', expected_fr: 'Explosion, pas crash.' },
+      { id: 'ITM-10', sev: 'p2', regression: true, title_en: 'Thermite grenades client/server sync', title_fr: 'Grenades thermite sync client/serveur', steps_en: 'Throw a grenade in MP. Verify the explosion happens once, server-side.', steps_fr: 'Lance grenade en MP. Vérifie explosion 1 fois, côté serveur.', expected_en: 'No phantom client-side explosion, no projectile desync.', expected_fr: 'Pas d\'explosion fantôme client, pas de désync.', commit: '5e352477' },
+      { id: 'ITM-11', sev: 'p2', title_en: 'Potato cannon variants', title_fr: 'Variantes potato cannon', steps_en: 'Fire each variant.', steps_fr: 'Tire avec chaque.', expected_en: 'Projectile fires.', expected_fr: 'Projectile tiré.' }
+    ]
+  },
+  {
+    id: 'multiplayer',
+    title_en: 'Multiplayer / server stability',
+    title_fr: 'Multijoueur / stabilité serveur',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'MP-01', sev: 'p2', title_en: '2 players viewing same machine', title_fr: '2 joueurs sur même machine', steps_en: 'Both watch goggle/multimeter overlay.', steps_fr: 'Les 2 regardent goggle/multimètre.', expected_en: 'No desync, no crash.', expected_fr: 'Pas désync, pas crash.' },
+      { id: 'MP-02', sev: 'p2', title_en: 'Player disconnect / reconnect', title_fr: 'Déco / reco joueur', steps_en: 'Disconnect during machine operation.', steps_fr: 'Déco pendant opération.', expected_en: 'Server unchanged.', expected_fr: 'Serveur intact.' },
+      { id: 'MP-03', sev: 'p1', title_en: '/reload does not break TFMG recipes', title_fr: '/reload ne casse pas recettes', steps_en: 'Run /reload during operation.', steps_fr: '/reload pendant opération.', expected_en: 'Recipes loaded, no exception.', expected_fr: 'Recettes OK.' },
+      { id: 'MP-04', sev: 'p1', title_en: 'Server TPS stable under load', title_fr: 'TPS serveur stable charge', steps_en: 'Run 10+ active machines, /spark.', steps_fr: 'Lance 10+ machines, /spark.', expected_en: 'TPS > 18.', expected_fr: 'TPS > 18.' },
+      { id: 'MP-05', sev: 'p0', title_en: 'Save & reload: no NBT corruption', title_fr: 'Save & reload : pas de corruption NBT', steps_en: 'Heavy machine save/reload cycle.', steps_fr: 'Cycle save/reload machines lourdes.', expected_en: 'Machines reload identical state.', expected_fr: 'Machines identiques.', critical: true },
+      { id: 'MP-06', sev: 'p2', title_en: 'No mod conflict on common addon set', title_fr: 'Pas de conflit addons courants', steps_en: 'Test with Create Big Cannons / Steam n Rails / etc.', steps_fr: 'Teste avec Create Big Cannons / Steam n Rails.', expected_en: 'No registry/mixin conflict.', expected_fr: 'Aucun conflit.' }
+    ]
+  },
+  {
+    id: 'regression_misc',
+    title_en: 'Regression checks (post-fix verification)',
+    title_fr: 'Régressions (vérification post-fix)',
+    desc_en: 'Targeted retests of every fix shipped in this fork that doesn\'t fit in another section.',
+    desc_fr: 'Retests ciblés des fixes du fork qui ne rentrent pas ailleurs.',
+    tests: [
+      { id: 'REG-01', sev: 'p0', title_en: 'Issue #332 reproducer is fixed', title_fr: 'Repro issue #332 corrigé', steps_en: 'Reproduce the original scenario.', steps_fr: 'Reproduis le scénario.', expected_en: 'Bug no longer occurs.', expected_fr: 'Bug n\'apparaît plus.', critical: true },
+      { id: 'REG-02', sev: 'p0', title_en: 'Issue #360 reproducer is fixed', title_fr: 'Repro issue #360 corrigé', steps_en: 'Reproduce the original scenario.', steps_fr: 'Reproduis le scénario.', expected_en: 'Bug no longer occurs.', expected_fr: 'Bug n\'apparaît plus.', critical: true },
+      { id: 'REG-CABLE', sev: 'p1', regression: true, title_en: 'Cable connector wire-removal guard works', title_fr: 'Cable connector guard de retrait wire fonctionne', setup_en: 'Build a 3-point cable connector network. Break one connector.', setup_fr: 'Monte un réseau 3-cable connector. Casse un connector.', steps_en: 'Verify other connectors still drop their wires correctly without removing themselves.', steps_fr: 'Vérifie que les autres connectors lâchent les wires sans se retirer eux-mêmes.', expected_en: 'No cascade of removed connectors. The BlockPos == BlockPos guard now works.', expected_fr: 'Pas de cascade. Le guard BlockPos == BlockPos marche.', commit: '01d80abf' },
+      { id: 'REG-IDLE', sev: 'p2', title_en: '"Everything breaks on chunk reload" no longer happens', title_fr: '"Tout casse au reload chunk" n\'arrive plus', steps_en: 'Big base, walk far away (~600 blocks), return.', steps_fr: 'Grosse base, va loin (~600 blocs), reviens.', expected_en: 'All electric blocks still working without manual rebreak.', expected_fr: 'Tous les blocs électriques marchent encore sans cassage.' }
+    ]
+  },
+  {
+    id: 'perf',
+    title_en: 'Performance — server-friendly checks',
+    title_fr: 'Performance — checks server-friendly',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'PRF-01', sev: 'p2', title_en: 'No tick-time hot spots in spark profile', title_fr: 'Aucun hotspot tick dans spark', steps_en: '/spark profiler --timeout 60 with 10+ machines.', steps_fr: '/spark profiler --timeout 60 avec 10+ machines.', expected_en: 'TFMG tick methods < 5% of server thread.', expected_fr: 'Méthodes tick TFMG < 5%.' },
+      { id: 'PRF-02', sev: 'p2', title_en: 'Lazy tick used where safe', title_fr: 'Lazy tick utilisé là où sûr', steps_en: 'Profile distillation tower.', steps_fr: 'Profile tour de distillation.', expected_en: 'Heavy scans run via lazyTick.', expected_fr: 'Scans lourds en lazyTick.' },
+      { id: 'PRF-03', sev: 'p2', title_en: 'Output cache cooldown working', title_fr: 'Cache sorties cooldown OK', steps_en: 'Distillation output cache hits.', steps_fr: 'Cache distillation OK.', expected_en: 'No per-tick getOutputs scan.', expected_fr: 'Pas de scan par tick.' },
+      { id: 'PRF-04', sev: 'p2', title_en: 'No double-write to NBT', title_fr: 'Pas de double-write NBT', steps_en: 'Save world, check write logs.', steps_fr: 'Sauvegarde, check logs write.', expected_en: 'Each BE writes once per save.', expected_fr: 'Chaque BE écrit 1 fois.' },
+      { id: 'PRF-05', sev: 'p2', title_en: 'Network manager skips zombie BE', title_fr: 'Network manager skip BE zombies', steps_en: 'Force unload mid-tick.', steps_fr: 'Force unload en plein tick.', expected_en: 'No NPE / IllegalState.', expected_fr: 'Aucune NPE / IllegalState.' },
+      { id: 'PRF-06', sev: 'p2', title_en: 'Memory stable over 30 min', title_fr: 'Mémoire stable 30 min', steps_en: 'Run base for 30 min, watch heap.', steps_fr: 'Lance base 30 min, surveille heap.', expected_en: 'No leak.', expected_fr: 'Pas de leak.' }
+    ]
+  },
+  {
+    id: 'i18n',
+    title_en: 'Internationalization — French translation',
+    title_fr: 'Internationalisation — traduction française',
+    desc_en: '',
+    desc_fr: '',
+    tests: [
+      { id: 'I18N-01', sev: 'p2', title_en: 'All blocks have French names', title_fr: 'Tous les blocs ont nom FR', steps_en: 'Browse creative tab in fr_fr.', steps_fr: 'Parcours tab créative en fr_fr.', expected_en: 'No raw key.', expected_fr: 'Aucune clé brute.' },
+      { id: 'I18N-02', sev: 'p2', title_en: 'All items have French names', title_fr: 'Tous items ont nom FR', steps_en: 'Browse all items.', steps_fr: 'Parcours items.', expected_en: 'No raw key.', expected_fr: 'Aucune clé brute.' },
+      { id: 'I18N-03', sev: 'p2', title_en: 'Tooltips translated', title_fr: 'Tooltips traduits', steps_en: 'Hover items / goggles.', steps_fr: 'Hover items / goggles.', expected_en: 'Tooltips in French.', expected_fr: 'Tooltips français.' },
+      { id: 'I18N-04', sev: 'p2', title_en: 'GUI labels translated', title_fr: 'Labels GUI traduits', steps_en: 'Open machine GUIs.', steps_fr: 'Ouvre GUI.', expected_en: 'Labels in French.', expected_fr: 'Labels français.' },
+      { id: 'I18N-05', sev: 'p2', title_en: 'Goggle / multimeter overlay translated', title_fr: 'Overlay traduit', steps_en: 'Read overlays in French.', steps_fr: 'Lis overlays en français.', expected_en: 'All keys translated.', expected_fr: 'Toutes traduites.' }
+    ]
+  }
+];
+
+let state = {};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch (e) { state = {}; }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  flashSaved();
+}
+
+let saveTimer = null;
+function flashSaved() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.classList.add('saved');
+  el.textContent = '● saved';
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    el.classList.remove('saved');
+    el.textContent = '●';
+  }, 1200);
+}
+
+function setLang(lang) {
+  document.body.classList.toggle('fr', lang === 'fr');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+  localStorage.setItem(STORAGE_KEY + '-lang', lang);
+}
+
+function expandAll(open) {
+  document.querySelectorAll('.section').forEach(s => {
+    s.classList.toggle('collapsed', !open);
+  });
+}
+
+function resetAll() {
+  if (!confirm('Reset all test results and comments? / Réinitialiser tous les résultats et commentaires ?')) return;
+  state = {};
+  saveState();
+  renderSections();
+  refreshStats();
+}
+
+function refreshStats() {
+  let total = 0, pass = 0, fail = 0, skip = 0;
+  TESTS.forEach(s => s.tests.forEach(t => {
+    total++;
+    const v = state[t.id]?.verdict;
+    if (v === 'pass') pass++;
+    else if (v === 'fail') fail++;
+    else if (v === 'skip') skip++;
+  }));
+  const done = pass + fail + skip;
+  const untested = total - done;
+  document.getElementById('stat-pass').textContent = pass;
+  document.getElementById('stat-fail').textContent = fail;
+  document.getElementById('stat-skip').textContent = skip;
+  document.getElementById('stat-untested').textContent = untested;
+  document.getElementById('progress-text').textContent = `${done} / ${total}`;
+  document.getElementById('progress-bar').style.width = `${total ? (done / total) * 100 : 0}%`;
+
+  TESTS.forEach(section => {
+    const sec = document.querySelector(`[data-section-id="${section.id}"]`);
+    if (!sec) return;
+    let p = 0, f = 0, sk = 0;
+    section.tests.forEach(t => {
+      const v = state[t.id]?.verdict;
+      if (v === 'pass') p++;
+      else if (v === 'fail') f++;
+      else if (v === 'skip') sk++;
+    });
+    const ms = sec.querySelector('.mini-stats');
+    if (ms) {
+      ms.querySelector('.pass').textContent = '✓ ' + p;
+      ms.querySelector('.fail').textContent = '✕ ' + f;
+      ms.querySelector('.skip').textContent = '~ ' + sk;
+    }
+  });
+}
+
+function setVerdict(testId, verdict) {
+  state[testId] = state[testId] || {};
+  state[testId].verdict = verdict;
+  saveState();
+  refreshStats();
+  applyFilters();
+}
+
+function setComment(testId, value) {
+  state[testId] = state[testId] || {};
+  state[testId].comment = value;
+  saveState();
+}
+
+function quickFill(sectionId, verdict) {
+  const section = TESTS.find(s => s.id === sectionId);
+  if (!section) return;
+  if (!confirm(`Set ${verdict.toUpperCase()} for all UNTESTED in this section?`)) return;
+  section.tests.forEach(t => {
+    if (!state[t.id]?.verdict) {
+      state[t.id] = { ...(state[t.id] || {}), verdict };
+      const radio = document.querySelector(`input[name="v-${t.id}"][value="${verdict}"]`);
+      if (radio) radio.checked = true;
+    }
+  });
+  saveState();
+  refreshStats();
+  applyFilters();
+}
+
+function renderSections() {
+  const container = document.getElementById('sections');
+  container.innerHTML = '';
+  TESTS.forEach(section => {
+    const sec = document.createElement('div');
+    sec.className = 'section';
+    sec.dataset.sectionId = section.id;
+
+    const head = document.createElement('div');
+    head.className = 'section-head';
+    head.innerHTML = `
+      <h2>
+        <span class="arrow">▾</span>
+        <span class="lang-en">${section.title_en}</span>
+        <span class="lang-fr">${section.title_fr}</span>
+      </h2>
+      <div class="mini-stats">
+        <span class="pass">✓ 0</span>
+        <span class="fail">✕ 0</span>
+        <span class="skip">~ 0</span>
+      </div>
+      <div class="quick-actions">
+        <button onclick="event.stopPropagation();quickFill('${section.id}','skip')" title="Skip remaining">~</button>
+      </div>
+    `;
+    head.addEventListener('click', e => {
+      if (e.target.closest('.quick-actions')) return;
+      sec.classList.toggle('collapsed');
+    });
+    sec.appendChild(head);
+
+    if (section.desc_en || section.desc_fr) {
+      const desc = document.createElement('div');
+      desc.className = 'section-desc';
+      desc.innerHTML = `<span class="lang-en">${section.desc_en}</span><span class="lang-fr">${section.desc_fr}</span>`;
+      sec.appendChild(desc);
+    }
+
+    const body = document.createElement('div');
+    body.className = 'section-body';
+    section.tests.forEach(test => body.appendChild(renderTestRow(test)));
+    sec.appendChild(body);
+    container.appendChild(sec);
+  });
+}
+
+function renderTestRow(test) {
+  const row = document.createElement('div');
+  let cls = 'test-row';
+  if (test.critical) cls += ' critical';
+  if (test.regression) cls += ' regression';
+  row.className = cls;
+  row.dataset.testId = test.id;
+  row.dataset.critical = test.critical ? '1' : '0';
+  row.dataset.regression = test.regression ? '1' : '0';
+  const saved = state[test.id] || {};
+
+  let tags = '';
+  if (test.critical) tags += '<span class="crit-tag">Critical</span>';
+  if (test.regression) tags += '<span class="reg-tag">Regr</span>';
+  if (test.sev) tags += `<span class="severity-tag ${test.sev}">${test.sev.toUpperCase()}</span>`;
+
+  const setupHtml = (test.setup_en || test.setup_fr) ? `
+    <div class="setup">
+      <span class="lang-en">${test.setup_en || ''}</span>
+      <span class="lang-fr">${test.setup_fr || test.setup_en || ''}</span>
+    </div>` : '';
+
+  let cmdsHtml = '';
+  if (test.cmds && test.cmds.length > 0) {
+    cmdsHtml = '<div class="cmds"><div class="cmds-label">'
+      + '<span class="lang-en">Setup commands</span><span class="lang-fr">Commandes de setup</span>'
+      + '</div>';
+    test.cmds.forEach(cmd => {
+      const escaped = cmd.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      cmdsHtml += `<div class="cmd-row"><code>${escaped}</code><button class="cmd-copy" onclick="copyCmd(this)">Copy</button></div>`;
+    });
+    cmdsHtml += '</div>';
+  }
+
+  const commitHtml = test.commit ? `<div class="commit-ref">→ <code>${test.commit}</code></div>` : '';
+
+  row.innerHTML = `
+    <div>
+      <h4>
+        <span class="test-id">${test.id}</span>
+        <span class="lang-en">${test.title_en}</span>
+        <span class="lang-fr">${test.title_fr}</span>
+        ${tags}
+      </h4>
+      ${setupHtml}
+      ${cmdsHtml}
+      <div class="steps">
+        <strong><span class="lang-en">Steps:</span><span class="lang-fr">Étapes :</span></strong>
+        <span class="lang-en"> ${test.steps_en}</span>
+        <span class="lang-fr"> ${test.steps_fr}</span>
+      </div>
+      <div class="expected">
+        <strong><span class="lang-en">Expected:</span><span class="lang-fr">Attendu :</span></strong>
+        <span class="lang-en"> ${test.expected_en}</span>
+        <span class="lang-fr"> ${test.expected_fr}</span>
+      </div>
+      ${commitHtml}
+      <textarea data-test="${test.id}" placeholder="Comment / Commentaire (logs, repro, screenshots…)">${(saved.comment || '').replace(/</g,'&lt;')}</textarea>
+    </div>
+    <div class="verdict">
+      <div class="verdict-buttons">
+        <label>
+          <input type="radio" name="v-${test.id}" value="pass" ${saved.verdict === 'pass' ? 'checked' : ''}>
+          <span>PASS</span>
+        </label>
+        <label>
+          <input type="radio" name="v-${test.id}" value="fail" ${saved.verdict === 'fail' ? 'checked' : ''}>
+          <span>FAIL</span>
+        </label>
+        <label>
+          <input type="radio" name="v-${test.id}" value="skip" ${saved.verdict === 'skip' ? 'checked' : ''}>
+          <span>SKIP</span>
+        </label>
+      </div>
+    </div>
+  `;
+
+  row.querySelectorAll('input[type="radio"]').forEach(r => {
+    r.addEventListener('change', () => setVerdict(test.id, r.value));
+  });
+  row.querySelector('textarea').addEventListener('input', e => setComment(test.id, e.target.value));
+
+  return row;
+}
+
+function toggleFilter(chip) {
+  document.querySelectorAll('.filters .chip').forEach(c => c.classList.remove('active'));
+  chip.classList.add('active');
+  activeFilter = chip.dataset.filter;
+  applyFilters();
+}
+
+function applyFilters() {
+  const search = (document.getElementById('search-input')?.value || '').toLowerCase().trim();
+  document.querySelectorAll('.test-row').forEach(row => {
+    const id = row.dataset.testId.toLowerCase();
+    const text = row.textContent.toLowerCase();
+    const verdict = state[row.dataset.testId]?.verdict;
+    const isCritical = row.dataset.critical === '1';
+    const isRegression = row.dataset.regression === '1';
+
+    let show = true;
+
+    if (search) {
+      show = id.includes(search) || text.includes(search);
+    }
+
+    if (show) {
+      switch (activeFilter) {
+        case 'critical': show = isCritical; break;
+        case 'regression': show = isRegression; break;
+        case 'untested': show = !verdict; break;
+        case 'fail': show = verdict === 'fail'; break;
+      }
+    }
+    row.classList.toggle('hidden', !show);
+  });
+
+  document.querySelectorAll('.section').forEach(sec => {
+    const visibleRows = sec.querySelectorAll('.test-row:not(.hidden)').length;
+    sec.style.display = visibleRows === 0 ? 'none' : '';
+  });
+}
+
+function buildExportObject() {
+  const meta = {
+    project: 'TFMG',
+    version: '1.2.1-r2',
+    branch: 'fixes/issues-332-360',
+    tester: document.getElementById('meta-tester').value,
+    date: document.getElementById('meta-date').value,
+    environment: document.getElementById('meta-env').value,
+    modpack: document.getElementById('meta-pack').value,
+    java: document.getElementById('meta-java').value,
+    ram: document.getElementById('meta-ram').value,
+    commit: document.getElementById('meta-commit').value,
+    notes: document.getElementById('meta-notes').value,
+    exported_at: new Date().toISOString()
+  };
+  const summary = { total: 0, pass: 0, fail: 0, skip: 0, untested: 0, critical_fail: 0, regression_fail: 0 };
+  const sections = TESTS.map(section => {
+    const tests = section.tests.map(t => {
+      const s = state[t.id] || {};
+      summary.total++;
+      if (s.verdict === 'pass') summary.pass++;
+      else if (s.verdict === 'fail') {
+        summary.fail++;
+        if (t.critical) summary.critical_fail++;
+        if (t.regression) summary.regression_fail++;
+      }
+      else if (s.verdict === 'skip') summary.skip++;
+      else summary.untested++;
+      return {
+        id: t.id,
+        title: t.title_en,
+        critical: !!t.critical,
+        regression: !!t.regression,
+        sev: t.sev || null,
+        commit: t.commit || null,
+        verdict: s.verdict || 'untested',
+        comment: s.comment || ''
+      };
+    });
+    return { id: section.id, title: section.title_en, tests };
+  });
+  return { meta, summary, sections };
+}
+
+function exportJSON() {
+  const obj = buildExportObject();
+  const txt = JSON.stringify(obj, null, 2);
+  document.getElementById('export-textarea').value = txt;
+  document.getElementById('export-modal').classList.add('show');
+}
+
+function copyCmd(btn) {
+  const code = btn.parentElement.querySelector('code');
+  if (!code) return;
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.selectNode(code);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  document.execCommand('copy');
+  sel.removeAllRanges();
+  btn.classList.add('copied');
+  const orig = btn.textContent;
+  btn.textContent = '✓';
+  setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 900);
+}
+
+function copyJSON(ev) {
+  const ta = document.getElementById('export-textarea');
+  ta.select();
+  document.execCommand('copy');
+  if (ev && ev.target) {
+    const orig = ev.target.innerHTML;
+    ev.target.innerHTML = '✓ Copied';
+    setTimeout(() => ev.target.innerHTML = orig, 1500);
+  }
+}
+
+function downloadJSON() {
+  const obj = buildExportObject();
+  const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const tester = (obj.meta.tester || 'tester').replace(/[^a-z0-9]/gi, '_');
+  const date = obj.meta.date || new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `tfmg-test-v1.2.1-r3-${tester}-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function closeModal() {
+  document.getElementById('export-modal').classList.remove('show');
+}
+
+function loadMeta() {
+  ['tester','date','env','pack','java','ram','commit','notes'].forEach(k => {
+    const v = localStorage.getItem(STORAGE_KEY + '-meta-' + k);
+    if (v !== null) document.getElementById('meta-' + k).value = v;
+  });
+  if (!document.getElementById('meta-date').value) {
+    document.getElementById('meta-date').value = new Date().toISOString().slice(0,10);
+  }
+  ['tester','date','env','pack','java','ram','commit','notes'].forEach(k => {
+    document.getElementById('meta-' + k).addEventListener('input', e => {
+      localStorage.setItem(STORAGE_KEY + '-meta-' + k, e.target.value);
+      flashSaved();
+    });
+  });
+}
+
+loadState();
+loadMeta();
+renderSections();
+refreshStats();
+applyFilters();
+const savedLang = localStorage.getItem(STORAGE_KEY + '-lang');
+if (savedLang === 'fr') setLang('fr');
+</script>
+</body>
+</html>
