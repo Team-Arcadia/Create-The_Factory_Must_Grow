@@ -126,7 +126,7 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
 
         diameter =getPossibleDiameter();
 
-        if(controller == this.getBlockPos()) {
+        if(controller != null && controller.equals(this.getBlockPos())) {
 
             isUsedByController = false;
         } else {
@@ -262,7 +262,7 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
 
         IFluidHandler handlerForCapability;
 
-        if (controller == null || controller == this.getBlockPos()
+        if (controller == null || controller.equals(this.getBlockPos())
 
         ) {
             handlerForCapability = tankInventory;

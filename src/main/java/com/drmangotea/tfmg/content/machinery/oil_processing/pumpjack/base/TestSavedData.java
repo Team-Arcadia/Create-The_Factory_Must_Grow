@@ -51,7 +51,7 @@ public class TestSavedData extends SavedData {
 
 
             //reservoir.deposits = Arrays.stream(depositArray).boxed().toList();
-            for (int j = 0; j < compound.getInt("DepositCount"); j++) {
+            for (int j = 0; j < reservoirNBT.getInt("DepositCount"); j++) {
                 reservoir.deposits.add(reservoirNBT.getLong("Deposit"+j));
             }
 

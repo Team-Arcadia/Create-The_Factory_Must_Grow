@@ -34,7 +34,7 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
 
     public void findDeposits(){
 
-        if(!level.isClientSide)
+        if(level.isClientSide)
             return;
 
         for(int x = 0;x<5;x++){
@@ -42,6 +42,7 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
                 grid[x][z] = hasOil(new BlockPos(getBlockPos().getX() + (x-2)*16, TFMGConfigs.common().machines.surfaceScannerScanDepth.get(),getBlockPos().getZ() + (z-2)*16));
             }
         }
+        sendData();
     }
 
     @Override
@@ -82,7 +83,7 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
     public boolean hasOil(BlockPos pos){
         ChunkAccess chunk = level.getChunk(pos);
         AABB checkedArea = new AABB(chunk.getPos().getMiddleBlockPosition(TFMGConfigs.common().machines.surfaceScannerScanDepth.get()).north().west());
-        checkedArea = checkedArea.inflate(7,0,7);
+        checkedArea = checkedArea.inflate(7, 0.5, 7);
         for(BlockState state : chunk.getBlockStates(checkedArea).toList()){
             if(state.is(TFMGTags.TFMGBlockTags.SURFACE_SCANNER_FINDABLE.tag))
                 return true;
