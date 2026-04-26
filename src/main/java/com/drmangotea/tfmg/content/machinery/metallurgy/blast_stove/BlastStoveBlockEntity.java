@@ -157,9 +157,11 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
 
         List<RecipeHolder<? extends Recipe<?>>> list = RecipeFinder.get(getRecipeCacheKey(), level, RecipeConditions.isOfType(TFMGRecipeTypes.HOT_BLAST.getType()));
 
-        for (int i = 0; i < list.toArray().length; i++) {
-            HotBlastRecipe recipe = (HotBlastRecipe) list.get(i).value();
-            if (recipe.getPrimaryIngredient().test(primaryInputInventory.getFluid()) && recipe.getSecondaryIngredient().test(secondaryInputInventory.getFluid()))
+        FluidStack primary = primaryInputInventory.getFluid();
+        FluidStack secondary = secondaryInputInventory.getFluid();
+        for (RecipeHolder<? extends Recipe<?>> holder : list) {
+            HotBlastRecipe recipe = (HotBlastRecipe) holder.value();
+            if (recipe.getPrimaryIngredient().test(primary) && recipe.getSecondaryIngredient().test(secondary))
                 return recipe;
         }
 

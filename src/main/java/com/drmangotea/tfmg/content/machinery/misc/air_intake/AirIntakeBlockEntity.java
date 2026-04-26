@@ -203,11 +203,11 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
 
         if(diameter ==2){
 
-            if(blockEntities.toArray().length!=4)
+            if(blockEntities.size()!=4)
                 return;
         }
         if(diameter ==3){
-            if(blockEntities.toArray().length!=9)
+            if(blockEntities.size()!=9)
                 return;
         }
 
