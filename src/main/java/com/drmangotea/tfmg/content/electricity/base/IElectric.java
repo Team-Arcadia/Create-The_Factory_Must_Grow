@@ -278,6 +278,8 @@ public interface IElectric {
         }
         if (resistance() != 0)
             TFMGTexts.Multimeter.resistance(voltageGeneration() > 0 ? getGeneratorResistance() : resistance()).forGoggles(tooltip, 1);
+        else if (getNetworkResistance() > 0)
+            TFMGTexts.Multimeter.resistance(getNetworkResistance()).forGoggles(tooltip, 1);
         TFMGTexts.Multimeter.voltage(getData().getVoltage()).forGoggles(tooltip, 1);
         TFMGTexts.Multimeter.current(resistance() == 0 ? getData().highestCurrent : getCurrent()).forGoggles(tooltip, 1);
         if (resistance() != 0)
