@@ -167,7 +167,7 @@ public class GoggleOverlayRendererMixin {
                                 colorBorderTop.getRGB(), colorBorderBot.getRGB(), mc.font);
 
                         poseStack.popPose();
-
+                        ci.cancel();
                         return;
                     }
 
@@ -193,6 +193,7 @@ public class GoggleOverlayRendererMixin {
                     ((MouseHandlerAccessor) mouseHandler).create$setXPos(cursorX);
                     ((MouseHandlerAccessor) mouseHandler).create$setYPos(cursorY);
                     poseStack.popPose();
+                    ci.cancel();
 
                 }
             }
