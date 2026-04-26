@@ -39,6 +39,8 @@ public class LargeSwitchVisual extends KineticBlockEntityVisual<LargeSwitchBlock
 
     @Override
     public void update(float pt) {
+		if (shaft == null)
+			return;
 		shaft.setup(blockEntity)
 			.setChanged();
 
@@ -46,6 +48,8 @@ public class LargeSwitchVisual extends KineticBlockEntityVisual<LargeSwitchBlock
 
     @Override
     public void updateLight(float partialTick) {
+		if (shaft == null)
+			return;
 		Direction facing = blockEntity.getBlockState().getValue(HORIZONTAL_FACING).getCounterClockWise();
         BlockPos behind = pos.relative(facing);
 		relight(behind, shaft);
@@ -54,11 +58,15 @@ public class LargeSwitchVisual extends KineticBlockEntityVisual<LargeSwitchBlock
 
     @Override
     protected void _delete() {
+		if (shaft == null)
+			return;
 		shaft.delete();
     }
 
 	@Override
 	public void collectCrumblingInstances(Consumer<Instance> consumer) {
+		if (shaft == null)
+			return;
 		consumer.accept(shaft);
 	}
 }
