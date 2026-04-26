@@ -266,6 +266,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             recipe = getMatchingRecipe();
         }
 
+        revalidateMachines();
         updateTemperature();
         if (level.isClientSide && !(level instanceof PonderLevel)) {
             int tankNumber = 0;
@@ -464,37 +465,12 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
         handleRecipe();
 
-        if (isController()) {
-            Iterator<BlockPos> iter = machineMap.keySet().iterator();
-            while (iter.hasNext()) {
-                BlockPos machinePos = iter.next();
-                BlockEntity blockEntity = level.getBlockEntity(machinePos);
-                if (blockEntity != null) {
-                    if (blockEntity instanceof IVatMachine vatMachine) {
-                        boolean operational = vatMachine.canOperate(this);
-                        operationalMachinesMap.put(machinePos, operational);
-                    } else {
-                        iter.remove();
-                        operationalMachinesMap.remove(machinePos);
-                    }
-                } else {
-                    iter.remove();
-                    operationalMachinesMap.remove(machinePos);
-                }
-            }
-        }
-
-        areMachinesValid = operationalMachinesMap.values().stream().allMatch((op) -> op == true);
-
-
         if (syncCooldown > 0) {
             syncCooldown--;
             if (syncCooldown == 0 && queuedSync)
                 sendData();
         }
         if (evaluateNextTick) {
-            //  if (level instanceof ServerLevel serverLevel)
-            //      CatnipServices.NETWORK.sendToClientsTrackingChunk(serverLevel, new ChunkPos(worldPosition),new VatEvaluationPacket(this.getBlockPos()));
             evaluate();
             sendData();
             evaluateNextTick = false;
@@ -513,10 +489,36 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         }
         if (updateConnectivity)
             updateConnectivity();
-        for (int i = 0; i < 8; i++) {
-            fluidLevel[i].tickChaser();
+        if (level.isClientSide) {
+            for (int i = 0; i < 8; i++) {
+                fluidLevel[i].tickChaser();
+            }
         }
 
+    }
+
+    private void revalidateMachines() {
+        if (!isController())
+            return;
+        Iterator<BlockPos> iter = machineMap.keySet().iterator();
+        while (iter.hasNext()) {
+            BlockPos machinePos = iter.next();
+            BlockEntity blockEntity = level.getBlockEntity(machinePos);
+            if (blockEntity instanceof IVatMachine vatMachine) {
+                operationalMachinesMap.put(machinePos, vatMachine.canOperate(this));
+            } else {
+                iter.remove();
+                operationalMachinesMap.remove(machinePos);
+            }
+        }
+        boolean allValid = true;
+        for (boolean op : operationalMachinesMap.values()) {
+            if (!op) {
+                allValid = false;
+                break;
+            }
+        }
+        areMachinesValid = allValid;
     }
 
     /**
@@ -648,6 +650,23 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
     private void onPositionChanged() {
         removeController(true);
         lastKnownPos = worldPosition;
+    }
+
+    public void notifyItemContentsChanged() {
+        if (!hasLevel())
+            return;
+
+        VatBlockEntity controller = getControllerBE();
+        if (controller != null && controller != this) {
+            controller.notifyItemContentsChanged();
+            return;
+        }
+
+        recipe = getMatchingRecipe();
+        if (!level.isClientSide) {
+            setChanged();
+            sendData();
+        }
     }
 
     protected void onInventoryChanged() {
