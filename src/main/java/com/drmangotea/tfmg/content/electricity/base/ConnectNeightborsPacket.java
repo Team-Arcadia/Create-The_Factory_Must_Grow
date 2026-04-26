@@ -23,9 +23,13 @@ public class ConnectNeightborsPacket extends BlockEntityDataPacket<SmartBlockEnt
     @Override
     protected void handlePacket(SmartBlockEntity blockEntity) {
 
-        if(blockEntity instanceof IElectric be) {
+        if (blockEntity instanceof IElectric be) {
+            // Server-side packet: client receives this but cannot run onPlaced
+            // because the client-side network manager map is not initialised
+            // for non-server worlds (NPE on null map).
+            if (be.getLevelAccessor() != null && be.getLevelAccessor().isClientSide())
+                return;
             be.onPlaced();
-
         }
     }
 

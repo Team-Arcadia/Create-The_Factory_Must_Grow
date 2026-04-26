@@ -52,8 +52,9 @@ public interface IElectric {
         if (getLevelAccessor().getBlockEntity(BlockPos.of(getData().electricalNetworkId)) instanceof IElectric) {
             return TFMG.NETWORK_MANAGER.getOrCreateNetworkFor((IElectric) getLevelAccessor().getBlockEntity(BlockPos.of(getData().electricalNetworkId)));
         } else {
-            ElectricNetworkManager.networks.get(getLevelAccessor())
-                    .remove(getData().electricalNetworkId);
+            java.util.Map<Long, ElectricalNetwork> map = ElectricNetworkManager.networks.get(getLevelAccessor());
+            if (map != null)
+                map.remove(getData().electricalNetworkId);
             return TFMG.NETWORK_MANAGER.getOrCreateNetworkFor(this);
         }
     }
@@ -95,22 +96,22 @@ public interface IElectric {
      */
     default void onRemoved() {
         this.getData().destroyed = true;
+        java.util.Map<Long, ElectricalNetwork> map = ElectricNetworkManager.networks.get(getLevelAccessor());
         for (Direction d : Direction.values()) {
             if (hasElectricitySlot(d))
                 if (getLevelAccessor().getBlockEntity(BlockPos.of(getPos()).relative(d)) instanceof IElectric be && be.hasElectricitySlot(d.getOpposite())) {
-                    ElectricNetworkManager.networks.get(getLevelAccessor())
-                            .remove(be.getPos());
+                    if (map != null)
+                        map.remove(be.getPos());
                     be.setNetwork(be.getPos());
-                    be.onPlaced();
+                    be.getData().connectNextTick = true;
                     be.updateNextTick();
                 }
         }
         if (getData().electricalNetworkId != getPos())
             getOrCreateElectricNetwork().getMembers().remove(this);
 //
-        if (getData().electricalNetworkId == getPos())
-            ElectricNetworkManager.networks.get(getLevelAccessor())
-                    .remove(getData().getId());
+        if (getData().electricalNetworkId == getPos() && map != null)
+            map.remove(getData().getId());
     }
 
     /**
