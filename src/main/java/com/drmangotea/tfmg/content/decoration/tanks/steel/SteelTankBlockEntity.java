@@ -136,6 +136,8 @@ public class SteelTankBlockEntity extends FluidTankBlockEntity implements IHaveG
         sendData();
         if (level.isClientSide)
             invalidateRenderBoundingBox();
+        if (!level.isClientSide && isController())
+            updateBoilerState();
     }
 
     private void onPositionChanged() {
@@ -317,10 +319,15 @@ public class SteelTankBlockEntity extends FluidTankBlockEntity implements IHaveG
     public boolean evaluate() {
         boolean hadController = isDistillationTower;
         boolean foundController = false;
+        SteelTankBlockEntity scanRoot = getControllerBE();
+        if (scanRoot == null)
+            scanRoot = this;
         BlockPos pos1 = controller == null ? getBlockPos() : controller;
-        for (int yOffset = 0; yOffset < getControllerBE().height; yOffset++) {
-            for (int xOffset = 0; xOffset < getControllerBE().width; xOffset++) {
-                for (int zOffset = 0; zOffset < getControllerBE().width; zOffset++) {
+        int scanHeight = scanRoot.height;
+        int scanWidth = scanRoot.width;
+        for (int yOffset = 0; yOffset < scanHeight; yOffset++) {
+            for (int xOffset = 0; xOffset < scanWidth; xOffset++) {
+                for (int zOffset = 0; zOffset < scanWidth; zOffset++) {
                     BlockPos pos = pos1.offset(xOffset, yOffset, zOffset);
                     BlockState blockState = level.getBlockState(pos);
                     if (!SteelTankBlock.isTank(blockState))
@@ -435,6 +442,7 @@ public class SteelTankBlockEntity extends FluidTankBlockEntity implements IHaveG
 
         updateConnectivity = compound.contains("Uninitialized");
         luminosity = compound.getInt("Luminosity");
+        isDistillationTower = compound.getBoolean("IsDistillationTower");
 
         lastKnownPos = null;
         if (compound.contains("LastKnownPos"))
@@ -514,6 +522,7 @@ public class SteelTankBlockEntity extends FluidTankBlockEntity implements IHaveG
             compound.putInt("Height", height);
         }
         compound.putInt("Luminosity", luminosity);
+        compound.putBoolean("IsDistillationTower", isDistillationTower);
         super.write(compound, registries, clientPacket);
 
         if (!clientPacket)
