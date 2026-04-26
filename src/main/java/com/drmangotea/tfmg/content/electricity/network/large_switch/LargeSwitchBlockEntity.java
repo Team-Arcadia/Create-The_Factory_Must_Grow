@@ -73,9 +73,12 @@ public class LargeSwitchBlockEntity extends KineticElectricBlockEntity {
     @Override
     public void lazyTick() {
         super.lazyTick();
-        if(data.notEnoughPower&&!getBlockState().getValue(IS_MAIN_PART))
-            if(level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(HORIZONTAL_FACING).getOpposite()))instanceof LargeSwitchBlockEntity be)
+        if (level.isClientSide || getBlockState().getValue(IS_MAIN_PART))
+            return;
+        if (level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(HORIZONTAL_FACING).getOpposite())) instanceof LargeSwitchBlockEntity be) {
+            if (data.notEnoughPower || be.getData().getId() == getData().getId())
                 be.onPlaced();
+        }
     }
 
     public IElectric getControlledBlock() {
