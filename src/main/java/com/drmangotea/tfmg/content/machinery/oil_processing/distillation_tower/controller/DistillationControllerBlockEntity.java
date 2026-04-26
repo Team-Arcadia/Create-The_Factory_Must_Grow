@@ -152,8 +152,32 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         super.tick();
 
         manageDialRendering();
+        if (!level.isClientSide)
+            pullFromSteelTank();
         manageRecipe();
 
+    }
+
+    private void pullFromSteelTank() {
+        int space = tank.getSpace();
+        if (space <= 0)
+            return;
+        BlockEntity beBehind = level.getBlockEntity(getBlockPos().relative(getFacing(getBlockState()).getOpposite()));
+        if (!(beBehind instanceof SteelTankBlockEntity be))
+            return;
+        SteelTankBlockEntity controllerBE = be.getControllerBE();
+        FluidTank steelTank = (controllerBE != null ? controllerBE : be).getTankInventory();
+        FluidStack stored = steelTank.getFluid();
+        if (stored.isEmpty())
+            return;
+        if (!tank.getFluid().isEmpty() && !tank.getFluid().getFluid().isSame(stored.getFluid()))
+            return;
+        int pullAmount = Math.min(stored.getAmount(), space);
+        if (pullAmount <= 0)
+            return;
+        FluidStack drained = steelTank.drain(pullAmount, IFluidHandler.FluidAction.EXECUTE);
+        if (!drained.isEmpty())
+            tank.fill(drained, IFluidHandler.FluidAction.EXECUTE);
     }
 
     protected void onFluidStackChanged(FluidStack newFluidStack) {
