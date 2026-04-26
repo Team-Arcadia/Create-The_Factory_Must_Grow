@@ -57,12 +57,12 @@ public class DistillationRecipe extends StandardProcessingRecipe<RecipeInput> {
     }
 
     public int getOutputCount(DistillationRecipe recipe){
-        return recipe.fluidResults.toArray().length;
+        return recipe.fluidResults.size();
     }
 
     public boolean matches(FluidTank inv, int outputs) {
 
-        int neededOutputs = fluidIngredients.toArray().length;
+        int neededOutputs = fluidIngredients.size();
 
         if(outputs !=neededOutputs)
             return false;

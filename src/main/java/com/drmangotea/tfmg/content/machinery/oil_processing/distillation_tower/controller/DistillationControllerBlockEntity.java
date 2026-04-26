@@ -33,6 +33,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
+import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 
 
 import java.util.ArrayList;
@@ -84,7 +85,7 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
     }
 
     public void findRecipe(ArrayList<DistillationOutputBlockEntity> outputs){
-        if (recipe == null || !recipe.matches(tank, outputs.toArray().length)) {
+        if (recipe == null || !recipe.matches(tank, outputs.size())) {
             DistillationRecipe recipe = getMatchingRecipes();
 
             if (recipe != null) {
@@ -95,13 +96,19 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
     }
 
     public void manageRecipe(){
+        if (level.isClientSide)
+            return;
+
         ArrayList<DistillationOutputBlockEntity> outputs = getOutputs();
         BlockEntity beBehind = level.getBlockEntity(getBlockPos().relative(getFacing(getBlockState()).getOpposite()));
         if (!(beBehind instanceof SteelTankBlockEntity be))
             return;
 
+        SteelTankBlockEntity controllerBE = be.getControllerBE();
+        SteelTankBlockEntity heatSource = controllerBE != null ? controllerBE : be;
 
-        if (outputs.isEmpty() || be.activeHeat == 0)
+        int outputCount = outputs.size();
+        if (outputCount == 0 || heatSource.activeHeat == 0)
             return;
 
         findRecipe(outputs);
@@ -109,37 +116,34 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         if (recipe == null)
             return;
 
-        ///
-        float speedModifier = (float) be.activeHeat / 2;
+        float speedModifier = (float) heatSource.activeHeat / 2;
         if (recipe.getInputFluid().amount() * speedModifier > tank.getFluidAmount())
             return;
 
-        if (recipe.getFluidResults().toArray().length != getOutputs().toArray().length)
+        if (recipe.getFluidResults().size() != outputCount)
             return;
-        if (be.isController()) {
-            if (be.getHeight() < outputs.toArray().length * 2 || (((FluidTankBlockEntityAccessor)be).tfmg$getWidth() < 2 && outputs.toArray().length > 3))
-                return;
-        }  else {
-            if (be.getControllerBE() != null)
-                if (be.getControllerBE().getHeight() < outputs.toArray().length * 2 || ((FluidTankBlockEntityAccessor)be.getControllerBE()).tfmg$getWidth() < 2)
-                    return;
-        }
+        if (controllerBE == null)
+            return;
+        int controllerWidth = ((FluidTankBlockEntityAccessor)controllerBE).tfmg$getWidth();
+        if (controllerBE.getHeight() < outputCount * 2 || (controllerWidth < 2 && outputCount > 3))
+            return;
 
         for (DistillationOutputBlockEntity be1 : outputs) {
-            if (be1.tank.getSpace() == 0&&be1.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
+            if (be1.tank.getSpace() == 0 && be1.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
                 return;
         }
+        int consumption = recipe.getInputFluid().amount() / 6;
         int numero = 0;
         for (DistillationOutputBlockEntity output : outputs) {
             FluidStack fluidStack = recipe.getFluidResults().get(numero);
             if (fluidStack.isEmpty())
                 break;
-            if (output.tank.fill(new FluidStack(fluidStack.getFluidHolder(), (int) (fluidStack.getAmount() * speedModifier)), IFluidHandler.FluidAction.SIMULATE) > output.tank.getCapacity()&&output.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
+            int fillAmount = (int) (fluidStack.getAmount() * speedModifier);
+            FluidStack toFill = new FluidStack(fluidStack.getFluidHolder(), fillAmount);
+            if (output.tank.fill(toFill, IFluidHandler.FluidAction.SIMULATE) > output.tank.getCapacity() && output.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
                 break;
 
-            output.tank.fill(new FluidStack(fluidStack.getFluidHolder(), (int) (fluidStack.getAmount() * speedModifier)), IFluidHandler.FluidAction.EXECUTE);
-            int consumption = (recipe.getInputFluid().amount() / 6);
-
+            output.tank.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
             tank.drain((int) (consumption * speedModifier), IFluidHandler.FluidAction.EXECUTE);
             numero++;
         }
@@ -171,7 +175,7 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
             SteelTankBlockEntity controllerBE = be.getControllerBE();
             TFMGTexts.header("distillation_tower").style(ChatFormatting.GRAY).forGoggles(tooltip, 1);
             TFMGTexts.Distillation.level(controllerBE != null ? controllerBE.activeHeat : be.activeHeat).forGoggles(tooltip, 1);
-            TFMGTexts.Distillation.outputs(getOutputs().toArray().length).forGoggles(tooltip, 1);
+            TFMGTexts.Distillation.outputs(getOutputs().size()).forGoggles(tooltip, 1);
         } else
             TFMGTexts.Distillation.tankNotFound().forGoggles(tooltip, 1);
 
@@ -182,13 +186,19 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
 
     protected DistillationRecipe getMatchingRecipes() {
         List<RecipeHolder<? extends Recipe<?>>> list = RecipeFinder.get(getRecipeCacheKey(), level, RecipeConditions.isOfType(TFMGRecipeTypes.DISTILLATION.getType()));
-        for (int i = 0; i < list.toArray().length; i++) {
-            DistillationRecipe recipe = (DistillationRecipe) list.get(i).value();
-            if (recipe.getFluidResults().toArray().length == getOutputs().toArray().length)
-                for (int y = 0; y < recipe.getFluidIngredients().getFirst().getFluids().length; y++)
-                    if (tank.getFluid().getFluid() == recipe.getFluidIngredients().getFirst().getFluids()[y].getFluid())
-                        if (tank.getFluidAmount() >= recipe.getFluidIngredients().getFirst().amount())
-                            return recipe;
+        int outputCount = getOutputs().size();
+        FluidStack tankFluid = tank.getFluid();
+        for (RecipeHolder<? extends Recipe<?>> holder : list) {
+            DistillationRecipe recipe = (DistillationRecipe) holder.value();
+            if (recipe.getFluidResults().size() != outputCount)
+                continue;
+            SizedFluidIngredient firstIngredient = recipe.getFluidIngredients().getFirst();
+            if (tank.getFluidAmount() < firstIngredient.amount())
+                continue;
+            for (FluidStack ingredientFluid : firstIngredient.getFluids()) {
+                if (tankFluid.getFluid() == ingredientFluid.getFluid())
+                    return recipe;
+            }
         }
         return null;
     }
