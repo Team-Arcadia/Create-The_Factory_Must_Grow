@@ -223,7 +223,7 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
             if (tank.getFluidAmount() < firstIngredient.amount())
                 continue;
             for (FluidStack ingredientFluid : firstIngredient.getFluids()) {
-                if (tankFluid.getFluid() == ingredientFluid.getFluid())
+                if (tankFluid.getFluid().isSame(ingredientFluid.getFluid()))
                     return recipe;
             }
         }
@@ -282,6 +282,7 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
 
     @Override
     public void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(compound, registries, clientPacket);
         compound.put("TankContent", tank.writeToNBT(registries,new CompoundTag()));
     }
 }
