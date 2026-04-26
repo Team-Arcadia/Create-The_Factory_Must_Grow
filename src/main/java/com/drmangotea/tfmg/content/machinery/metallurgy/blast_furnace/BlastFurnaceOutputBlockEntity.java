@@ -268,7 +268,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
 
         if (!primaryTank.getFluid().isEmpty() && !primaryTank.getFluid().getFluid().isSame(recipe.getPrimaryResult().getFluid()))
             return false;
-        if (!secondaryTank.getFluid().isEmpty() && !secondaryTank.getFluid().getFluid().isSame(recipe.getSecondaryResult().getFluid()))
+        if (recipe.getFluidResults().size() > 1 && !secondaryTank.getFluid().isEmpty() && !secondaryTank.getFluid().getFluid().isSame(recipe.getSecondaryResult().getFluid()))
             return false;
         return true;
     }
@@ -276,9 +276,19 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     @Override
     public void lazyTick() {
         super.lazyTick();
-        cachedSize = getSize();
+        if (isScanAreaLoaded()) {
+            cachedSize = getSize();
+        }
         onContentsChanged();
         collectItems();
+    }
+
+    private boolean isScanAreaLoaded() {
+        BlockPos middlePos = getBlockPos().relative(getBlockState().getValue(FACING).getOpposite());
+        int maxHeight = TFMGConfigs.common().machines.blastFurnaceMaxHeight.get();
+        BlockPos low = middlePos.offset(-1, 0, -1);
+        BlockPos high = middlePos.offset(1, maxHeight, 1);
+        return level.isLoaded(low) && level.isLoaded(high);
     }
 
     @Override
@@ -342,6 +352,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound,registries , clientPacket);
         isReinforced = compound.getBoolean("IsReinforce");
+        cachedSize = compound.getInt("CachedSize");
         inputInventory.deserializeNBT(registries,compound.getCompound("InputItems"));
         fluxInventory.deserializeNBT(registries,compound.getCompound("Flux"));
         timer = compound.getInt("Timer");
@@ -355,6 +366,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     public void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(compound,registries , clientPacket);
         compound.putBoolean("IsReinforce", isReinforced);
+        compound.putInt("CachedSize", cachedSize);
         compound.put("InputItems", inputInventory.serializeNBT(registries));
         compound.put("Flux", fluxInventory.serializeNBT(registries));
         compound.putInt("Timer", timer);

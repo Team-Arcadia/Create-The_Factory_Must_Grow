@@ -42,10 +42,10 @@ public class IndustrialBlastingRecipe extends ProcessingRecipe<RecipeInput, Indu
     }
 
     public FluidStack getPrimaryResult(){
-        return getFluidResults().get(0);
+        return getFluidResults().isEmpty() ? FluidStack.EMPTY : getFluidResults().get(0);
     }
     public FluidStack getSecondaryResult(){
-        return getFluidResults().get(1);
+        return getFluidResults().size() < 2 ? FluidStack.EMPTY : getFluidResults().get(1);
     }
     public FluidStack getGasByproduct(){
         if(getFluidResults().size() == 3) {
