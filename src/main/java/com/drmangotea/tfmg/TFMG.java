@@ -9,6 +9,7 @@ import com.drmangotea.tfmg.datagen.TFMGDatagen;
 import com.drmangotea.tfmg.base.fluid.TFMGFluidInteractions;
 import com.drmangotea.tfmg.config.TFMGConfigs;
 import com.drmangotea.tfmg.content.decoration.pipes.TFMGPipes;
+import com.drmangotea.tfmg.gametest.TFMGGameTests;
 import com.drmangotea.tfmg.registry.*;
 import com.drmangotea.tfmg.worldgen.TFMGFeatures;
 import com.mojang.logging.LogUtils;
@@ -82,6 +83,7 @@ public class TFMG {
         TFMGMountedStorageTypes.register();
 
         modEventBus.addListener(TFMG::onRegister);
+        modEventBus.addListener(TFMGGameTests::register);
         TFMGPackets.register();
         TFMGConfigs.register(modLoadingContext, modContainer);
         modEventBus.addListener(EventPriority.HIGHEST, TFMGDatagen::gatherDataHighPriority);
