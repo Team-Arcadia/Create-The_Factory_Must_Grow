@@ -97,7 +97,7 @@ public class FireboxBlockEntity extends SmartBlockEntity implements IHaveGoggleI
 
         FireboxBlockEntity controller = isController() ? this : getControllerBE();
 
-        if (!canBurn(controller)) {
+        if (controller == null || !canBurn(controller)) {
             if (wasRunning)
                 level.setBlock(getBlockPos(), getBlockState().setValue(FireboxBlock.HEAT_LEVEL, BlazeBurnerBlock.HeatLevel.NONE), 2);
             running = false;
@@ -115,7 +115,7 @@ public class FireboxBlockEntity extends SmartBlockEntity implements IHaveGoggleI
     }
 
     public boolean canBurn(FireboxBlockEntity controller) {
-        if(exhuastTank == null)
+        if (controller == null || controller.exhuastTank == null || controller.tankInventory == null)
             return false;
 
         return controller.exhuastTank.getSpace() > 0 && controller.tankInventory.getFluidAmount() >= TFMGConfigs.common().machines.fireboxFuelConsumption.get() && controller.tankInventory.getFluid().getFluid().is(TFMGTags.TFMGFluidTags.FIREBOX_FUEL.tag);
