@@ -32,10 +32,11 @@ public abstract class TFMGForgeEnergyStorage extends EnergyStorage {
     }
 
     public int setEnergy(int energy) {
+        int oldAmount = this.energy;
         this.energy = energy;
 
-        if(energy>0)
-            onEnergyChanged(energy,this.energy);
+        if (energy != oldAmount)
+            onEnergyChanged(energy, oldAmount);
 
         return 0;
     }

@@ -135,8 +135,10 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity {
             }
             length = newLength;
             int oldEnergy = energy.getEnergyStored();
-            energy = createEnergyStorage(length);
-            energy.setEnergy(Math.min(oldEnergy, energy.getMaxEnergyStored() * length));
+            // getMaxCapacity() already multiplies by length, so the
+            // storage multiplier here is 1 (otherwise capacity is squared).
+            energy = createEnergyStorage(1);
+            energy.setEnergy(Math.min(oldEnergy, energy.getMaxEnergyStored()));
             refreshCapability();
             updateNextTick();
             for (int i = 1; i < length; i++) {
