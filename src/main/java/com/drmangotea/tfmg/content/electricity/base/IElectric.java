@@ -164,7 +164,20 @@ public interface IElectric {
     default void lazyTickElectricity() {
 
         if (getPowerUsage() > getData().networkPowerGeneration && !getData().notEnoughPower)
-            onPlaced();
+            getData().connectNextTick = true;
+
+        // Self-heal: if we are not in any registered network on the manager
+        // (e.g. the chunk just reloaded and our previous network entry has
+        // been pruned of zombies), schedule a fresh onPlaced. This stops
+        // electric blocks from sitting dead until the player breaks and
+        // replaces them.
+        if (!getLevelAccessor().isClientSide()) {
+            java.util.Map<Long, ElectricalNetwork> map = ElectricNetworkManager.networks.get(getLevelAccessor());
+            ElectricalNetwork myNetwork = map == null ? null : map.get(getData().getId());
+            if (myNetwork == null || !myNetwork.getMembers().contains(this)) {
+                getData().connectNextTick = true;
+            }
+        }
 
         if (getData().failTimer >= 4) {
 
@@ -408,6 +421,14 @@ public interface IElectric {
 
 
     default int powerGeneration() {
+
+        // voltageGeneration() runs before powerGeneration() in updateNetwork()
+        // and clears getsOutsidePower if no VoltageAlteringBlockEntity was
+        // found around this block. We can re-use that to skip the 6 BE
+        // lookups here entirely for the common case of a consumer with no
+        // adjacent voltage source.
+        if (!getData().getsOutsidePower)
+            return 0;
 
         int powerGeneration = 0;
 
