@@ -9,7 +9,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.simibubi.create.api.equipment.goggles.IProxyHoveringInformation;
 import com.simibubi.create.compat.Mods;
 import com.simibubi.create.content.equipment.goggles.GoggleOverlayRenderer;
-import com.simibubi.create.content.equipment.goggles.GogglesItem;
 import com.simibubi.create.foundation.gui.RemovedGuiUtils;
 import com.simibubi.create.foundation.mixin.accessor.MouseHandlerAccessor;
 import com.simibubi.create.infrastructure.config.AllConfigs;
@@ -96,21 +95,18 @@ public class GoggleOverlayRendererMixin {
 
         boolean holdsMultimeter = MultimeterItem.isHeldByPlayer(mc.player);
 
-        boolean hasGoggles = GogglesItem.isWearingGoggles(mc.player);
-
         boolean isShifting = mc.player.isShiftKeyDown();
 
         boolean isElectricBlock = be instanceof IElectric;
 
 
-        if (isElectricBlock && !hasGoggles) {
+        if (isElectricBlock && holdsMultimeter) {
             ItemStack item = TFMGItems.MULTIMETER.asStack();
             List<Component> tooltip = new ArrayList<>();
 
             ((IElectric) be).makeMultimeterTooltip(tooltip, isShifting);
 
-            // break early if goggle or hover returned false when present
-            if ((!isElectricBlock) || !holdsMultimeter) {
+            if (!isElectricBlock) {
                 tfmg$hoverTicks = 0;
 
             } else {
