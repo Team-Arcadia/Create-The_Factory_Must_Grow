@@ -106,7 +106,8 @@ public class RotorBlockEntity extends KineticElectricBlockEntity {
 
     @Override
     public int powerGeneration() {
-        return (int) (generation() * 40*1.84563);
+        float multiplier = TFMGConfigs.common().machines.largeGeneratorPowerMultiplier.getF();
+        return (int) (generation() * 40 * multiplier);
     }
 
     public void findStators() {
