@@ -335,7 +335,12 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 continue;
             boolean doesntMatch = false;
 
-            if (!Objects.equals(testedRecipe.machines, machineMap.values().stream().toList())) {
+            // Compare as multisets — HashMap.values() ordering is not stable.
+            java.util.List<String> required = new java.util.ArrayList<>(testedRecipe.machines);
+            java.util.List<String> have = new java.util.ArrayList<>(machineMap.values());
+            java.util.Collections.sort(required);
+            java.util.Collections.sort(have);
+            if (!required.equals(have)) {
                 continue;
             }
 
@@ -343,7 +348,10 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 continue;
             }
 
-            if (!testedRecipe.allowedVatTypes.contains(((VatBlock) getBlockState().getBlock()).vatType)) {
+            if (!(getBlockState().getBlock() instanceof VatBlock vatBlock)) {
+                continue;
+            }
+            if (!testedRecipe.allowedVatTypes.contains(vatBlock.vatType)) {
                 continue;
             }
 
@@ -577,7 +585,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                     }
                 }
                 if (handled)
-                    break;
+                    continue;
                 for (int i = 0; i < outputInventory.getSlots(); i++) {
                     ItemStack itemInSlot = outputInventory.getStackInSlot(i);
                     if (itemInSlot.isEmpty()) {
@@ -589,7 +597,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             //item input
             if (recipe != null)
                 for (Ingredient ingredient : recipe.getIngredients()) {
-                    for (int i = 0; i < fluidHandler.getTanks(); i++) {
+                    for (int i = 0; i < itemHandler.getSlots(); i++) {
                         ItemStack stackInInv = itemHandler.getStackInSlot(i);
                         if (ingredient.test(new ItemStack(stackInInv.getItem(), 64))) {
                             stackInInv.setCount(stackInInv.getCount() - ingredient.getItems()[0].getCount());
@@ -776,7 +784,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             }
         }
         efficiency = speed;
-        if (oldMachineMap != machineMap)
+        if (!oldMachineMap.equals(machineMap))
             recipe = null;
 
         notifyUpdate();
@@ -888,7 +896,9 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         if (be == null)
             return;
 
-        if (((VatBlock) getBlockState().getBlock()).vatType == "tfmg:firebrick_lined_vat")
+        if (!(getBlockState().getBlock() instanceof VatBlock vatBlock))
+            return;
+        if ("tfmg:firebrick_lined_vat".equals(vatBlock.vatType))
             return;
 
         be.setWindows(!be.window);
