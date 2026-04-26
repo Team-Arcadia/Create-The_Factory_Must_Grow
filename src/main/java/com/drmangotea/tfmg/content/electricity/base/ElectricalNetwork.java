@@ -46,7 +46,6 @@ public class ElectricalNetwork {
      */
     public void updateNetwork() {
 
-        // Drop zombie members whose BlockEntity was unloaded since the last update.
         members.removeIf(ElectricNetworkManager::isStale);
 
         int maxVoltage = 0;

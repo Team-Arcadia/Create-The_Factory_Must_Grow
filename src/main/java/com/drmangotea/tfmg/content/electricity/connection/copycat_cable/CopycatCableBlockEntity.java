@@ -60,7 +60,6 @@ public class CopycatCableBlockEntity extends CopycatBlockEntity implements IElec
     @Override
     public void remove() {
         super.remove();
-        // Teardown moved to destroy() — see ElectricBlockEntity.
     }
 
     @Override

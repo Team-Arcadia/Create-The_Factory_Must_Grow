@@ -173,9 +173,7 @@ public class TransformerBlockEntity extends VoltageAlteringBlockEntity {
 
     @Override
     public void remove() {
-
         super.remove();
-        // Subnetwork notification only on real block break — see ElectricBlockEntity.
     }
 
     @Override

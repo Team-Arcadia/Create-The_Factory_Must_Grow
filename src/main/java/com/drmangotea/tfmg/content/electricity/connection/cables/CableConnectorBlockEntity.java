@@ -68,9 +68,6 @@ public class CableConnectorBlockEntity extends ElectricBlockEntity implements IH
     @Override
     public void remove() {
         super.remove();
-        // notifyRemoval() drops the wire items and reorganises the connected
-        // cable connectors. We only want this on an actual break, not on
-        // chunk unload — handled by destroy() now.
     }
 
     @Override
@@ -159,8 +156,6 @@ public class CableConnectorBlockEntity extends ElectricBlockEntity implements IH
     public List<CableConnectorBlockEntity> getConnectedWires() {
         List<CableConnectorBlockEntity> list = new ArrayList<>();
         collectConnectedWires(list);
-        // Send a single update per visited node at the end of the walk
-        // instead of N×2 packets per recursion level.
         for (CableConnectorBlockEntity wire : list)
             wire.sendStuff();
         return list;

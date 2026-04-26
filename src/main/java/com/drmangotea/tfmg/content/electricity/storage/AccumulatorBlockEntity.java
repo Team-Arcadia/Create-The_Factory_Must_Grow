@@ -77,7 +77,6 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity {
     @Override
     public void remove() {
         super.remove();
-        // Multiblock refresh only on actual break, see ElectricBlockEntity.
     }
 
     @Override

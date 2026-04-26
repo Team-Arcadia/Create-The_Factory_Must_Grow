@@ -35,8 +35,8 @@ public class MachineConfig extends ConfigBase {
     public final ConfigGroup generators = group(1, "generators", "Generators");
     public final ConfigFloat largeGeneratorModifier = f(4, 0, "largeGeneratorModifier", Comments.largeGenerator);
     public final ConfigFloat largeGeneratorMinSpeed = f(70, 0, "largeGeneratorMinSpeed", Comments.largeGeneratorMinSpeed);
-    public final ConfigFloat largeGeneratorVoltageMultiplier = f(5, 0, "largeGeneratorVoltageMultiplier", Comments.largeGeneratorVoltageMultiplier);
-    public final ConfigFloat largeGeneratorPowerMultiplier = f(5, 0, "largeGeneratorPowerMultiplier", Comments.largeGeneratorPowerMultiplier);
+    public final ConfigFloat largeGeneratorVoltageMultiplier = f(3, 0, "largeGeneratorVoltageMultiplier", Comments.largeGeneratorVoltageMultiplier);
+    public final ConfigFloat largeGeneratorPowerMultiplier = f(2, 0, "largeGeneratorPowerMultiplier", Comments.largeGeneratorPowerMultiplier);
     public final ConfigInt largeGeneratorMaxVoltage = i(10000, 1, "largeGeneratorMaxVoltage", Comments.largeGeneratorMaxVoltage);
     //
     public final ConfigFloat generatorModifier = f(1.4f, 0, "GeneratorModifier", Comments.generator);

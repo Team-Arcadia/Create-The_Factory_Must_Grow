@@ -61,11 +61,6 @@ public class ElectricBlockEntity extends SmartBlockEntity implements IElectric, 
     @Override
     public void remove() {
         super.remove();
-        // Do not tear down the electrical network here: remove() is also called
-        // when the chunk unloads, and tearing the network down on every chunk
-        // unload is what forced players to break and replace every cable hub /
-        // rotor / etc. after travelling away. The actual block-break path goes
-        // through destroy() instead.
     }
 
     @Override

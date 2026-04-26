@@ -22,9 +22,6 @@ public class ElectricNetworkManager {
 
         ElectricalNetwork network = map.get(id);
         if (network != null) {
-            // Drop members whose BlockEntity has been unloaded since the last
-            // load — without this, every chunk reload accumulates zombie
-            // references in the network and downstream iteration NPEs.
             network.members.removeIf(ElectricNetworkManager::isStale);
             if (network.members.isEmpty()) {
                 map.remove(id);

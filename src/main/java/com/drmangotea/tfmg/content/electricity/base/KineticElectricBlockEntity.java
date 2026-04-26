@@ -57,9 +57,6 @@ public class KineticElectricBlockEntity extends GeneratingKineticBlockEntity imp
     @Override
     public void remove() {
         super.remove();
-        // See ElectricBlockEntity.remove() — chunk unload also calls remove(),
-        // tearing the network down here forced the network to be rebuilt by
-        // hand. Block-break tear down lives in destroy().
     }
 
     @Override

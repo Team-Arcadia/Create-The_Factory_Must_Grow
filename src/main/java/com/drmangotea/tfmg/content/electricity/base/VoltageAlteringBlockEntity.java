@@ -51,11 +51,6 @@ public class VoltageAlteringBlockEntity extends ElectricBlockEntity{
 
     @Override
     public int getPowerUsage() {
-        // checkForLoops walks the entire network — too expensive to run from
-        // getPowerUsage (which is called multiple times per network update).
-        // It is already triggered from onPlaced() via checkForLoopsNextTick,
-        // so we only need to schedule a fresh check rather than call it
-        // synchronously here.
         Direction facing = getDirection();
         if (level.getBlockEntity(getBlockPos().relative(facing)) instanceof IElectric be && be.getData().getId() != data.getId()) {
             if (be.hasElectricitySlot(facing.getOpposite()))
@@ -118,10 +113,7 @@ public class VoltageAlteringBlockEntity extends ElectricBlockEntity{
 
     @Override
     public void remove() {
-
         super.remove();
-        // Downstream notification moved to destroy() so chunk unload doesn't
-        // disturb the subnetwork.
     }
 
     @Override

@@ -266,11 +266,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             recipe = getMatchingRecipe();
         }
 
-        // Re-scan the structure if it's possible we missed machines on the
-        // last evaluate (e.g. a neighbouring chunk loaded after our initial
-        // evaluateNextTick fired). Cheap to do every lazyTick and self-heals
-        // attached electrodes / mixers / centrifuges that 'disappeared' on
-        // chunk reload.
         if (!level.isClientSide && isController())
             evaluateNextTick = true;
 
