@@ -552,17 +552,17 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         if (timer >= recipe.getProcessingDuration()) {
 
 
-            SmartFluidTank outputFluidHandler = outputTank.getPrimaryHandler();
-            IFluidHandler fluidHandler = fluidCapability;
-            IItemHandler itemHandler = itemCapability;
+            IFluidHandler inputFluidHandler = inputTank.getCapability();
 
 
             //fluid input
             for (SizedFluidIngredient ingredient : recipe.getFluidIngredients()) {
-                for (int i = 0; i < fluidHandler.getTanks(); i++) {
-                    FluidStack fluidInTank = fluidHandler.getFluidInTank(i);
-                    if (ingredient.test(new FluidStack(fluidInTank.getFluidHolder(), 4000))) {
-                        fluidHandler.drain(new FluidStack(fluidInTank.getFluidHolder(), ingredient.amount()), IFluidHandler.FluidAction.EXECUTE);
+                for (int i = 0; i < inputFluidHandler.getTanks(); i++) {
+                    FluidStack fluidInTank = inputFluidHandler.getFluidInTank(i);
+                    if (fluidInTank.isEmpty())
+                        continue;
+                    if (ingredient.test(fluidInTank) && fluidInTank.getAmount() >= ingredient.amount()) {
+                        inputFluidHandler.drain(new FluidStack(fluidInTank.getFluidHolder(), ingredient.amount()), IFluidHandler.FluidAction.EXECUTE);
                         break;
                     }
                 }
@@ -600,10 +600,13 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             //item input
             if (recipe != null)
                 for (Ingredient ingredient : recipe.getIngredients()) {
-                    for (int i = 0; i < itemHandler.getSlots(); i++) {
-                        ItemStack stackInInv = itemHandler.getStackInSlot(i);
-                        if (ingredient.test(new ItemStack(stackInInv.getItem(), 64))) {
-                            stackInInv.setCount(stackInInv.getCount() - ingredient.getItems()[0].getCount());
+                    int needed = ingredient.getItems().length > 0 ? ingredient.getItems()[0].getCount() : 1;
+                    for (int i = 0; i < inputInventory.getSlots(); i++) {
+                        ItemStack stackInInv = inputInventory.getStackInSlot(i);
+                        if (stackInInv.isEmpty())
+                            continue;
+                        if (ingredient.test(stackInInv) && stackInInv.getCount() >= needed) {
+                            inputInventory.extractItem(i, needed, false);
                             break;
                         }
                     }
