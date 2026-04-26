@@ -135,10 +135,7 @@ public class ConverterBlockEntity extends ElectricBlockEntity {
 
     @Override
     public int powerGeneration() {
-        if (canPower()) {
-            return 10000;
-        }
-        return 0;
+        return voltageGeneration() > 0 ? 10000 : 0;
     }
 
     @Override
@@ -193,8 +190,13 @@ public class ConverterBlockEntity extends ElectricBlockEntity {
 
     @Override
     public int voltageGeneration() {
-
-        return canPower() ? voltageGenerated.getValue() : 0;
+        if (getBlockState().getValue(INPUT))
+            return 0;
+        if (timer != 0)
+            return 0;
+        if (energy.getEnergyStored() <= 0)
+            return 0;
+        return voltageGenerated.getValue();
     }
 
     @Override
