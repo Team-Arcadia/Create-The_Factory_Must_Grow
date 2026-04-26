@@ -122,10 +122,9 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
 
         if (recipe.getFluidResults().size() != outputCount)
             return;
-        if (controllerBE == null)
-            return;
-        int controllerWidth = ((FluidTankBlockEntityAccessor)controllerBE).tfmg$getWidth();
-        if (controllerBE.getHeight() < outputCount * 2 || (controllerWidth < 2 && outputCount > 3))
+        SteelTankBlockEntity sizeRef = controllerBE != null ? controllerBE : be;
+        int sizeRefWidth = ((FluidTankBlockEntityAccessor) sizeRef).tfmg$getWidth();
+        if (sizeRef.getHeight() < outputCount * 2 || (sizeRefWidth < 2 && outputCount > 3))
             return;
 
         for (DistillationOutputBlockEntity be1 : outputs) {
