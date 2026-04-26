@@ -562,7 +562,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 for (int i = 0; i < fluidHandler.getTanks(); i++) {
                     FluidStack fluidInTank = fluidHandler.getFluidInTank(i);
                     if (ingredient.test(new FluidStack(fluidInTank.getFluidHolder(), 4000))) {
-                        fluidHandler.getFluidInTank(i).setAmount(fluidInTank.getAmount() - ingredient.amount());
+                        fluidHandler.drain(new FluidStack(fluidInTank.getFluidHolder(), ingredient.amount()), IFluidHandler.FluidAction.EXECUTE);
                         break;
                     }
                 }
@@ -755,13 +755,11 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         machineMap = new HashMap<>();
         heatLevel = 0;
         heatCondition = HeatCondition.NONE;
-
-
-        float speed = 1;
+        efficiency = 1;
 
         for (int xOffset = 0; xOffset < width; xOffset++) {
             for (int zOffset = 0; zOffset < width; zOffset++) {
-                for (int yOffset = 0; yOffset < getHeight() + 2; yOffset++) {
+                for (int yOffset = 0; yOffset < getHeight() + 1; yOffset++) {
                     BlockPos pos = getBlockPos().below().offset(xOffset, yOffset, zOffset);
                     BlockState blockState = level.getBlockState(pos);
 
@@ -786,7 +784,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 }
             }
         }
-        efficiency = speed;
         if (!oldMachineMap.equals(machineMap))
             recipe = null;
 
@@ -1180,7 +1177,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         IFluidHandler fluidHandler = fluidCapability;
         for (int i = 0; i < fluidHandler.getTanks(); i++)
             if (!fluidHandler.getFluidInTank(i).isEmpty())
-                return (float) fluidHandler.getFluidInTank(i).getAmount() / fluidHandler.getTankCapacity(0);
+                return (float) fluidHandler.getFluidInTank(i).getAmount() / fluidHandler.getTankCapacity(i);
 
         return 0;
 
