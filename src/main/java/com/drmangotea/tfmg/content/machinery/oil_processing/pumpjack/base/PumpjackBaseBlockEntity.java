@@ -106,13 +106,15 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
     }
 
     public void findDeposit() {
-        for (int i = 0; i < this.getBlockPos().getY() + 64; i++) {
-            BlockPos checkedPos = new BlockPos(this.getBlockPos().getX(), (this.getBlockPos().getY() - 1) - i, this.getBlockPos().getZ());
-            if (level.getBlockState(new BlockPos(checkedPos)).is(TFMGBlocks.OIL_DEPOSIT.get())) {
+        int minY = level.getMinBuildHeight();
+        for (int y = this.getBlockPos().getY() - 1; y >= minY; y--) {
+            BlockPos checkedPos = new BlockPos(this.getBlockPos().getX(), y, this.getBlockPos().getZ());
+            BlockState state = level.getBlockState(checkedPos);
+            if (state.is(TFMGBlocks.OIL_DEPOSIT.get())) {
                 deposit = checkedPos;
                 return;
             }
-            if (!(level.getBlockState(new BlockPos(checkedPos)).is(TFMGTags.TFMGBlockTags.INDUSTRIAL_PIPE.tag))) {
+            if (!state.is(TFMGTags.TFMGBlockTags.INDUSTRIAL_PIPE.tag)) {
                 deposit = null;
                 return;
             }

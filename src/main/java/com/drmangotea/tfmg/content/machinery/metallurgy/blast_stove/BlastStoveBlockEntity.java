@@ -117,6 +117,7 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
 
                         primaryOutputInventory.setFluid(new FluidStack(recipe.getPrimaryResult().getFluidHolder(), primaryOutputInventory.getFluidAmount() + recipe.getPrimaryResult().getAmount()));
                         secondaryOutputInventory.setFluid(new FluidStack(recipe.getSecondaryResult().getFluidHolder(), secondaryOutputInventory.getFluidAmount() + recipe.getSecondaryResult().getAmount()));
+                        timer = 0;
                     }
                 } else {
                     timer++;
