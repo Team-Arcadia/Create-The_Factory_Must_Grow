@@ -140,8 +140,11 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
             if (fluidStack.isEmpty())
                 break;
             int fillAmount = (int) (fluidStack.getAmount() * speedModifier);
+            if (fillAmount <= 0)
+                break;
             FluidStack toFill = new FluidStack(fluidStack.getFluidHolder(), fillAmount);
-            if (output.tank.fill(toFill, IFluidHandler.FluidAction.SIMULATE) > output.tank.getCapacity() && output.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
+            int simulated = output.tank.fill(toFill, IFluidHandler.FluidAction.SIMULATE);
+            if (simulated < fillAmount && output.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
                 break;
 
             output.tank.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
