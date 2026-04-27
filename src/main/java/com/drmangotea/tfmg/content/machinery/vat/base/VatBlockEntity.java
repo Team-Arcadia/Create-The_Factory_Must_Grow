@@ -760,7 +760,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
         for (int xOffset = 0; xOffset < width; xOffset++) {
             for (int zOffset = 0; zOffset < width; zOffset++) {
-                for (int yOffset = 0; yOffset < getHeight() + 1; yOffset++) {
+                for (int yOffset = 0; yOffset < getHeight() + 2; yOffset++) {
                     BlockPos pos = getBlockPos().below().offset(xOffset, yOffset, zOffset);
                     BlockState blockState = level.getBlockState(pos);
 
