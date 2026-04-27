@@ -37,7 +37,7 @@ public class TFMGDirectionalBlock extends DirectionalBlock implements IWrenchabl
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean moved) {
         super.onPlace(state, level, pos, oldState, moved);
-        if (!moved && oldState.getBlock() == state.getBlock() && oldState != state) {
+        if (!moved && !state.isAir() && oldState != state) {
             ElectricRotationHook.onRotated(level, pos);
         }
     }
