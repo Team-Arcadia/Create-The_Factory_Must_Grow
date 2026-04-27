@@ -34,7 +34,14 @@ public class OilWellFeature extends Feature<NoneFeatureConfiguration> {
 
         ChunkGenerator chunkGenerator = context.chunkGenerator();
 
-        int height = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG,pos.getX(),pos.getZ())+70+randomsource.nextInt(12);
+        int surfaceY = level.getHeight(Heightmap.Types.WORLD_SURFACE_WG, pos.getX(), pos.getZ());
+        int targetTop = surfaceY + 70 + randomsource.nextInt(12);
+        int maxY = level.getMaxBuildHeight() - 1;
+        if (targetTop > maxY)
+            targetTop = maxY;
+        int height = targetTop - startingPos.getY();
+        if (height <= 0)
+            return false;
 
 
 
@@ -42,6 +49,8 @@ public class OilWellFeature extends Feature<NoneFeatureConfiguration> {
 
         for(int i = 0; i < height;i++){
 
+            if (pos.getY() > maxY)
+                break;
             if(i==0) {
                 level.setBlock(startingPos, TFMGBlocks.OIL_DEPOSIT.getDefaultState(), 2);
                 pos = pos.above();
