@@ -321,6 +321,8 @@ public class LargeEngineBlockEntity extends AbstractEngineBlockEntity {
         if (shaft == null)
             return 0;
         float speed = Math.abs(shaft.getGeneratedSpeed());
+        if (speed <= 0)
+            return 0;
         if (isSimpleEngine())
             return Math.max(1, (int) (speed / 10f));
         return Math.max(1, (int) (speed / 40f));

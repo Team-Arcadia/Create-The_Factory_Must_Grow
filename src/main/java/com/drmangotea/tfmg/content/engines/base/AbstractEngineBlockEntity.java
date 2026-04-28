@@ -150,13 +150,17 @@ public abstract class AbstractEngineBlockEntity extends KineticElectricBlockEnti
     }
 
     public void manageFuelAndExhaust() {
-        exhaustTank.forceFill(new FluidStack(TFMGFluids.CARBON_DIOXIDE.get(), Math.min(300, getFuelConsumption())), IFluidHandler.FluidAction.EXECUTE);
+        int consumption = getFuelConsumption();
+        if (consumption <= 0 || fuelTank.isEmpty() || !canWork())
+            return;
+
+        exhaustTank.forceFill(new FluidStack(TFMGFluids.CARBON_DIOXIDE.get(), Math.min(300, consumption)), IFluidHandler.FluidAction.EXECUTE);
 
         if (fuelConsumptionTimer <= 2) {
             fuelConsumptionTimer++;
         } else {
             fuelConsumptionTimer = 0;
-            fuelTank.forceDrain(getFuelConsumption(), IFluidHandler.FluidAction.EXECUTE);
+            fuelTank.forceDrain(consumption, IFluidHandler.FluidAction.EXECUTE);
 
             if (fuelTank.isEmpty())
                 updateRotation();
