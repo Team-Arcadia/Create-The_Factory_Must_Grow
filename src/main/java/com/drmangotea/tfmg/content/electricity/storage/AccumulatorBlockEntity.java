@@ -2,8 +2,8 @@ package com.drmangotea.tfmg.content.electricity.storage;
 
 import com.drmangotea.tfmg.base.lang.TFMGTexts;
 import com.drmangotea.tfmg.config.TFMGConfigs;
-import com.drmangotea.tfmg.content.electricity.base.ElectricBlockEntity;
 import com.drmangotea.tfmg.content.electricity.base.IElectric;
+import com.drmangotea.tfmg.content.electricity.base.VoltageAlteringBlockEntity;
 import com.drmangotea.tfmg.content.electricity.utilities.converter.ConverterBlockEntity;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
 import com.drmangotea.tfmg.registry.TFMGDataComponents;
@@ -23,7 +23,7 @@ import java.util.List;
 
 import static net.minecraft.world.level.block.DirectionalBlock.FACING;
 
-public class AccumulatorBlockEntity extends ElectricBlockEntity {
+public class AccumulatorBlockEntity extends VoltageAlteringBlockEntity {
 
     public TFMGForgeEnergyStorage energy = createEnergyStorage(1);
     private IEnergyStorage energyCapability;
