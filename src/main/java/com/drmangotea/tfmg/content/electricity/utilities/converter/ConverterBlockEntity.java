@@ -3,8 +3,8 @@ package com.drmangotea.tfmg.content.electricity.utilities.converter;
 import com.drmangotea.tfmg.base.lang.TFMGLang;
 import com.drmangotea.tfmg.base.lang.TFMGTexts;
 import com.drmangotea.tfmg.config.TFMGConfigs;
-import com.drmangotea.tfmg.content.electricity.base.ElectricBlockEntity;
 import com.drmangotea.tfmg.content.electricity.base.IElectric;
+import com.drmangotea.tfmg.content.electricity.base.VoltageAlteringBlockEntity;
 import com.drmangotea.tfmg.content.electricity.storage.AccumulatorBlockEntity;
 import com.drmangotea.tfmg.content.electricity.storage.TFMGForgeEnergyStorage;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
@@ -31,7 +31,7 @@ import static com.drmangotea.tfmg.content.electricity.utilities.converter.Conver
 import static com.simibubi.create.content.kinetics.base.HorizontalKineticBlock.HORIZONTAL_FACING;
 import static net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING;
 
-public class ConverterBlockEntity extends ElectricBlockEntity {
+public class ConverterBlockEntity extends VoltageAlteringBlockEntity {
 
     public final TFMGForgeEnergyStorage energy = createEnergyStorage();
     private IEnergyStorage energyCapability;
@@ -156,17 +156,43 @@ public class ConverterBlockEntity extends ElectricBlockEntity {
                 energy.receiveEnergy((int) (getChargingRate() / TFMGConfigs.common().machines.FEtoWattTickConversionRate.get()), false);
 
             }
-        } else if (canPower()) {
+        } else {
+            // OUTPUT mode: expose the configured voltage on this BE so
+            // neighbours that gate on getData().getVoltage() != 0 actually
+            // see us as a power source.
+            if (timer == 0 && energy.getEnergyStored() > 0) {
+                int target = voltageGenerated.getValue();
+                if (getData().voltage != target) {
+                    getData().voltage = target;
+                    sendStuff();
+                }
+            } else if (getData().voltage != 0) {
+                getData().voltage = 0;
+                sendStuff();
+            }
 
-            int energyToExtract = data.networkPowerGeneration == 0 ? getNetworkPowerUsage() : (int) Math.max(0, Math.max(((float) powerGeneration() / (float) data.networkPowerGeneration) * (float) getNetworkPowerUsage(), 0));
-            energyToExtract /= TFMGConfigs.common().machines.FEtoWattTickConversionRate.get();
-            energy.extractEnergy(Math.max(energyToExtract, 1), false);
-            if (energy.getEnergyStored() == 0) {
-                timer = 100;
-                updateNextTick();
+            if (canPower()) {
+                int energyToExtract = data.networkPowerGeneration == 0 ? getNetworkPowerUsage() : (int) Math.max(0, Math.max(((float) powerGeneration() / (float) data.networkPowerGeneration) * (float) getNetworkPowerUsage(), 0));
+                energyToExtract /= TFMGConfigs.common().machines.FEtoWattTickConversionRate.get();
+                energy.extractEnergy(Math.max(energyToExtract, 1), false);
+                if (energy.getEnergyStored() == 0) {
+                    timer = 100;
+                    updateNextTick();
+                }
             }
         }
 
+    }
+
+    @Override
+    public int getOutputVoltage() {
+        if (getBlockState().getValue(INPUT))
+            return 0;
+        if (timer != 0)
+            return 0;
+        if (energy.getEnergyStored() <= 0)
+            return 0;
+        return voltageGenerated.getValue();
     }
     @Override
     public boolean makeMultimeterTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
