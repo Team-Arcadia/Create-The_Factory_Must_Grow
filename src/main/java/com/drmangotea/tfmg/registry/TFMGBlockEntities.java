@@ -371,14 +371,9 @@ public class TFMGBlockEntities {
             .renderer(() -> SteelFluidTankRenderer::new)
             .register();
 
-    public static final BlockEntityEntry<com.drmangotea.tfmg.content.decoration.tanks.aluminum.AluminumTankBlockEntity> ALUMINUM_FLUID_TANK_BE = REGISTRATE
-            .blockEntity("aluminum_fluid_tank", com.drmangotea.tfmg.content.decoration.tanks.aluminum.AluminumTankBlockEntity::new)
-            .validBlocks(TFMGBlocks.ALUMINUM_FLUID_TANK)
-            .renderer(() -> TFMGFluidTankRenderer::new)
-            .register();
-    public static final BlockEntityEntry<com.drmangotea.tfmg.content.decoration.tanks.cast_iron.CastIronTankBlockEntity> CAST_IRON_FLUID_TANK_BE = REGISTRATE
-            .blockEntity("cast_iron_fluid_tank", com.drmangotea.tfmg.content.decoration.tanks.cast_iron.CastIronTankBlockEntity::new)
-            .validBlocks(TFMGBlocks.CAST_IRON_FLUID_TANK)
+    public static final BlockEntityEntry<TFMGFluidTankBlockEntity> TFMG_FLUID_TANK = REGISTRATE
+            .blockEntity("tfmg_fluid_tank", TFMGFluidTankBlockEntity::new)
+            .validBlocks(TFMGBlocks.ALUMINUM_FLUID_TANK, TFMGBlocks.CAST_IRON_FLUID_TANK)
             .renderer(() -> TFMGFluidTankRenderer::new)
             .register();
 

@@ -57,7 +57,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import static com.simibubi.create.content.fluids.tank.FluidTankBlock.Shape;
 
-public class CastIronTankBlock extends FluidTankBlock implements IWrenchable, IBE<FluidTankBlockEntity> {
+public class CastIronTankBlock extends Block implements IWrenchable, IBE<FluidTankBlockEntity> {
     public static final BooleanProperty TOP = FluidTankBlock.TOP;
     public static final BooleanProperty BOTTOM = FluidTankBlock.BOTTOM;
     public static final EnumProperty<Shape> SHAPE = FluidTankBlock.SHAPE;
@@ -67,7 +67,7 @@ public class CastIronTankBlock extends FluidTankBlock implements IWrenchable, IB
     }
 
     protected CastIronTankBlock(Properties p_i48440_1_, boolean creative) {
-        super(p_i48440_1_, creative);
+        super(p_i48440_1_);
         this.creative = creative;
         registerDefaultState(defaultBlockState().setValue(TOP, true)
                 .setValue(BOTTOM, true)
@@ -256,7 +256,7 @@ public class CastIronTankBlock extends FluidTankBlock implements IWrenchable, IB
 
     @Override
     public BlockEntityType<? extends FluidTankBlockEntity> getBlockEntityType() {
-        return TFMGBlockEntities.CAST_IRON_FLUID_TANK_BE.get();
+        return TFMGBlockEntities.TFMG_FLUID_TANK.get();
     }
 
     @Override

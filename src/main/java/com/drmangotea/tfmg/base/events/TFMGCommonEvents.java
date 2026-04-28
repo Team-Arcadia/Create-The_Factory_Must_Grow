@@ -86,8 +86,7 @@ public class TFMGCommonEvents {
             DistillationControllerBlockEntity.registerCapabilities(event);
             AccumulatorBlockEntity.registerCapabilities(event);
             SteelTankBlockEntity.registerCapabilities(event);
-            com.drmangotea.tfmg.content.decoration.tanks.aluminum.AluminumTankBlockEntity.registerCapabilities(event);
-            com.drmangotea.tfmg.content.decoration.tanks.cast_iron.CastIronTankBlockEntity.registerCapabilities(event);
+            TFMGFluidTankBlockEntity.registerCapabilities(event);
             VatBlockEntity.registerCapabilities(event);
             BlastStoveBlockEntity.registerCapabilities(event);
             SmokestackBlockEntity.registerCapabilities(event);
