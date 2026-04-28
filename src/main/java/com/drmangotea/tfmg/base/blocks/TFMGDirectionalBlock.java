@@ -1,13 +1,8 @@
 package com.drmangotea.tfmg.base.blocks;
 
-import com.drmangotea.tfmg.content.electricity.base.IElectric;
-import com.drmangotea.tfmg.content.electricity.base.VoltageAlteringBlockEntity;
 import com.mojang.serialization.MapCodec;
 import com.simibubi.create.content.equipment.wrench.IWrenchable;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -31,44 +26,5 @@ public class TFMGDirectionalBlock extends DirectionalBlock implements IWrenchabl
     }
     public BlockState getStateForPlacement(BlockPlaceContext pContext) {
         return this.defaultBlockState().setValue(FACING, pContext.getNearestLookingDirection().getOpposite());
-    }
-
-    @Override
-    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean moved) {
-        super.onPlace(state, level, pos, oldState, moved);
-        if (!moved && !state.isAir() && oldState != state) {
-            ElectricRotationHook.onRotated(level, pos);
-        }
-    }
-
-    /** Shared helper so TFMGHorizontalDirectionalBlock and TFMGDirectionalBlock can both
-     *  reconnect the rotated block and its 6 neighbours. We avoid calling onRemoved
-     *  because it tears down the network entry which then causes a race with the
-     *  neighbour reconnect — Asuka retest of ALT-01 showed this made the bug worse. */
-    public static final class ElectricRotationHook {
-        private ElectricRotationHook() {}
-
-        /** Called from onPlace. Reconnects the rotated/placed BE on the next tick
-         *  and asks each of its 6 neighbours to refresh THEIR network on the next
-         *  tick. We deliberately don't trigger the heavier connectNextTick on the
-         *  neighbours to avoid 6 simultaneous network resets racing with each other,
-         *  which was breaking circuits on rotation. updateNextTick replays the
-         *  connection scan from the existing network anchor — enough to pick up
-         *  the new slot direction without reshuffling the neighbours' identity. */
-        public static void onRotated(Level level, BlockPos pos) {
-            if (level.getBlockEntity(pos) instanceof IElectric ie) {
-                ie.getData().connectNextTick = true;
-                ie.getData().updateNextTick = true;
-                if (ie instanceof VoltageAlteringBlockEntity vae)
-                    vae.updateInFront = true;
-            }
-            for (Direction d : Direction.values()) {
-                if (level.getBlockEntity(pos.relative(d)) instanceof IElectric n) {
-                    n.getData().updateNextTick = true;
-                    if (n instanceof VoltageAlteringBlockEntity vae)
-                        vae.updateInFront = true;
-                }
-            }
-        }
     }
 }
