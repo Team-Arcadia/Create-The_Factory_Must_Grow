@@ -242,14 +242,14 @@ public class TFMGItems {
 
     public static final ItemEntry<LithiumBladeItem> LITHIUM_BLADE =
             REGISTRATE.item("lithium_blade", p -> new LithiumBladeItem(TFMGTiers.STEEL, p))
-                    .properties(p -> p.attributes(AxeItem.createAttributes(TFMGTiers.STEEL, 2, -2.4F)))
+                    .properties(p -> p.attributes(SwordItem.createAttributes(TFMGTiers.STEEL, 4, -2.4F)))
                     .model((ctx, prov) -> prov
                             .withExistingParent("lithium_blade", "minecraft:item/handheld")
                             .texture("layer0", "tfmg:item/lithium_blade"))
                     .register();
     public static final ItemEntry<LitLithiumBladeItem> LIT_LITHIUM_BLADE =
             REGISTRATE.item("lit_lithium_blade", p -> new LitLithiumBladeItem(TFMGTiers.STEEL, p))
-                    .properties(p -> p.attributes(AxeItem.createAttributes(TFMGTiers.STEEL, 3, -2.4F)))
+                    .properties(p -> p.attributes(SwordItem.createAttributes(TFMGTiers.STEEL, 6, -2.4F)))
                     .model((ctx, prov) -> prov
                             .withExistingParent("lit_lithium_blade", "minecraft:item/handheld")
                             .texture("layer0", "tfmg:item/lithium_blade_lit"))
