@@ -4,7 +4,6 @@ import com.mojang.serialization.MapCodec;
 import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -39,9 +38,4 @@ public class TFMGHorizontalDirectionalBlock extends HorizontalDirectionalBlock i
         }
     }
 
-    @Override
-    public BlockState updateAfterWrenched(BlockState newState, UseOnContext context) {
-        TFMGDirectionalBlock.ElectricRotationHook.beforeRotation(context.getLevel(), context.getClickedPos());
-        return Block.updateFromNeighbourShapes(newState, context.getLevel(), context.getClickedPos());
-    }
 }

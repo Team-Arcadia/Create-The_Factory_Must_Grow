@@ -7,7 +7,6 @@ import com.simibubi.create.content.equipment.wrench.IWrenchable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DirectionalBlock;
@@ -42,30 +41,16 @@ public class TFMGDirectionalBlock extends DirectionalBlock implements IWrenchabl
         }
     }
 
-    @Override
-    public BlockState updateAfterWrenched(BlockState newState, UseOnContext context) {
-        ElectricRotationHook.beforeRotation(context.getLevel(), context.getClickedPos());
-        return Block.updateFromNeighbourShapes(newState, context.getLevel(), context.getClickedPos());
-    }
-
     /** Shared helper so TFMGHorizontalDirectionalBlock and TFMGDirectionalBlock can both
-     *  reconnect the rotated block and its 6 neighbours. */
+     *  reconnect the rotated block and its 6 neighbours. We avoid calling onRemoved
+     *  because it tears down the network entry which then causes a race with the
+     *  neighbour reconnect — Asuka retest of ALT-01 showed this made the bug worse. */
     public static final class ElectricRotationHook {
         private ElectricRotationHook() {}
 
-        /** Called BEFORE the wrench setBlock. Detaches the BE from the network using its
-         *  current (pre-rotation) slot direction so neighbours hooked on that slot are
-         *  notified to drop the link instead of holding a stale reference. */
-        public static void beforeRotation(Level level, BlockPos pos) {
-            if (level.getBlockEntity(pos) instanceof IElectric ie) {
-                ie.onRemoved();
-                ie.getData().destroyed = false;
-            }
-        }
-
-        /** Called AFTER setBlock from the onPlace hook. Forces the rotated BE and its 6
-         *  neighbours to re-run onPlaced on the next tick so the new slot direction is
-         *  picked up. */
+        /** Called from onPlace. Forces the rotated/placed BE and its 6 neighbours to
+         *  re-run onPlaced on the next tick so the new slot direction is picked up
+         *  without dropping the existing network. */
         public static void onRotated(Level level, BlockPos pos) {
             if (level.getBlockEntity(pos) instanceof IElectric ie) {
                 ie.getData().connectNextTick = true;
