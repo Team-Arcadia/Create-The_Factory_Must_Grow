@@ -48,9 +48,13 @@ public class TFMGDirectionalBlock extends DirectionalBlock implements IWrenchabl
     public static final class ElectricRotationHook {
         private ElectricRotationHook() {}
 
-        /** Called from onPlace. Forces the rotated/placed BE and its 6 neighbours to
-         *  re-run onPlaced on the next tick so the new slot direction is picked up
-         *  without dropping the existing network. */
+        /** Called from onPlace. Reconnects the rotated/placed BE on the next tick
+         *  and asks each of its 6 neighbours to refresh THEIR network on the next
+         *  tick. We deliberately don't trigger the heavier connectNextTick on the
+         *  neighbours to avoid 6 simultaneous network resets racing with each other,
+         *  which was breaking circuits on rotation. updateNextTick replays the
+         *  connection scan from the existing network anchor — enough to pick up
+         *  the new slot direction without reshuffling the neighbours' identity. */
         public static void onRotated(Level level, BlockPos pos) {
             if (level.getBlockEntity(pos) instanceof IElectric ie) {
                 ie.getData().connectNextTick = true;
@@ -60,7 +64,6 @@ public class TFMGDirectionalBlock extends DirectionalBlock implements IWrenchabl
             }
             for (Direction d : Direction.values()) {
                 if (level.getBlockEntity(pos.relative(d)) instanceof IElectric n) {
-                    n.getData().connectNextTick = true;
                     n.getData().updateNextTick = true;
                     if (n instanceof VoltageAlteringBlockEntity vae)
                         vae.updateInFront = true;
