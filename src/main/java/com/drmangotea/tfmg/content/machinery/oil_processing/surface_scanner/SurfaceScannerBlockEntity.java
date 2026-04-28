@@ -82,8 +82,15 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
 
     public boolean hasOil(BlockPos pos){
         ChunkAccess chunk = level.getChunk(pos);
-        AABB checkedArea = new AABB(chunk.getPos().getMiddleBlockPosition(TFMGConfigs.common().machines.surfaceScannerScanDepth.get()).north().west());
-        checkedArea = checkedArea.inflate(7, 0.5, 7);
+        // Scan a tall vertical column from min build height up through the configured
+        // scan depth so deposits placed at any Y get found. Single-Y scan was missing
+        // most deposits because oil features place at varying depths.
+        int topY = TFMGConfigs.common().machines.surfaceScannerScanDepth.get();
+        int bottomY = level.getMinBuildHeight();
+        BlockPos centre = chunk.getPos().getMiddleBlockPosition(topY).north().west();
+        AABB checkedArea = new AABB(
+                centre.getX() - 7, bottomY,                centre.getZ() - 7,
+                centre.getX() + 8, topY + 1,               centre.getZ() + 8);
         for(BlockState state : chunk.getBlockStates(checkedArea).toList()){
             if(state.is(TFMGTags.TFMGBlockTags.SURFACE_SCANNER_FINDABLE.tag))
                 return true;
