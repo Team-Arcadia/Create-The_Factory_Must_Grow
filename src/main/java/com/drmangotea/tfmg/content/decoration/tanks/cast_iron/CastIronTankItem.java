@@ -85,7 +85,7 @@ public class CastIronTankItem extends BlockItem {
             return;
 
         FluidTankBlockEntity tankAt = ConnectivityHandler.partAt(
-                TFMGBlockEntities.TFMG_FLUID_TANK.get(), world, placedOnPos
+                TFMGBlockEntities.CAST_IRON_FLUID_TANK_BE.get(), world, placedOnPos
         );
         if (tankAt == null)
             return;

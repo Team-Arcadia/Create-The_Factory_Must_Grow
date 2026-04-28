@@ -85,7 +85,7 @@ public class AluminumTankItem extends BlockItem {
             return;
 
         FluidTankBlockEntity tankAt = ConnectivityHandler.partAt(
-                TFMGBlockEntities.TFMG_FLUID_TANK.get(), world, placedOnPos
+                TFMGBlockEntities.ALUMINUM_FLUID_TANK_BE.get(), world, placedOnPos
         );
         if (tankAt == null)
             return;

@@ -255,7 +255,7 @@ public class AluminumTankBlock extends FluidTankBlock implements IWrenchable, IB
 
     @Override
     public BlockEntityType<? extends FluidTankBlockEntity> getBlockEntityType() {
-        return TFMGBlockEntities.TFMG_FLUID_TANK.get();
+        return TFMGBlockEntities.ALUMINUM_FLUID_TANK_BE.get();
     }
 
     @Override
