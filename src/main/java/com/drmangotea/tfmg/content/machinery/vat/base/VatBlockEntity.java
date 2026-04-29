@@ -159,8 +159,13 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
     @Override
     public void addBehaviours(List<BlockEntityBehaviour> behaviours) {
+        // forbidExtraction on the input tank stops external pipes (Mekanism
+        // mechanical pipes, etc.) from siphoning ingredients out of the
+        // input — without it, an output-mode pipe attached to the vat would
+        // drain the very fluid the recipe was about to consume.
         inputTank = new SmartFluidTankBehaviour(SmartFluidTankBehaviour.INPUT, this, 4, 4000, true)
-                .whenFluidUpdates(this::onInventoryChanged);
+                .whenFluidUpdates(this::onInventoryChanged)
+                .forbidExtraction();
         outputTank = new SmartFluidTankBehaviour(SmartFluidTankBehaviour.OUTPUT, this, 4, 4000, true)
                 .whenFluidUpdates(this::onInventoryChanged)
                 .forbidInsertion();
@@ -560,6 +565,15 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
         if (timer >= recipe.getProcessingDuration()) {
 
+            // Pre-flight: make sure ALL outputs (items + fluids) can be placed
+            // before consuming any inputs. The previous code drained the input
+            // fluids first and only then tried to write outputs, so a full
+            // output tank or a full output inventory silently destroyed the
+            // ingredients (the user reported a 'mixer accepts everything but
+            // produces nothing' on a recipe whose output had nowhere to go).
+            if (!canFitAllOutputs(recipe)) {
+                return;
+            }
 
             IFluidHandler inputFluidHandler = inputTank.getCapability();
 
@@ -650,6 +664,100 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         }
     }
 
+    /**
+     * Simulate placing every item + fluid result of the recipe to make sure
+     * the outputs can absorb them. Returns true only if every output fits.
+     * Mirrors the actual placement order: items first (merge into a same-item
+     * stack, otherwise place in an empty slot), fluids second (merge into the
+     * matching tank segment, otherwise an empty one).
+     */
+    private boolean canFitAllOutputs(VatMachineRecipe r) {
+        // Items: track a virtual copy of each output slot's count so that
+        // multi-item outputs accumulate correctly.
+        int slots = outputInventory.getSlots();
+        int[] simCount = new int[slots];
+        ItemStack[] simStack = new ItemStack[slots];
+        for (int i = 0; i < slots; i++) {
+            ItemStack s = outputInventory.getStackInSlot(i);
+            simStack[i] = s.copy();
+            simCount[i] = s.getCount();
+        }
+        for (ProcessingOutput out : r.getRollableResults()) {
+            ItemStack stack = out.getStack();
+            if (stack.isEmpty())
+                continue;
+            int needed = stack.getCount();
+            int placed = -1;
+            // Try to merge into an existing same-item slot.
+            for (int i = 0; i < slots; i++) {
+                if (simCount[i] == 0)
+                    continue;
+                if (!ItemStack.isSameItemSameComponents(simStack[i], stack))
+                    continue;
+                int max = simStack[i].getMaxStackSize();
+                if (simCount[i] + needed > max)
+                    continue;
+                simCount[i] += needed;
+                placed = i;
+                break;
+            }
+            if (placed >= 0)
+                continue;
+            // Otherwise look for an empty slot.
+            for (int i = 0; i < slots; i++) {
+                if (simCount[i] == 0) {
+                    simStack[i] = stack.copy();
+                    simCount[i] = needed;
+                    placed = i;
+                    break;
+                }
+            }
+            if (placed < 0)
+                return false;
+        }
+        // Fluids: simulate filling each output tank segment by tracking the
+        // remaining capacity per segment.
+        SmartFluidTankBehaviour.TankSegment[] segs = outputTank.getTanks();
+        FluidStack[] simFluid = new FluidStack[segs.length];
+        int[] simFluidCap = new int[segs.length];
+        for (int i = 0; i < segs.length; i++) {
+            SmartFluidTank t = ((TankSegmentAccessor) segs[i]).tfmg$tank();
+            simFluid[i] = t.getFluid().copy();
+            simFluidCap[i] = t.getCapacity() - t.getFluidAmount();
+        }
+        for (FluidStack fs : r.getFluidResults()) {
+            if (fs.isEmpty())
+                continue;
+            int needed = fs.getAmount();
+            int placed = -1;
+            // Merge into a segment already holding the same fluid.
+            for (int i = 0; i < segs.length; i++) {
+                if (simFluid[i].isEmpty())
+                    continue;
+                if (!simFluid[i].getFluid().isSame(fs.getFluid()))
+                    continue;
+                if (simFluidCap[i] < needed)
+                    continue;
+                simFluidCap[i] -= needed;
+                placed = i;
+                break;
+            }
+            if (placed >= 0)
+                continue;
+            // Otherwise an empty segment.
+            for (int i = 0; i < segs.length; i++) {
+                if (simFluid[i].isEmpty() && simFluidCap[i] >= needed) {
+                    simFluid[i] = new FluidStack(fs.getFluid(), needed);
+                    simFluidCap[i] -= needed;
+                    placed = i;
+                    break;
+                }
+            }
+            if (placed < 0)
+                return false;
+        }
+        return true;
+    }
 
     @Override
     public BlockPos getLastKnownPos() {

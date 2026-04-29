@@ -115,7 +115,14 @@ public class TFMGVatRecipeGen extends VatRecipeGen {
             .require(SizedFluidIngredient.of(air(), 1000))
             .output(coolingFluid(), 250)
             .duration(120)
-            .values(freezingAndPressurising()))
+            .values(freezingAndPressurising())),
+
+    LIQUID_ASPHALT_VAT = create("liquid_asphalt", b -> ((VatMachineRecipe.Builder<VatMachineRecipe>) b)
+            .require(SizedFluidIngredient.of(water(), 250))
+            .require(asphaltMixture())
+            .output(liquidAsphalt(), 1000)
+            .duration(100)
+            .values(mixing(true)))
 
 
                     //DEBUG = createVatRecipe("debug_5", b -> ((VatMachineRecipe.Builder<VatMachineRecipe>) b)
