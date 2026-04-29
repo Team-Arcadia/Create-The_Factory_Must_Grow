@@ -47,6 +47,17 @@ public class VatRenderer extends SafeBlockEntityRenderer<VatBlockEntity> {
         float zMin = tankHullWidth;
         float zMax = zMin + vat.width - 2 * tankHullWidth;
 
+        // Each populated segment occupies a slice of the visible fluid
+        // column proportional to its share of the total fluid, so the
+        // overall surface stays at fluidLevel * usable height regardless
+        // of how many segments are filled. The previous code multiplied
+        // the full fluidLevel height by EACH segment, so a vat with 4 of
+        // 8 segments at full each would render 4 boxes that stacked to
+        // ~4 blocks of fluid above the bottom cap — visibly spilling
+        // over the top of the vat with texture flicker where the boxes
+        // overlapped the vat ceiling.
+        float usableHeight = Math.max(0, vat.height - 2 * capHeight);
+        float totalFluidHeight = fluidLevel * usableHeight;
         float level = 0;
 
         for (SmartFluidTankBehaviour behaviour : tanks) {
@@ -59,8 +70,11 @@ public class VatRenderer extends SafeBlockEntityRenderer<VatBlockEntity> {
                 float units = tankSegment.getTotalUnits(partialTicks);
                 if (units < 1)
                     continue;
+                float share = units / totalUnits;
                 float yMin = capHeight + level;
-                float yMax = Math.min(yMin + (fluidLevel * (vat.height - (2 * capHeight))),vat.height);
+                float yMax = Math.min(yMin + (share * totalFluidHeight), capHeight + usableHeight);
+                if (yMax <= yMin)
+                    continue;
 
                 NeoForgeCatnipServices.FLUID_RENDERER.renderFluidBox(renderedFluid, xMin, yMin, zMin, xMax, yMax, zMax,
                         buffer, ms, light, false, false);
