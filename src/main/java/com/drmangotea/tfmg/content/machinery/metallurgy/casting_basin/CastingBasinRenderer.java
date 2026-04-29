@@ -19,7 +19,15 @@ public class CastingBasinRenderer extends SafeBlockEntityRenderer<CastingBasinBl
         if (be.tank.isEmpty())
             return;
         BlockState blockState = be.getBlockState();
-        NeoForgeCatnipServices.FLUID_RENDERER.renderFluidBox(be.tank.getFluid(), 0.1f, 0.1f, 0.1f, 0.9f, be.fluidLevel.getValue(partialTicks) / 400, 0.9f, buffer, ms, light, false, false);
+        // Render fluid Y-max proportional to fill ratio, clamped inside the
+        // basin geometry (0.1..0.9). The previous code divided fluidLevel by
+        // a constant 400 which was calibrated on the old 144 mB tank — after
+        // raising the tank capacity to 1000 mB, a full basin would render
+        // 2.5 blocks of fluid spilling out the top.
+        int capacity = Math.max(1, be.tank.getCapacity());
+        float fillFraction = Math.min(1f, be.fluidLevel.getValue(partialTicks) / (float) capacity);
+        float maxY = 0.1f + fillFraction * 0.8f;
+        NeoForgeCatnipServices.FLUID_RENDERER.renderFluidBox(be.tank.getFluid(), 0.1f, 0.1f, 0.1f, 0.9f, maxY, 0.9f, buffer, ms, light, false, false);
         if (be.flowTimer > 0) {
 
             Direction facing = blockState.getValue(FACING);
