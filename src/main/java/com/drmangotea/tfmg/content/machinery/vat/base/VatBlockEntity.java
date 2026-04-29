@@ -548,6 +548,15 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             return;
         if (recipe.getRequiredHeat() == HeatCondition.SUPERHEATED && heatCondition != HeatCondition.SUPERHEATED)
             return;
+        // Pressure recipes: positive recipe.pressure requires the vat to be at
+        // least that pressurised; negative recipe.pressure requires it to be
+        // at least that depressurised. Without this check the compressor
+        // increment/decrement on the field went nowhere — recipes shipped
+        // their pressure value but the vat never honoured it.
+        if (recipe.pressure > 0 && pressure < recipe.pressure)
+            return;
+        if (recipe.pressure < 0 && pressure > recipe.pressure)
+            return;
 
         if (timer >= recipe.getProcessingDuration()) {
 

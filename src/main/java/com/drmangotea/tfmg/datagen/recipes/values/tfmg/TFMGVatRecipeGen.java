@@ -95,7 +95,27 @@ public class TFMGVatRecipeGen extends VatRecipeGen {
                     .output(.25f, TFMGItems.ALUMINUM_NUGGET, 2)
                     .output(TFMGFluids.CARBON_DIOXIDE.get(), 500)
                     .duration(100)
-                    .values(electrolysis()))
+                    .values(electrolysis())),
+
+    COOLING_FLUID = create("cooling_fluid", b -> ((VatMachineRecipe.Builder<VatMachineRecipe>) b)
+            .require(SizedFluidIngredient.of(water(), 500))
+            .require(SizedFluidIngredient.of(lubricationOil(), 250))
+            .output(coolingFluid(), 500)
+            .duration(80)
+            .values(freezing())),
+
+    COMPRESSED_LPG = create("compressed_lpg", b -> ((VatMachineRecipe.Builder<VatMachineRecipe>) b)
+            .require(SizedFluidIngredient.of(butane(), 500))
+            .require(SizedFluidIngredient.of(propane(), 500))
+            .output(lpg(), 1000)
+            .duration(60)
+            .values(pressurising())),
+
+    LIQUID_AIR = create("liquid_air", b -> ((VatMachineRecipe.Builder<VatMachineRecipe>) b)
+            .require(SizedFluidIngredient.of(air(), 1000))
+            .output(coolingFluid(), 250)
+            .duration(120)
+            .values(freezingAndPressurising()))
 
 
                     //DEBUG = createVatRecipe("debug_5", b -> ((VatMachineRecipe.Builder<VatMachineRecipe>) b)
@@ -175,12 +195,11 @@ public class TFMGVatRecipeGen extends VatRecipeGen {
 
     public VatRecipeValues freezing() {
         VatRecipeValues params = new VatRecipeValues();
-
+        params.machines.add("tfmg:freezing");
         params.allowedVatTypes = new ArrayList<>();
         params.allowedVatTypes.add("tfmg:cast_iron_vat");
         params.allowedVatTypes.add("tfmg:steel_vat");
         params.allowedVatTypes.add("tfmg:firebrick_lined_vat");
-        params.heat = 5;
         return params;
     }
 
@@ -189,6 +208,37 @@ public class TFMGVatRecipeGen extends VatRecipeGen {
         params.machines.add("tfmg:freezing");
         params.machines.add("tfmg:freezing");
         params.machines.add("tfmg:freezing");
+        return params;
+    }
+
+    public VatRecipeValues pressurising() {
+        VatRecipeValues params = new VatRecipeValues();
+        params.machines.add("tfmg:pressurising");
+        params.allowedVatTypes = new ArrayList<>();
+        params.allowedVatTypes.add("tfmg:steel_vat");
+        params.allowedVatTypes.add("tfmg:firebrick_lined_vat");
+        params.pressure = 1;
+        return params;
+    }
+
+    public VatRecipeValues depressurising() {
+        VatRecipeValues params = new VatRecipeValues();
+        params.machines.add("tfmg:depressurising");
+        params.allowedVatTypes = new ArrayList<>();
+        params.allowedVatTypes.add("tfmg:steel_vat");
+        params.allowedVatTypes.add("tfmg:firebrick_lined_vat");
+        params.pressure = -1;
+        return params;
+    }
+
+    public VatRecipeValues freezingAndPressurising() {
+        VatRecipeValues params = new VatRecipeValues();
+        params.machines.add("tfmg:freezing");
+        params.machines.add("tfmg:pressurising");
+        params.allowedVatTypes = new ArrayList<>();
+        params.allowedVatTypes.add("tfmg:steel_vat");
+        params.allowedVatTypes.add("tfmg:firebrick_lined_vat");
+        params.pressure = 1;
         return params;
     }
 

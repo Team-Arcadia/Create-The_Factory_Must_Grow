@@ -1,7 +1,8 @@
 package com.drmangotea.tfmg.content.machinery.vat.compressor;
 
 import com.drmangotea.tfmg.base.lang.TFMGLang;
-import com.drmangotea.tfmg.base.lang.TFMGTexts;
+import com.drmangotea.tfmg.content.machinery.vat.base.IVatMachine;
+import com.drmangotea.tfmg.content.machinery.vat.base.VatBlockEntity;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -11,7 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 
-public class CompressorBlockEntity extends KineticBlockEntity {
+public class CompressorBlockEntity extends KineticBlockEntity implements IVatMachine {
 
     public CompressorBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -27,6 +28,28 @@ public class CompressorBlockEntity extends KineticBlockEntity {
             return CompressorState.PRESSURIZING;
         }
         return CompressorState.DEPRESSURIZING;
+    }
+
+    @Override
+    public String getOperationId() {
+        switch (getState()) {
+            case PRESSURIZING:
+                return "tfmg:pressurising";
+            case DEPRESSURIZING:
+                return "tfmg:depressurising";
+            default:
+                return "";
+        }
+    }
+
+    @Override
+    public boolean canOperate(VatBlockEntity vat) {
+        return getState() != CompressorState.NON_OPERATIONAL;
+    }
+
+    @Override
+    public PositionRequirement getPositionRequirement() {
+        return PositionRequirement.TOP;
     }
 
 
