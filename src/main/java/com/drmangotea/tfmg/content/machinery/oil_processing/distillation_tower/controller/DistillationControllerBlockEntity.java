@@ -141,28 +141,35 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         if (sizeRef.getHeight() < outputCount * 2 || (sizeRefWidth < 2 && outputCount > 3))
             return;
 
-        for (DistillationOutputBlockEntity be1 : outputs) {
-            if (be1.tank.getSpace() == 0 && be1.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
-                return;
-        }
+        // Heavy oil distillation has heavy_oil as its first result (a partial
+        // self-loop). If output 0 was set to KEEP_FLUID and got full, the
+        // old code returned for the whole recipe, blocking outputs 1..N
+        // even though they had room. The redundant pre-check has been
+        // removed and the in-loop full-output handling now skips that
+        // single output instead of breaking the chain — all the still-
+        // empty outputs keep receiving their fractions and the tank
+        // drains proportionally to what was actually filled.
         int consumption = recipe.getInputFluid().amount() / 6;
-        int numero = 0;
-        for (DistillationOutputBlockEntity output : outputs) {
+        boolean anyFilled = false;
+        for (int numero = 0; numero < outputs.size() && numero < recipe.getFluidResults().size(); numero++) {
+            DistillationOutputBlockEntity output = outputs.get(numero);
             FluidStack fluidStack = recipe.getFluidResults().get(numero);
             if (fluidStack.isEmpty())
-                break;
+                continue;
             int fillAmount = (int) (fluidStack.getAmount() * speedModifier);
             if (fillAmount <= 0)
-                break;
+                continue;
             FluidStack toFill = new FluidStack(fluidStack.getFluidHolder(), fillAmount);
             int simulated = output.tank.fill(toFill, IFluidHandler.FluidAction.SIMULATE);
             if (simulated < fillAmount && output.mode.get() == DistillationOutputBlockEntity.DistillationOutputMode.KEEP_FLUID)
-                break;
+                continue;
 
             output.tank.fill(toFill, IFluidHandler.FluidAction.EXECUTE);
             tank.drain((int) (consumption * speedModifier), IFluidHandler.FluidAction.EXECUTE);
-            numero++;
+            anyFilled = true;
         }
+        if (!anyFilled)
+            return;
     }
     @Override
     public void tick() {
