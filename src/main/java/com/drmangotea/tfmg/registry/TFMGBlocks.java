@@ -1507,7 +1507,6 @@ public class TFMGBlocks {
             .transform(BuilderTransformers.casing(() -> TFMGSpriteShifts.STEEL_CASING))
             .register();
     public static final BlockEntry<CasingBlock> HEAVY_MACHINERY_CASING = REGISTRATE.block("heavy_machinery_casing", CasingBlock::new)
-            .tag(TFMGBlockTags.SURFACE_SCANNER_FINDABLE.tag)
             .transform(BuilderTransformers.casing(() -> TFMGSpriteShifts.HEAVY_MACHINERY_CASING))
             .properties(p -> p.sound(SoundType.NETHERITE_BLOCK))
             .register();

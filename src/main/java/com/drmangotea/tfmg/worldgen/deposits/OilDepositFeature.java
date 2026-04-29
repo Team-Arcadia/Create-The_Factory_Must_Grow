@@ -27,7 +27,7 @@ public class OilDepositFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos pos = startingPos;
         RandomSource randomsource = context.random();
 
-        if (randomsource.nextInt(20) != 0)
+        if (randomsource.nextInt(4) != 0)
             return false;
 
         for (int i = 0; i < randomsource.nextInt(6) + 1; i++) {

@@ -171,6 +171,14 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         if (!(beBehind instanceof SteelTankBlockEntity be))
             return;
         SteelTankBlockEntity controllerBE = be.getControllerBE();
+        // If we are touching a slave and the controller chunk is not loaded,
+        // the slave's local tank is empty (storage lives on the controller).
+        // Skip the tick rather than pulling 0 from a slave; this fixes the
+        // cross-chunk distillation feed bug where the second tower never
+        // received heavy oil because the SteelTank controller sat in a
+        // neighbouring chunk.
+        if (!be.isController() && controllerBE == null)
+            return;
         FluidTank steelTank = (controllerBE != null ? controllerBE : be).getTankInventory();
         FluidStack stored = steelTank.getFluid();
         if (stored.isEmpty())
