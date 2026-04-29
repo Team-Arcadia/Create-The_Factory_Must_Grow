@@ -114,34 +114,33 @@ public class RotorBlockEntity extends KineticElectricBlockEntity {
         Axis axis = getBlockState().getValue(AXIS);
 
         Map<StatorOffset, BlockState> position = statorPosition.get(axis);
+        // Apply the correct STATOR_STATE / FACING / VALUE to every stator
+        // we can see around the rotor, even if the ring isn't complete yet.
+        // The previous version exit-broke at the first missing slot and
+        // never wrote any setBlock, so every stator stayed on its default
+        // state and only snapped into the correct shape once all 8 were
+        // placed. Power generation still requires the full set of 8 (the
+        // stators field gates that), but the visual is now correct from
+        // the very first placement.
         ArrayList<BlockPos> found = new ArrayList<>();
-        boolean ok = true;
-        for (StatorOffset offset : position.keySet()) {
-            BlockPos pos = getBlockPos().relative(offset.direction1);
-            if (offset.direction2.isPresent())
-                pos = pos.relative(offset.direction2.get());
-
-            if (!(level.getBlockEntity(pos) instanceof StatorBlockEntity be) || (be.rotor != null && !be.rotor.equals(getBlockPos()))) {
-                ok = false;
-                break;
-            }
-            found.add(pos);
-        }
-        if (!ok) {
-            stators = new ArrayList<>();
-            return;
-        }
-        stators = found;
         for (Map.Entry<StatorOffset, BlockState> entry : position.entrySet()) {
             StatorOffset offset = entry.getKey();
             BlockPos pos = getBlockPos().relative(offset.direction1);
             if (offset.direction2.isPresent())
                 pos = pos.relative(offset.direction2.get());
-            if (level.getBlockEntity(pos) instanceof StatorBlockEntity be) {
-                level.setBlock(pos, entry.getValue(), 2);
-                be.rotor = getBlockPos();
-            }
+
+            if (!(level.getBlockEntity(pos) instanceof StatorBlockEntity be))
+                continue;
+            if (be.rotor != null && !be.rotor.equals(getBlockPos()))
+                continue;
+            BlockState target = entry.getValue();
+            if (!level.getBlockState(pos).equals(target))
+                level.setBlock(pos, target, 2);
+            be.rotor = getBlockPos();
+            found.add(pos);
         }
+        // Generation still gates on the full 8-stator ring (see generation()).
+        stators = found.size() == position.size() ? found : new ArrayList<>();
     }
 
     public void manageRotation() {
