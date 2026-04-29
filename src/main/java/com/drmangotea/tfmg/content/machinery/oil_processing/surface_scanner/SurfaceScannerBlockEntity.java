@@ -10,6 +10,8 @@ import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -79,6 +81,45 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
         }else {
             grid = new Boolean[5][5];
         }
+    }
+
+    @Override
+    protected void write(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(tag, registries, clientPacket);
+        // grid was never serialised: server computed it, sendData wrote the
+        // BE NBT, but without a write/read entry the client kept seeing an
+        // empty Boolean[5][5] forever. Encode as 25 bytes: 0 = unset,
+        // 1 = false (scanned, no deposit), 2 = true (scanned, deposit).
+        byte[] flat = new byte[25];
+        for (int x = 0; x < 5; x++) {
+            for (int z = 0; z < 5; z++) {
+                Boolean cell = grid[x][z];
+                flat[x * 5 + z] = (byte) (cell == null ? 0 : (cell ? 2 : 1));
+            }
+        }
+        tag.putByteArray("Grid", flat);
+    }
+
+    @Override
+    protected void read(CompoundTag tag, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(tag, registries, clientPacket);
+        if (!tag.contains("Grid")) {
+            grid = new Boolean[5][5];
+            return;
+        }
+        byte[] flat = tag.getByteArray("Grid");
+        if (flat.length != 25) {
+            grid = new Boolean[5][5];
+            return;
+        }
+        Boolean[][] next = new Boolean[5][5];
+        for (int x = 0; x < 5; x++) {
+            for (int z = 0; z < 5; z++) {
+                byte v = flat[x * 5 + z];
+                next[x][z] = v == 0 ? null : v == 2;
+            }
+        }
+        grid = next;
     }
 
     public boolean hasOil(BlockPos pos){
