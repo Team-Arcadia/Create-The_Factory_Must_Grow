@@ -81,7 +81,7 @@ public class CastIronTankItem extends BlockItem {
         BlockPos placedOnPos = pos.relative(face.getOpposite());
         BlockState placedOnState = world.getBlockState(placedOnPos);
 
-        if (!CastIronTankBlock.isTank(placedOnState))
+        if (!com.simibubi.create.content.fluids.tank.FluidTankBlock.isTank(placedOnState))
             return;
 
         FluidTankBlockEntity tankAt = ConnectivityHandler.partAt(
@@ -110,7 +110,7 @@ public class CastIronTankItem extends BlockItem {
             for (int zOffset = 0; zOffset < width; zOffset++) {
                 BlockPos offsetPos = startPos.offset(xOffset, 0, zOffset);
                 BlockState blockState = world.getBlockState(offsetPos);
-                if (CastIronTankBlock.isTank(blockState))
+                if (com.simibubi.create.content.fluids.tank.FluidTankBlock.isTank(blockState))
                     continue;
                 if (!blockState.canBeReplaced())
                     return;
@@ -125,7 +125,7 @@ public class CastIronTankItem extends BlockItem {
             for (int zOffset = 0; zOffset < width; zOffset++) {
                 BlockPos offsetPos = startPos.offset(xOffset, 0, zOffset);
                 BlockState blockState = world.getBlockState(offsetPos);
-                if (CastIronTankBlock.isTank(blockState))
+                if (com.simibubi.create.content.fluids.tank.FluidTankBlock.isTank(blockState))
                     continue;
                 BlockPlaceContext context = BlockPlaceContext.at(ctx, offsetPos, face);
                 player.getPersistentData()
