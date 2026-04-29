@@ -2,7 +2,7 @@
   "type": "create:filling",
   "ingredients": [
     {
-      "tag": "minecraft:planks"
+      "tag": "c:stripped_logs"
     },
     {
       "type": "neoforge:single",

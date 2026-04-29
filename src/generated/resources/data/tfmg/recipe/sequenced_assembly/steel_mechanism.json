@@ -3,19 +3,15 @@
   "ingredient": {
     "item": "tfmg:heavy_plate"
   },
-  "loops": 2,
+  "loops": 1,
   "results": [
     {
-      "chance": 120.0,
+      "chance": 0.8,
       "id": "tfmg:steel_mechanism"
     },
     {
-      "chance": 4.0,
-      "id": "minecraft:compass"
-    },
-    {
-      "chance": 4.0,
-      "id": "tfmg:steel_ingot"
+      "chance": 0.2,
+      "id": "minecraft:iron_nugget"
     }
   ],
   "sequence": [
@@ -26,7 +22,7 @@
           "item": "tfmg:unfinished_steel_mechanism"
         },
         {
-          "item": "tfmg:steel_cogwheel"
+          "item": "tfmg:steel_ingot"
         }
       ],
       "results": [
@@ -42,39 +38,7 @@
           "item": "tfmg:unfinished_steel_mechanism"
         },
         {
-          "item": "tfmg:nickel_sheet"
-        }
-      ],
-      "results": [
-        {
-          "id": "tfmg:unfinished_steel_mechanism"
-        }
-      ]
-    },
-    {
-      "type": "create:deploying",
-      "ingredients": [
-        {
-          "item": "tfmg:unfinished_steel_mechanism"
-        },
-        {
-          "item": "tfmg:large_steel_cogwheel"
-        }
-      ],
-      "results": [
-        {
-          "id": "tfmg:unfinished_steel_mechanism"
-        }
-      ]
-    },
-    {
-      "type": "create:deploying",
-      "ingredients": [
-        {
-          "item": "tfmg:unfinished_steel_mechanism"
-        },
-        {
-          "item": "tfmg:lead_sheet"
+          "item": "tfmg:aluminum_ingot"
         }
       ],
       "results": [
