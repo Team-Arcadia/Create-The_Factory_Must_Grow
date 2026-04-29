@@ -3,6 +3,7 @@ package com.drmangotea.tfmg.content.machinery.oil_processing.surface_scanner;
 import com.drmangotea.tfmg.base.lang.TFMGTexts;
 import com.drmangotea.tfmg.config.TFMGConfigs;
 import com.drmangotea.tfmg.content.machinery.misc.machine_input.MachineInputBlockEntity;
+import com.drmangotea.tfmg.registry.TFMGFluids;
 import com.drmangotea.tfmg.registry.TFMGTags;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
 import com.simibubi.create.foundation.blockEntity.SmartBlockEntity;
@@ -124,14 +125,22 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
 
     public boolean hasOil(BlockPos pos){
         ChunkAccess chunk = level.getChunk(pos);
-        // Walk every non-empty 16x16x16 section in the chunk and check each
-        // block via the section's PalettedContainer. Deposits sit at worldgen
-        // Y = -64 by default but may exist at any Y; the previous bounding-box
-        // path returned nothing in practice because the box straddled the
-        // chunk boundary and chunk.getBlockStates filtered every block out.
-        int minY = level.getMinBuildHeight();
-        int maxY = TFMGConfigs.common().machines.surfaceScannerScanDepth.get();
-        if (maxY <= minY)
+        // The config 'surfaceScannerScanDepth' is the FLOOR of the scan,
+        // not the only Y. Worldgen places oil_deposit at Y=-64 with up to
+        // ~25 blocks of crude_oil above, so the scan must cover Y=floor
+        // through some sensible ceiling — otherwise a deposit at Y=-50
+        // never gets found. The previous code computed
+        // minY = level.getMinBuildHeight() = -64 (overworld) and
+        // maxY = config = -64, leaving a single-Y slice that almost
+        // everything missed.
+        int floorY = TFMGConfigs.common().machines.surfaceScannerScanDepth.get();
+        int worldFloor = level.getMinBuildHeight();
+        int minY = Math.max(floorY, worldFloor);
+        // Cap at sea level — deposits and their crude_oil columns top out
+        // well below this and walking the full chunk to Y=320 every lazy
+        // tick on 25 chunks is not worth it.
+        int maxY = Math.min(64, level.getMaxBuildHeight() - 1);
+        if (maxY < minY)
             return false;
         LevelChunkSection[] sections = chunk.getSections();
         int minSectionIndex = chunk.getSectionIndex(minY);
@@ -148,6 +157,11 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
                     for (int y = yStart; y <= yEnd; y++) {
                         BlockState state = section.getBlockState(x, y, z);
                         if (state.is(TFMGTags.TFMGBlockTags.SURFACE_SCANNER_FINDABLE.tag))
+                            return true;
+                        // Also count the crude_oil fluid column the worldgen
+                        // feature drops on top of every oil_deposit — that's
+                        // the part players actually see when prospecting.
+                        if (state.getFluidState().getType().isSame(TFMGFluids.CRUDE_OIL.get().getSource()))
                             return true;
                     }
                 }
