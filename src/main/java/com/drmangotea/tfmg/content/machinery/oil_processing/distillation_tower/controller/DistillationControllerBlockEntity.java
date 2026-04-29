@@ -87,14 +87,16 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
     }
 
     public void findRecipe(ArrayList<DistillationOutputBlockEntity> outputs){
-        if (recipe == null || !recipe.matches(tank, outputs.size())) {
-            DistillationRecipe recipe = getMatchingRecipes();
-
-            if (recipe != null) {
-                this.recipe = recipe;
-                sendData();
-            }
-        }
+        if (recipe != null && recipe.matches(tank, outputs.size()))
+            return;
+        // The old code only overwrote this.recipe when getMatchingRecipes
+        // returned a hit; on a miss the controller kept the previous recipe
+        // and the rest of manageRecipe ran against stale getFluidResults().
+        // Clear it so manageRecipe exits early instead of trying to fill
+        // the wrong outputs with the wrong fluid.
+        DistillationRecipe found = getMatchingRecipes();
+        this.recipe = found;
+        sendData();
     }
 
     public void manageRecipe(){
@@ -106,7 +108,17 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         if (!(beBehind instanceof SteelTankBlockEntity be))
             return;
 
+        // If "be" is a slave whose controller chunk is not loaded, getControllerBE()
+        // returns null and the old fallback used the slave itself — a slave has
+        // width=1, height=1, activeHeat=0, so manageRecipe exited prematurely on
+        // every tick where chunk loading was racy. This presented to the player
+        // as "1 of 3 distillation towers works": the only tower whose tank
+        // controller happened to be inside the same chunk progressed; the
+        // others stalled. Skip the tick instead of falling back, and let the
+        // next tick (after chunks settle) actually try.
         SteelTankBlockEntity controllerBE = be.getControllerBE();
+        if (controllerBE == null && !be.isController())
+            return;
         SteelTankBlockEntity heatSource = controllerBE != null ? controllerBE : be;
 
         int outputCount = outputs.size();
@@ -124,7 +136,7 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
 
         if (recipe.getFluidResults().size() != outputCount)
             return;
-        SteelTankBlockEntity sizeRef = controllerBE != null ? controllerBE : be;
+        SteelTankBlockEntity sizeRef = heatSource;
         int sizeRefWidth = ((FluidTankBlockEntityAccessor) sizeRef).tfmg$getWidth();
         if (sizeRef.getHeight() < outputCount * 2 || (sizeRefWidth < 2 && outputCount > 3))
             return;
