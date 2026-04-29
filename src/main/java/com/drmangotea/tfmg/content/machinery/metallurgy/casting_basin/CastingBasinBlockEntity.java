@@ -35,7 +35,7 @@ public class CastingBasinBlockEntity extends SmartBlockEntity implements IHaveGo
     int flowTimer = 0;
     public SmartInventory inventory = new SmartInventory(1, this, 1, false);
 
-    public FluidTank tank = new SmartFluidTank(144, this::onFluidChanged);
+    public FluidTank tank = new SmartFluidTank(1000, this::onFluidChanged);
     public IFluidHandler fluidCapability;
     public IItemHandlerModifiable itemCapability;
     public CastingRecipe recipe = null;
@@ -66,20 +66,31 @@ public class CastingBasinBlockEntity extends SmartBlockEntity implements IHaveGo
     @Override
     public void tick() {
         super.tick();
-        if (tank.getSpace() == 0) {
-            if (recipe == null)
-                findRecipe();
-            if (recipe != null) {
-                if(recipe.getIngrenient().test(tank.getFluid())) {
-                    if (timer >= recipe.getProcessingDuration()) {
-                        tank.setFluid(FluidStack.EMPTY);
-                        inventory.setStackInSlot(0, recipe.getRollableResults().get(0).rollOutput(level.random));
-                        recipe = null;
-                        timer = 0;
-                    } else timer++;
-                } else findRecipe();
+        // Old code gated the recipe on tank.getSpace() == 0 (tank full at
+        // capacity 144 mB), which meant the only way to start a 144 mB
+        // recipe was to fill the basin to its hard cap exactly. Pipes
+        // pushing in multiple ticks would still get there eventually, but
+        // single-tick over-pushes (a bucket = 1000 mB) overflowed and
+        // dropped fluid. The Arcadia V2 KubeJS workaround capped every
+        // recipe to 140 mB so the basin could always accept a small
+        // surplus before it tried to start. Lift the cap to 1000 mB and
+        // gate the recipe on having ENOUGH fluid for the recipe instead
+        // of the tank being literally full — recipes consume their
+        // declared amount and any excess stays in the tank for the next
+        // craft. Original 144 mB recipes work without modification.
+        if (recipe == null || !recipe.getIngrenient().test(tank.getFluid()))
+            findRecipe();
+        if (recipe != null) {
+            int needed = recipe.getIngrenient().amount();
+            if (tank.getFluidAmount() >= needed && inventory.isEmpty()) {
+                if (timer >= recipe.getProcessingDuration()) {
+                    tank.drain(needed, IFluidHandler.FluidAction.EXECUTE);
+                    inventory.setStackInSlot(0, recipe.getRollableResults().get(0).rollOutput(level.random));
+                    recipe = null;
+                    timer = 0;
+                } else timer++;
             } else timer = 0;
-        }
+        } else timer = 0;
 
         if(level.isClientSide){
 
