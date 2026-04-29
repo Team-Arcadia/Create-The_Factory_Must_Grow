@@ -11,10 +11,11 @@ import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.chunk.LevelChunkSection;
 
 import java.util.List;
 
@@ -82,20 +83,35 @@ public class SurfaceScannerBlockEntity extends SmartBlockEntity implements IHave
 
     public boolean hasOil(BlockPos pos){
         ChunkAccess chunk = level.getChunk(pos);
-        // Scan a tall vertical column from min build height up through the configured
-        // scan depth so deposits placed at any Y get found. Single-Y scan was missing
-        // most deposits because oil features place at varying depths.
-        int topY = TFMGConfigs.common().machines.surfaceScannerScanDepth.get();
-        int bottomY = level.getMinBuildHeight();
-        BlockPos centre = chunk.getPos().getMiddleBlockPosition(topY).north().west();
-        AABB checkedArea = new AABB(
-                centre.getX() - 7, bottomY,                centre.getZ() - 7,
-                centre.getX() + 8, topY + 1,               centre.getZ() + 8);
-        for(BlockState state : chunk.getBlockStates(checkedArea).toList()){
-            if(state.is(TFMGTags.TFMGBlockTags.SURFACE_SCANNER_FINDABLE.tag))
-                return true;
+        // Walk every non-empty 16x16x16 section in the chunk and check each
+        // block via the section's PalettedContainer. Deposits sit at worldgen
+        // Y = -64 by default but may exist at any Y; the previous bounding-box
+        // path returned nothing in practice because the box straddled the
+        // chunk boundary and chunk.getBlockStates filtered every block out.
+        int minY = level.getMinBuildHeight();
+        int maxY = TFMGConfigs.common().machines.surfaceScannerScanDepth.get();
+        if (maxY <= minY)
+            return false;
+        LevelChunkSection[] sections = chunk.getSections();
+        int minSectionIndex = chunk.getSectionIndex(minY);
+        int maxSectionIndex = chunk.getSectionIndex(maxY);
+        for (int s = minSectionIndex; s <= maxSectionIndex && s < sections.length; s++) {
+            LevelChunkSection section = sections[s];
+            if (section == null || section.hasOnlyAir())
+                continue;
+            int sectionMinY = SectionPos.sectionToBlockCoord(chunk.getSectionYFromSectionIndex(s));
+            int yStart = Math.max(0, minY - sectionMinY);
+            int yEnd = Math.min(15, maxY - sectionMinY);
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int y = yStart; y <= yEnd; y++) {
+                        BlockState state = section.getBlockState(x, y, z);
+                        if (state.is(TFMGTags.TFMGBlockTags.SURFACE_SCANNER_FINDABLE.tag))
+                            return true;
+                    }
+                }
+            }
         }
-
         return false;
     }
 
