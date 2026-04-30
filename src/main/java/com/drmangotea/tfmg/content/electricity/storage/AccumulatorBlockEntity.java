@@ -197,47 +197,15 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
     }
 
     public void refreshMultiblock() {
-        Direction facing = getBlockState().getValue(FACING);
-        refreshCapability();
-        if (!(level.getBlockEntity(getBlockPos().relative(facing)) instanceof AccumulatorBlockEntity be && be.getBlockState().getValue(FACING) == facing)) {
-            // Sum existing energy across the chain BEFORE clearing slave
-            // tanks, so that pre-existing slave energy is rolled into the
-            // controller instead of being voided. The previous code did
-            // otherBe.energy.setEnergy(0) without contributing to the
-            // controller's storage, so any energy that had been received
-            // by a slave (e.g. before promotion, or after a chain rebuild)
-            // disappeared on the next refresh.
-            int totalEnergy = energy.getEnergyStored();
-            int newLength = 1;
-            controller = getBlockPos();
-            for (int i = 1; i < 15; i++) {
-                BlockPos pos = getBlockPos().relative(getBlockState().getValue(FACING).getOpposite(), i);
-                if (level.getBlockEntity(pos) instanceof AccumulatorBlockEntity otherBe && otherBe.getBlockState().getValue(FACING) == getBlockState().getValue(FACING)) {
-                    totalEnergy += otherBe.energy.getEnergyStored();
-                    otherBe.controller = this.getBlockPos();
-                    otherBe.refreshCapability();
-                    otherBe.length = 0;
-                    otherBe.energy.setEnergy(0);
-
-                    newLength++;
-                } else break;
-            }
-            length = newLength;
-            // getMaxCapacity() already multiplies by length, so the
-            // storage multiplier here is 1 (otherwise capacity is squared).
-            energy = createEnergyStorage(1);
-            energy.setEnergy(Math.min(totalEnergy, energy.getMaxEnergyStored()));
-            refreshCapability();
-            updateNextTick();
-            for (int i = 1; i < length; i++) {
-                BlockPos pos = getBlockPos().relative(getBlockState().getValue(FACING).getOpposite(), i);
-                if (level.getBlockEntity(pos) instanceof AccumulatorBlockEntity be) {
-                    be.refreshCapability();
-                    be.sendStuff();
-                }
-            }
-            sendStuff();
-        }
+        // Old refresh path: only ran when this BE was the chain head, used
+        // its own pos as the controller, and disagreed with rebuildSubChain
+        // (which promotes the tail) about which end owns the energy. Both
+        // could fire on the same chain across different events (lazyTick vs
+        // place/destroy) and leave members pointing at conflicting
+        // controllers — the resulting drift was the source of 'discharge
+        // doesn't work'. Route everything through rebuildChainAround so a
+        // single canonical pass picks the tail and resets every member.
+        rebuildChainAround(getBlockPos(), 0);
     }
 
     public void refreshCapability() {

@@ -197,7 +197,12 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
     }
 
     public int getMaxCapacity() {
-        return TFMGConfigs.common().machines.accumulatorStorage.get();
+        // The actual TFMGForgeEnergyStorage was created at 500_000 FE in
+        // createEnergyStorage(), but this method used to return the
+        // accumulatorStorage config (default 100_000). getChargingRate
+        // gates on energy >= getMaxCapacity, so charging stopped at
+        // 100 kFE even though the tank could physically hold 500 kFE.
+        return energy.getMaxEnergyStored();
     }
 
     //in FE per tick
