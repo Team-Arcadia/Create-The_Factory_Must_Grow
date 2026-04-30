@@ -83,13 +83,19 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
     @Override
     public void destroy() {
         super.destroy();
-        refreshController();
+        // Hand off this block's stored energy + the entire chain's energy to
+        // the surviving sub-chains BEFORE the chain rebuild kicks in. The
+        // previous code just called refreshController which scanned the
+        // partial chain from the destroyed block's pos and never carried
+        // this BE's energy anywhere — every break voided up to one slave's
+        // worth of charge.
+        rebuildChainAround(getBlockPos(), energy.getEnergyStored());
     }
 
     @Override
     public void onPlaced() {
         super.onPlaced();
-        refreshController();
+        rebuildChainAround(getBlockPos(), 0);
     }
 
     @Override
@@ -107,14 +113,87 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
     }
 
     public void refreshController() {
+        rebuildChainAround(getBlockPos(), 0);
+    }
+
+    /**
+     * Walks the chain in BOTH directions from a seed position, treating the
+     * seed as either present (just placed) or absent (just destroyed). For
+     * a destroy, the seed pos returns null from level.getBlockEntity so the
+     * scan stops there — which means the chain is split in two. We rebuild
+     * each side independently. donatedEnergy is added to whichever sub-chain
+     * touches the seed; if both sub-chains exist (middle break), it goes
+     * into the side facing.opposite (the controller side, where storage
+     * lives anyway).
+     */
+    private void rebuildChainAround(BlockPos seed, int donatedEnergy) {
+        if (level == null)
+            return;
         Direction facing = getBlockState().getValue(FACING);
-        for (int i = 0; i < 15; i++) {
-            BlockPos pos = getBlockPos().relative(getBlockState().getValue(FACING), i);
-            if (level.getBlockEntity(pos) instanceof AccumulatorBlockEntity be && be.getBlockState().getValue(FACING) == facing &&
-                    !(level.getBlockEntity(pos.relative(facing)) instanceof AccumulatorBlockEntity otherBE && otherBE.getBlockState().getValue(FACING) == facing)) {
-                be.refreshMultiblock();
-            }
+        // Find the tail (most-facing.opposite) and head (most-facing) of each
+        // sub-chain neighbouring the seed. Scan each side starting one step
+        // away from the seed so a break in the middle creates two sub-chains.
+        BlockPos tailSide = seed.relative(facing.getOpposite());
+        BlockPos headSide = seed.relative(facing);
+        boolean rebuiltOpp = rebuildSubChainStartingFrom(tailSide, facing, donatedEnergy);
+        // The opposite-side sub-chain absorbs the donated energy (controller
+        // side). If it didn't exist, donate to the head side instead so the
+        // energy isn't voided.
+        rebuildSubChainStartingFrom(headSide, facing, rebuiltOpp ? 0 : donatedEnergy);
+    }
+
+    /**
+     * Given an arbitrary accumulator pos, walk the chain in facing/opposite
+     * directions, find the controller (most-facing.opposite end), and
+     * promote it. Returns false if no accumulator chain was found here.
+     */
+    private boolean rebuildSubChainStartingFrom(BlockPos anchor, Direction facing, int extraEnergy) {
+        if (!(level.getBlockEntity(anchor) instanceof AccumulatorBlockEntity start))
+            return false;
+        if (start.getBlockState().getValue(FACING) != facing)
+            return false;
+        // Find the tail (the most-facing.opposite block belonging to this chain).
+        BlockPos tailPos = anchor;
+        for (int i = 1; i < 15; i++) {
+            BlockPos probe = anchor.relative(facing.getOpposite(), i);
+            if (level.getBlockEntity(probe) instanceof AccumulatorBlockEntity probeBe
+                    && probeBe.getBlockState().getValue(FACING) == facing) {
+                tailPos = probe;
+            } else break;
         }
+        if (!(level.getBlockEntity(tailPos) instanceof AccumulatorBlockEntity tail))
+            return false;
+        // Sum every block's energy from tailPos toward facing direction.
+        int totalEnergy = extraEnergy;
+        int newLength = 0;
+        java.util.List<AccumulatorBlockEntity> members = new java.util.ArrayList<>();
+        for (int i = 0; i < 15; i++) {
+            BlockPos pos = tailPos.relative(facing, i);
+            if (level.getBlockEntity(pos) instanceof AccumulatorBlockEntity be
+                    && be.getBlockState().getValue(FACING) == facing) {
+                totalEnergy += be.energy.getEnergyStored();
+                members.add(be);
+                newLength++;
+            } else break;
+        }
+        // Promote tail to controller, demote everyone else to slaves.
+        tail.controller = tail.getBlockPos();
+        tail.length = newLength;
+        tail.energy = tail.createEnergyStorage(1);
+        tail.energy.setEnergy(Math.min(totalEnergy, tail.energy.getMaxEnergyStored()));
+        tail.refreshCapability();
+        tail.updateNextTick();
+        for (AccumulatorBlockEntity be : members) {
+            if (be == tail)
+                continue;
+            be.controller = tail.getBlockPos();
+            be.length = 0;
+            be.energy.setEnergy(0);
+            be.refreshCapability();
+            be.sendStuff();
+        }
+        tail.sendStuff();
+        return true;
     }
 
     public void refreshMultiblock() {
