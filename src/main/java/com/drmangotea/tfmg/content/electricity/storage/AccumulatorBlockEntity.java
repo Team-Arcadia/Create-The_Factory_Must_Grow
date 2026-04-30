@@ -121,11 +121,20 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
         Direction facing = getBlockState().getValue(FACING);
         refreshCapability();
         if (!(level.getBlockEntity(getBlockPos().relative(facing)) instanceof AccumulatorBlockEntity be && be.getBlockState().getValue(FACING) == facing)) {
+            // Sum existing energy across the chain BEFORE clearing slave
+            // tanks, so that pre-existing slave energy is rolled into the
+            // controller instead of being voided. The previous code did
+            // otherBe.energy.setEnergy(0) without contributing to the
+            // controller's storage, so any energy that had been received
+            // by a slave (e.g. before promotion, or after a chain rebuild)
+            // disappeared on the next refresh.
+            int totalEnergy = energy.getEnergyStored();
             int newLength = 1;
             controller = getBlockPos();
             for (int i = 1; i < 15; i++) {
                 BlockPos pos = getBlockPos().relative(getBlockState().getValue(FACING).getOpposite(), i);
                 if (level.getBlockEntity(pos) instanceof AccumulatorBlockEntity otherBe && otherBe.getBlockState().getValue(FACING) == getBlockState().getValue(FACING)) {
+                    totalEnergy += otherBe.energy.getEnergyStored();
                     otherBe.controller = this.getBlockPos();
                     otherBe.refreshCapability();
                     otherBe.length = 0;
@@ -135,11 +144,10 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
                 } else break;
             }
             length = newLength;
-            int oldEnergy = energy.getEnergyStored();
             // getMaxCapacity() already multiplies by length, so the
             // storage multiplier here is 1 (otherwise capacity is squared).
             energy = createEnergyStorage(1);
-            energy.setEnergy(Math.min(oldEnergy, energy.getMaxEnergyStored()));
+            energy.setEnergy(Math.min(totalEnergy, energy.getMaxEnergyStored()));
             refreshCapability();
             updateNextTick();
             for (int i = 1; i < length; i++) {
@@ -279,6 +287,21 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
         return getData().networkResistance > 0 && (getData().getVoltage() <= getOutputVoltage()) && energy.getEnergyStored() > 0 && signal == 0;
     }
 
+    /**
+     * Returns true if the accumulator should be exposing its voltage to the
+     * network. canPower also requires a non-zero networkResistance, but on
+     * the very first updateNetwork tick the network resistance is still 0,
+     * which made canPower false, which made voltageGeneration return 0,
+     * which made maxVoltage stay 0, which kept setNetworkResistance at 0.
+     * The chicken-and-egg loop meant a fresh accumulator + load chain never
+     * energised. Loosen the gate to 'energy stored AND no redstone signal'
+     * so the first tick already publishes a voltage and the network can
+     * compute its resistance from there.
+     */
+    public boolean canExposeVoltage() {
+        return energy.getEnergyStored() > 0 && signal == 0 && isController();
+    }
+
 
     public int getChargingRate() {
         //
@@ -292,10 +315,7 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
 
     @Override
     public int powerGeneration() {
-        if (canPower()) {
-            return getData().networkResistance > 0 ? maxPowerOutput() : 0;
-        }
-        return 0;
+        return canExposeVoltage() ? maxPowerOutput() : 0;
     }
 
     public int maxPowerOutput() {
@@ -325,8 +345,7 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
 
     @Override
     public int voltageGeneration() {
-
-        return canPower() ? getOutputVoltage() : 0;
+        return canExposeVoltage() ? getOutputVoltage() : 0;
     }
 
 
