@@ -634,29 +634,40 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                         }
                     }
                 }
-            //fluid output
-
-
-            List<FluidStack> handledFluidStacks = new ArrayList<>();
-            List<SmartFluidTankBehaviour.TankSegment> tankSegments = List.of(outputTank.getTanks());
-            if (recipe != null)
+            //fluid output — cascade across multiple output segments for
+            // the same fluid so that a 144 mB output isn't truncated to
+            // whatever fit in the first matching segment. canFitAllOutputs
+            // already guaranteed the total room exists, so the loop is safe
+            // to spill across segments.
+            if (recipe != null) {
+                SmartFluidTankBehaviour.TankSegment[] segs = outputTank.getTanks();
                 for (FluidStack fluidStack : recipe.getFluidResults()) {
-                    for (SmartFluidTankBehaviour.TankSegment tankSegment : tankSegments) {
+                    if (fluidStack.isEmpty())
+                        continue;
+                    int remaining = fluidStack.getAmount();
+                    // Same-fluid segments first.
+                    for (SmartFluidTankBehaviour.TankSegment tankSegment : segs) {
+                        if (remaining <= 0)
+                            break;
                         SmartFluidTank tank = ((TankSegmentAccessor) tankSegment).tfmg$tank();
                         FluidStack fluidInTank = tank.getFluid();
-                        if (handledFluidStacks.contains(fluidStack)) break;
-
-                        if (fluidInTank.getFluid().isSame(fluidStack.getFluid())) {
-                            tank.fill(new FluidStack(fluidStack.getFluid(), fluidStack.getAmount()), IFluidHandler.FluidAction.EXECUTE);
-                            handledFluidStacks.add(fluidStack);
+                        if (fluidInTank.isEmpty() || !fluidInTank.getFluid().isSame(fluidStack.getFluid()))
+                            continue;
+                        int filled = tank.fill(new FluidStack(fluidStack.getFluid(), remaining), IFluidHandler.FluidAction.EXECUTE);
+                        remaining -= filled;
+                    }
+                    // Then empty segments.
+                    for (SmartFluidTankBehaviour.TankSegment tankSegment : segs) {
+                        if (remaining <= 0)
                             break;
-                        }
-                        if (!handledFluidStacks.contains(fluidStack) && fluidInTank.isEmpty()) {
-                            tank.fill(new FluidStack(fluidStack.getFluid(), fluidStack.getAmount()), IFluidHandler.FluidAction.EXECUTE);
-                            break;
-                        }
+                        SmartFluidTank tank = ((TankSegmentAccessor) tankSegment).tfmg$tank();
+                        if (!tank.getFluid().isEmpty())
+                            continue;
+                        int filled = tank.fill(new FluidStack(fluidStack.getFluid(), remaining), IFluidHandler.FluidAction.EXECUTE);
+                        remaining -= filled;
                     }
                 }
+            }
             recipe = null;
             timer = 0;
         } else {
@@ -728,32 +739,40 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         for (FluidStack fs : r.getFluidResults()) {
             if (fs.isEmpty())
                 continue;
-            int needed = fs.getAmount();
-            int placed = -1;
-            // Merge into a segment already holding the same fluid.
-            for (int i = 0; i < segs.length; i++) {
+            int remaining = fs.getAmount();
+            // Pour into every segment that already holds the same fluid,
+            // partial fills allowed. Real tickRecipe writes only the first
+            // matching segment, but multiblock vats route through a
+            // CombinedTankWrapper that does cascade fills, so allowing the
+            // simulation to spill across segments is what actually happens
+            // when the recipe runs. The previous all-or-nothing check
+            // wedged here once one segment hit a partial fill, refusing a
+            // 144 mB output because no single segment had 144 mB free even
+            // though the output tank as a whole had room.
+            for (int i = 0; i < segs.length && remaining > 0; i++) {
                 if (simFluid[i].isEmpty())
                     continue;
                 if (!simFluid[i].getFluid().isSame(fs.getFluid()))
                     continue;
-                if (simFluidCap[i] < needed)
+                int take = Math.min(simFluidCap[i], remaining);
+                if (take <= 0)
                     continue;
-                simFluidCap[i] -= needed;
-                placed = i;
-                break;
+                simFluidCap[i] -= take;
+                remaining -= take;
             }
-            if (placed >= 0)
-                continue;
-            // Otherwise an empty segment.
-            for (int i = 0; i < segs.length; i++) {
-                if (simFluid[i].isEmpty() && simFluidCap[i] >= needed) {
-                    simFluid[i] = new FluidStack(fs.getFluid(), needed);
-                    simFluidCap[i] -= needed;
-                    placed = i;
-                    break;
-                }
+            // Spill the remainder into empty segments, again partial fills
+            // allowed.
+            for (int i = 0; i < segs.length && remaining > 0; i++) {
+                if (!simFluid[i].isEmpty())
+                    continue;
+                int take = Math.min(simFluidCap[i], remaining);
+                if (take <= 0)
+                    continue;
+                simFluid[i] = new FluidStack(fs.getFluid(), take);
+                simFluidCap[i] -= take;
+                remaining -= take;
             }
-            if (placed < 0)
+            if (remaining > 0)
                 return false;
         }
         return true;
