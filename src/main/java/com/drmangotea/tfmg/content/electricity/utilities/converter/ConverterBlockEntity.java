@@ -5,6 +5,7 @@ import com.drmangotea.tfmg.base.lang.TFMGTexts;
 import com.drmangotea.tfmg.config.TFMGConfigs;
 import com.drmangotea.tfmg.content.electricity.base.ElectricBlockEntity;
 import com.drmangotea.tfmg.content.electricity.base.IElectric;
+import com.drmangotea.tfmg.content.electricity.base.IVoltageSource;
 import com.drmangotea.tfmg.content.electricity.storage.AccumulatorBlockEntity;
 import com.drmangotea.tfmg.content.electricity.storage.TFMGForgeEnergyStorage;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
@@ -31,7 +32,7 @@ import static com.drmangotea.tfmg.content.electricity.utilities.converter.Conver
 import static com.simibubi.create.content.kinetics.base.HorizontalKineticBlock.HORIZONTAL_FACING;
 import static net.minecraft.world.level.block.HorizontalDirectionalBlock.FACING;
 
-public class ConverterBlockEntity extends ElectricBlockEntity {
+public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltageSource {
 
     public final TFMGForgeEnergyStorage energy = createEnergyStorage();
     private IEnergyStorage energyCapability;
@@ -213,6 +214,16 @@ public class ConverterBlockEntity extends ElectricBlockEntity {
         if (energy.getEnergyStored() <= 0)
             return 0;
         return voltageGenerated.getValue();
+    }
+
+    @Override
+    public int getOutputVoltage() {
+        return voltageGeneration();
+    }
+
+    @Override
+    public int getMaxPowerOutput() {
+        return powerGeneration();
     }
 
     @Override

@@ -406,6 +406,19 @@ public interface IElectric {
                                 voltageGeneration = Math.max(voltageGeneration, be.getOutputVoltage());
                                 getData().getsOutsidePower = true;
                             }
+                // Recognise IVoltageSource neighbours (Accumulator, Converter)
+                // without forcing them to extend VoltageAlteringBlockEntity,
+                // which would re-introduce the StackOverflow in
+                // VoltageAlteringBlockEntity.getPowerUsage.
+                if (getLevelAccessor().getBlockEntity(getBlockPos().relative(direction)) instanceof IVoltageSource src
+                        && !(src instanceof VoltageAlteringBlockEntity)) {
+                    if (src.getData().getId() != getData().getId())
+                        if (src.getOutputVoltage() != 0)
+                            if (src.hasElectricitySlot(direction)) {
+                                voltageGeneration = Math.max(voltageGeneration, src.getOutputVoltage());
+                                getData().getsOutsidePower = true;
+                            }
+                }
             }
         }
 
@@ -433,6 +446,19 @@ public interface IElectric {
                             if (be.hasElectricitySlot(direction)) {
                                 int cachedGen = be.getData().networkPowerGeneration;
                                 int maxOut = be.getMaxPowerOutput();
+                                int available = cachedGen > 0 ? Math.min(maxOut, cachedGen) : maxOut;
+                                powerGeneration = Math.max(powerGeneration, available);
+                            }
+                }
+                // Same direct-source path for IVoltageSource neighbours.
+                if (getLevelAccessor().getBlockEntity(getBlockPos().relative(direction)) instanceof IVoltageSource src
+                        && !(src instanceof VoltageAlteringBlockEntity)
+                        && src.canWork()) {
+                    if (src.getData().getId() != getData().getId())
+                        if (src.getOutputVoltage() != 0)
+                            if (src.hasElectricitySlot(direction)) {
+                                int cachedGen = src.getData().networkPowerGeneration;
+                                int maxOut = src.getMaxPowerOutput();
                                 int available = cachedGen > 0 ? Math.min(maxOut, cachedGen) : maxOut;
                                 powerGeneration = Math.max(powerGeneration, available);
                             }
