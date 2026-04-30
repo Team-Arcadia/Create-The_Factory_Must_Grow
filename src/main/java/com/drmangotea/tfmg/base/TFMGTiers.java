@@ -13,13 +13,9 @@ import java.util.function.Supplier;
 
 public enum TFMGTiers implements Tier {
 
-
-
-
-
-    STEEL(TFMG.asResource("steel").toString(),1000, 7.5f, 3f, 12,()-> Ingredient.of(CommonMetal.STEEL.ingots)),
-    ALUMINUM(TFMG.asResource("aluminum").toString(),220, 6, 2f, 22,()-> Ingredient.of(CommonMetal.ALUMINUM.ingots)),
-    LEAD(TFMG.asResource("lead").toString(),32, 2, 0.5f, 5,()-> Ingredient.of(CommonMetal.LEAD.ingots));
+    STEEL(TFMG.asResource("steel").toString(), 1000, 7.5f, 3f, 12, BlockTags.INCORRECT_FOR_DIAMOND_TOOL, () -> Ingredient.of(CommonMetal.STEEL.ingots)),
+    ALUMINUM(TFMG.asResource("aluminum").toString(), 220, 6, 2f, 22, BlockTags.INCORRECT_FOR_IRON_TOOL, () -> Ingredient.of(CommonMetal.ALUMINUM.ingots)),
+    LEAD(TFMG.asResource("lead").toString(), 32, 2, 0.5f, 5, BlockTags.INCORRECT_FOR_STONE_TOOL, () -> Ingredient.of(CommonMetal.LEAD.ingots));
 
 
     public final String name;
@@ -28,15 +24,18 @@ public enum TFMGTiers implements Tier {
     private final float speed;
     private final float damageBonus;
     private final int enchantValue;
+    private final TagKey<Block> incorrectBlocksForDrops;
     private final Supplier<Ingredient> repairMaterial;
 
     private TFMGTiers(String name, int uses, float speed, float damageBonus, int enchantValue,
-                             Supplier<Ingredient> repairMaterial) {
+                      TagKey<Block> incorrectBlocksForDrops,
+                      Supplier<Ingredient> repairMaterial) {
         this.name = name;
         this.uses = uses;
         this.speed = speed;
         this.damageBonus = damageBonus;
         this.enchantValue = enchantValue;
+        this.incorrectBlocksForDrops = incorrectBlocksForDrops;
         this.repairMaterial = repairMaterial;
     }
 
@@ -57,7 +56,7 @@ public enum TFMGTiers implements Tier {
 
     @Override
     public @NotNull TagKey<Block> getIncorrectBlocksForDrops() {
-        return BlockTags.INCORRECT_FOR_WOODEN_TOOL;
+        return incorrectBlocksForDrops;
     }
 
     @Override
