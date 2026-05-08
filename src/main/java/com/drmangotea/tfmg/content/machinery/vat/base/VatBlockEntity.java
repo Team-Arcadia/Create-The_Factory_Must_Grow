@@ -575,19 +575,28 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 return;
             }
 
-            IFluidHandler inputFluidHandler = inputTank.getCapability();
-
-
-            //fluid input
+            // Drain the input tank's fluid ingredients directly via the
+            // TankSegments, NOT through inputTank.getCapability(). The
+            // capability now has forbidExtraction() applied to stop external
+            // pipes from draining ingredients (commit 9c3d43c9), which had
+            // the side effect of also blocking the recipe's own internal
+            // drain — the user reported 'fluids never get consumed but the
+            // output is still produced'. The TankSegments expose a direct
+            // SmartFluidTank that always honours drain.
+            SmartFluidTankBehaviour.TankSegment[] inputSegs = inputTank.getTanks();
             for (SizedFluidIngredient ingredient : recipe.getFluidIngredients()) {
-                for (int i = 0; i < inputFluidHandler.getTanks(); i++) {
-                    FluidStack fluidInTank = inputFluidHandler.getFluidInTank(i);
+                int remaining = ingredient.amount();
+                for (SmartFluidTankBehaviour.TankSegment seg : inputSegs) {
+                    if (remaining <= 0)
+                        break;
+                    SmartFluidTank tank = ((TankSegmentAccessor) seg).tfmg$tank();
+                    FluidStack fluidInTank = tank.getFluid();
                     if (fluidInTank.isEmpty())
                         continue;
-                    if (ingredient.test(fluidInTank) && fluidInTank.getAmount() >= ingredient.amount()) {
-                        inputFluidHandler.drain(new FluidStack(fluidInTank.getFluidHolder(), ingredient.amount()), IFluidHandler.FluidAction.EXECUTE);
-                        break;
-                    }
+                    if (!ingredient.test(fluidInTank))
+                        continue;
+                    FluidStack drained = tank.drain(new FluidStack(fluidInTank.getFluidHolder(), remaining), IFluidHandler.FluidAction.EXECUTE);
+                    remaining -= drained.getAmount();
                 }
             }
             //item output

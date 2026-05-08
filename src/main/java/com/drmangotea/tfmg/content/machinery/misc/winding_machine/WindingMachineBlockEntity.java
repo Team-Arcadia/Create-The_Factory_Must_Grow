@@ -173,10 +173,23 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
 
         if (getSpeed() == 0)
             return;
+        // Apply set() to a fresh ItemStack reference and write it back via
+        // setStackInSlot so SmartInventory marks the slot dirty and the new
+        // component value is sync'd / saved. The previous code mutated
+        // inventory.getItem(0) in place, which left the slot's cached
+        // serialised form stale — the user reported pulling out 10
+        // resistors at the same target percentage and getting 5 different
+        // resistance values instead of a single one, because the slot
+        // would resync with whichever NBT the client last saw before the
+        // server-side mutation propagated.
         if ((inventory.getItem(0).is(TFMGItems.ELECTROMAGNETIC_COIL.get())||inventory.getItem(0).is(TFMGBlocks.LARGE_COIL.get().asItem())) && spool.is(TFMGItems.COPPER_SPOOL.get()) && spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) > 0 && inventory.getItem(0).getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) < turnPercentage.getValue() * 10) {
             if(inventory.getItem(0).getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) < turnPercentage.getValue() * 10){
                 spool.set(TFMGDataComponents.SPOOL_AMOUNT, spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) - 1);
-                inventory.getItem(0).set(TFMGDataComponents.COIL_TURNS, inventory.getItem(0).getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) + 1);
+                ItemStack copy = inventory.getItem(0).copy();
+                copy.set(TFMGDataComponents.COIL_TURNS, copy.getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) + 1);
+                inventory.setStackInSlot(0, copy);
+                setChanged();
+                sendData();
                 return;
             }
         }
@@ -184,7 +197,11 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
             if (inventory.getItem(0).is(TFMGBlocks.RESISTOR.asItem()) && spool.is(TFMGItems.CONSTANTAN_SPOOL.get()) && spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) > 0 && inventory.getItem(0).getOrDefault(TFMGDataComponents.RESISTANCE, defaultResistance) < turnPercentage.getValue() * 10) {
                 if(inventory.getItem(0).getOrDefault(TFMGDataComponents.RESISTANCE, 0)< turnPercentage.getValue() * 10) {
                     spool.set(TFMGDataComponents.SPOOL_AMOUNT, spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) - 1);
-                    inventory.getItem(0).set(TFMGDataComponents.RESISTANCE, inventory.getItem(0).getOrDefault(TFMGDataComponents.RESISTANCE, defaultResistance) + 1);
+                    ItemStack copy = inventory.getItem(0).copy();
+                    copy.set(TFMGDataComponents.RESISTANCE, copy.getOrDefault(TFMGDataComponents.RESISTANCE, defaultResistance) + 1);
+                    inventory.setStackInSlot(0, copy);
+                    setChanged();
+                    sendData();
                     return;
                 }
             }

@@ -109,6 +109,14 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
         if (!level.isClientSide) {
             setChanged();
             sendData();
+            // Invalidate the cached capability so neighbouring pipes
+            // (Mekanism mechanical pipe, Create pump, ...) re-fetch the
+            // up-to-date IFluidHandler. Without this, players reported
+            // that occasionally — and seemingly at random — the output
+            // tank stopped accepting external extraction even though the
+            // fluid was visible. The pipe was holding a stale handler
+            // reference from before a chunk reload or BE re-init.
+            level.invalidateCapabilities(getBlockPos());
         }
     }
 
@@ -367,6 +375,12 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
         fuelConsumeTimer = compound.getInt("FuelConsumeTimer");
         primaryTank.readFromNBT(registries,compound.getCompound("PrimaryTankContent"));
         secondaryTank.readFromNBT(registries,compound.getCompound("SecondaryTankContent"));
+        // Force neighbours to re-fetch the IFluidHandler reference after a
+        // chunk reload. Otherwise Mekanism pipes can keep a stale handler
+        // and silently fail to extract from the output until the player
+        // breaks-and-replaces a connector.
+        if (!clientPacket && hasLevel() && !level.isClientSide)
+            level.invalidateCapabilities(getBlockPos());
     }
 
     @Override
