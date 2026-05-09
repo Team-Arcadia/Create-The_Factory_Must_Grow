@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFMG Targeted Test — b291e878 (winding server-only)</title>
+<style>
+  :root {
+    --bg: #15181d;
+    --panel: #1f2329;
+    --panel2: #272c34;
+    --panel3: #313742;
+    --border: #3a404d;
+    --text: #e6e8eb;
+    --muted: #8a93a3;
+    --accent: #f0a050;
+    --accent-soft: rgba(240,160,80,0.12);
+    --pass: #4caf50;
+    --fail: #e54848;
+    --skip: #7a828f;
+    --warn: #f0a050;
+    --regression: #e54848;
+    --info: #5fa8e8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 5px; }
+
+  header {
+    background: linear-gradient(135deg, #2a2f38, #15181d);
+    padding: 20px 28px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 19px; color: var(--accent); flex: 0 0 auto; }
+  header .sub { color: var(--muted); font-size: 12px; flex: 1; }
+  .lang-switch { display: flex; gap: 4px; }
+  .lang-switch button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #15181d;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  body:not(.fr) .lang-fr { display: none; }
+  body.fr .lang-en { display: none; }
+
+  .container { padding: 20px 28px 140px; max-width: 1300px; margin: 0 auto; }
+
+  .meta {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .meta label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .meta input, .meta select, .meta textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .meta textarea { grid-column: 1 / -1; resize: vertical; min-height: 50px; }
+
+  .scope-banner {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .scope-banner h3 { margin: 0 0 10px; color: var(--accent); font-size: 14px; }
+  .scope-banner ul { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: var(--text); }
+  .scope-banner li { margin-bottom: 6px; }
+  .scope-banner code { background: var(--bg); padding: 1px 6px; border-radius: 3px; font-size: 11px; color: var(--accent); }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .toolbar button.primary { background: var(--accent); color: #15181d; border-color: var(--accent); font-weight: 600; }
+  .toolbar button.danger { background: var(--regression); color: white; border-color: var(--regression); }
+  .toolbar .stats { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+  .toolbar .stats span { display: flex; align-items: center; gap: 4px; }
+  .toolbar .stats .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  .toolbar .progress {
+    flex: 1;
+    height: 26px;
+    min-width: 200px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .toolbar .progress-bar { height: 100%; background: linear-gradient(90deg, var(--pass), var(--accent)); transition: width .25s; }
+  .toolbar .progress-text {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text);
+  }
+  .toolbar .save-indicator {
+    color: var(--muted);
+    font-size: 12px;
+    transition: color 0.4s;
+  }
+  .toolbar .save-indicator.saved { color: var(--pass); }
+
+  .test {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .test-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .test-id {
+    font-family: monospace;
+    background: var(--bg);
+    padding: 3px 8px;
+    border-radius: 3px;
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .test-title { font-weight: 600; flex: 1; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge.p0 { background: var(--regression); color: white; }
+  .badge.p1 { background: var(--accent); color: #15181d; }
+  .badge.p2 { background: var(--panel3); color: var(--text); }
+  .badge.regression { background: rgba(229,72,72,0.15); color: var(--regression); border: 1px solid var(--regression); }
+  .badge.collateral { background: rgba(95,168,232,0.15); color: var(--info); border: 1px solid var(--info); }
+  .badge.sided { background: rgba(95,168,232,0.3); color: white; border: 1px solid var(--info); }
+
+  .test-section { margin: 8px 0; font-size: 13px; }
+  .test-section .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  .test-section .body { line-height: 1.6; }
+  .test-section code {
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .test-section pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-size: 11.5px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+
+  .verdict {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+  .verdict button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .verdict button.pass.active { background: var(--pass); border-color: var(--pass); color: white; }
+  .verdict button.fail.active { background: var(--regression); border-color: var(--regression); color: white; }
+  .verdict button.skip.active { background: var(--skip); border-color: var(--skip); color: white; }
+  .verdict textarea {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+    min-height: 32px;
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal h2 { margin: 0 0 14px; color: var(--accent); }
+  .modal textarea {
+    width: 100%;
+    min-height: 250px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: monospace;
+    font-size: 11px;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+  .modal-actions button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 18px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .modal-actions button.primary { background: var(--accent); color: #15181d; border-color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TFMG Targeted Test — commit b291e878</h1>
+  <div class="sub">
+    <span class="lang-en">Scope: only the single fix shipped in <code style="font-family:monospace">b291e878</code> (winding machine performRecipe gated to server-side only) plus the regressions it could have introduced.</span>
+    <span class="lang-fr">Périmètre : uniquement le fix unique du commit <code style="font-family:monospace">b291e878</code> (performRecipe de la winding machine restreint au server-side) plus les régressions qu'il aurait pu introduire.</span>
+  </div>
+  <div class="lang-switch">
+    <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+    <button id="btn-fr" onclick="setLang('fr')">FR</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="meta">
+    <div>
+      <label><span class="lang-en">Tester name</span><span class="lang-fr">Nom du testeur</span></label>
+      <input type="text" id="meta-tester" placeholder="vyrriox">
+    </div>
+    <div>
+      <label><span class="lang-en">Test date</span><span class="lang-fr">Date du test</span></label>
+      <input type="date" id="meta-date">
+    </div>
+    <div>
+      <label><span class="lang-en">Environment</span><span class="lang-fr">Environnement</span></label>
+      <select id="meta-env">
+        <option value="singleplayer">Singleplayer</option>
+        <option value="lan">LAN</option>
+        <option value="dedicated">Dedicated server</option>
+        <option value="creative">Creative test world</option>
+      </select>
+    </div>
+    <div>
+      <label><span class="lang-en">Build commit</span><span class="lang-fr">Commit testé</span></label>
+      <input type="text" id="meta-commit" placeholder="b291e878" value="b291e878">
+    </div>
+    <div style="grid-column:1/-1">
+      <label><span class="lang-en">Notes</span><span class="lang-fr">Notes</span></label>
+      <textarea id="meta-notes" placeholder=""></textarea>
+    </div>
+  </div>
+
+  <div class="scope-banner">
+    <h3>
+      <span class="lang-en">▸ Scope of this test pass</span>
+      <span class="lang-fr">▸ Périmètre de cette passe</span>
+    </h3>
+    <div class="lang-en">
+      <p>One follow-up fix shipped in <code>b291e878</code> after Neymor16's f77251be retest still showed 5% target consuming 90 spool durability and 100% target finishing under 1000 ohm. Root cause was that <code>performRecipe</code> ran on BOTH the server and the client because <code>tick()</code> had no sidedness check. The server applied the authoritative drain (50 over 50 ticks); the client applied its own visible drain (40 ticks visible to the player before the next sync overwrote it). Tester saw the client value, hence 90 instead of 50.</p>
+      <p>The fix is a single line at the very top of <code>performRecipe</code>: <code>if (level == null || level.isClientSide) return;</code>. The previous guards (top-of-method target-met early-out, copy-then-setStackInSlot, target-reached check below the recipe-null block) all remain in place — they were correct, just being undermined by the duplicate client-side ticks.</p>
+      <p>Tests below verify the symptom is gone and that nothing client-side relied on performRecipe running locally.</p>
+    </div>
+    <div class="lang-fr">
+      <p>Un fix de suivi livré dans <code>b291e878</code> après que le retest f77251be de Neymor16 ait toujours montré 5% target consommant 90 spool et 100% target finissant sous 1000 ohm. Cause racine : <code>performRecipe</code> tournait sur SERVEUR ET CLIENT car <code>tick()</code> n'avait pas de check de sidedness. Le serveur appliquait le drain autoritatif (50 sur 50 ticks) ; le client appliquait son propre drain visible (40 ticks vus par le joueur avant que le sync suivant n'écrase). Le testeur voyait la valeur client, donc 90 au lieu de 50.</p>
+      <p>Le fix est une ligne unique tout en haut de <code>performRecipe</code> : <code>if (level == null || level.isClientSide) return;</code>. Les guards précédents (early-out top-of-method, copy-then-setStackInSlot, target-reached check en bas) restent en place — ils étaient corrects, juste court-circuités par les ticks client-side dupliqués.</p>
+      <p>Les tests ci-dessous vérifient la disparition du symptôme et que rien côté client ne reposait sur l'exécution locale de performRecipe.</p>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="progress">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+      <div class="progress-text" id="progress-text">0 / 0</div>
+    </div>
+    <div class="stats">
+      <span><i class="dot" style="background:var(--pass)"></i><span id="stat-pass">0</span></span>
+      <span><i class="dot" style="background:var(--regression)"></i><span id="stat-fail">0</span></span>
+      <span><i class="dot" style="background:var(--skip)"></i><span id="stat-skip">0</span></span>
+      <span><i class="dot" style="background:var(--panel3)"></i><span id="stat-untested">0</span></span>
+    </div>
+    <span class="save-indicator" id="save-indicator">●</span>
+    <button class="danger" onclick="resetAll()"><span class="lang-en">Reset</span><span class="lang-fr">Réinit.</span></button>
+    <button class="primary" onclick="exportJSON()"><span class="lang-en">Export JSON</span><span class="lang-fr">Exporter JSON</span></button>
+  </div>
+
+  <div id="tests"></div>
+</div>
+
+<div class="modal" id="export-modal">
+  <div class="modal-content">
+    <h2><span class="lang-en">Export</span><span class="lang-fr">Export</span></h2>
+    <textarea id="export-textarea" readonly></textarea>
+    <div class="modal-actions">
+      <button onclick="downloadJSON()"><span class="lang-en">Download .json</span><span class="lang-fr">Télécharger .json</span></button>
+      <button class="primary" onclick="copyJSON(event)"><span class="lang-en">Copy</span><span class="lang-fr">Copier</span></button>
+      <button onclick="closeModal()"><span class="lang-en">Close</span><span class="lang-fr">Fermer</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'tfmg-test-b291e878-targeted';
+
+const TESTS = [
+  // ============================================================
+  // PRIMARY — verify the user-reported symptom is gone
+  // ============================================================
+  {
+    id: 'WIND-SIDED-5PCT',
+    sev: 'p0',
+    regression: true,
+    sided: true,
+    title_en: 'Resistor at 5% target consumes EXACTLY 50 spool durability (primary fix)',
+    title_fr: 'Résistance à 5% target consomme EXACTEMENT 50 spool durability (fix principal)',
+    setup_en: 'Winding machine driven by a shaft at non-zero speed. Set turn percentage to 5%. Insert a constantan spool with SPOOL_AMOUNT = 1000.',
+    setup_fr: 'Winding machine entraînée par un shaft à vitesse non nulle. Règle turn percentage à 5%. Insère une constantan spool avec SPOOL_AMOUNT = 1000.',
+    steps_en: '1) Note the spool\'s SPOOL_AMOUNT (should be 1000). 2) Insert a plain resistor. 3) Wait until the in-machine display stops moving. 4) Re-read the spool\'s SPOOL_AMOUNT. 5) The new value MUST be 950 — exactly 50 consumed. The resistor MUST be at 50 ohm.',
+    steps_fr: '1) Note le SPOOL_AMOUNT de la spool (doit être 1000). 2) Insère une résistance vierge. 3) Attends que l\'affichage de la machine se stabilise. 4) Re-lis le SPOOL_AMOUNT. 5) La nouvelle valeur DOIT être 950 — exactement 50 consommés. La résistance DOIT être à 50 ohm.',
+    expected_en: '1000 → 950 spool, 50 ohm resistor. Before b291e878 the client also ticked the drain (no sidedness check), so the player saw values landing around 910 instead of 950 even after the server-side guard had already capped at 50.',
+    expected_fr: '1000 → 950 spool, résistance 50 ohm. Avant b291e878 le client tickait aussi le drain (pas de check sidedness), donc le joueur voyait des valeurs vers 910 au lieu de 950 même après que le guard server-side ait déjà capé à 50.',
+    cmds: [
+      '/give @s tfmg:resistor 4',
+      '/give @s tfmg:constantan_spool 2'
+    ]
+  },
+  {
+    id: 'WIND-SIDED-100PCT',
+    sev: 'p0',
+    regression: true,
+    sided: true,
+    title_en: 'Resistor at 100% target finishes at EXACTLY 1000 ohm (primary fix)',
+    title_fr: 'Résistance à 100% target finit à EXACTEMENT 1000 ohm (fix principal)',
+    setup_en: 'Same as WIND-SIDED-5PCT but turn percentage = 100%. Use a constantan spool with SPOOL_AMOUNT >= 1000.',
+    setup_fr: 'Comme WIND-SIDED-5PCT mais turn percentage = 100%. Utilise une constantan spool avec SPOOL_AMOUNT >= 1000.',
+    steps_en: '1) Insert a fresh resistor. 2) Wait for winding to stop (machine display stable). 3) Pull the resistor out and read RESISTANCE NBT. 4) MUST be exactly 1000. The spool SPOOL_AMOUNT MUST drop by exactly 1000.',
+    steps_fr: '1) Insère une résistance neuve. 2) Attends la fin de l\'enroulage (affichage stable). 3) Sors la résistance et lis le NBT RESISTANCE. 4) DOIT être 1000 exactement. Le SPOOL_AMOUNT de la spool DOIT diminuer de 1000 exactement.',
+    expected_en: 'Resistor 1000 ohm, spool drops by 1000. Previously the client double-tick made the spool appear to deplete before the server-authoritative resistor reached 1000, so the resistor finished at 960 ohm.',
+    expected_fr: 'Résistance 1000 ohm, spool baisse de 1000. Avant, le double-tick client faisait paraître la spool vidée avant que la résistance autoritative serveur n\'atteigne 1000, donc la résistance finissait à 960 ohm.'
+  },
+  {
+    id: 'WIND-SIDED-LAN-COLLATERAL',
+    sev: 'p0',
+    regression: true,
+    sided: true,
+    title_en: 'On a LAN / dedicated server, the player count visible to the spool matches the server (collateral)',
+    title_fr: 'Sur un serveur LAN / dédié, la valeur de la spool vue par le joueur match celle du serveur (collatéral)',
+    setup_en: 'Set up the same scenario on a LAN session or dedicated server (NOT singleplayer). Have a second tester join.',
+    setup_fr: 'Reproduis le même scénario sur une session LAN ou serveur dédié (PAS solo). Fais venir un second testeur.',
+    steps_en: 'Both players observe the spool SPOOL_AMOUNT counting down while a 5% target resistor winds. Both readouts MUST match each other AND the final value MUST be exactly 950 (1000 - 50). On singleplayer the bug was already partially hidden because the integrated server eats some of the desync; LAN exposed it most clearly.',
+    steps_fr: 'Les deux joueurs observent le SPOOL_AMOUNT diminuer pendant qu\'une résistance 5% s\'enroule. Les deux affichages DOIVENT être identiques ET la valeur finale DOIT être exactement 950 (1000 - 50). Solo le bug était partiellement caché parce que le serveur intégré absorbe une partie de la desync ; LAN l\'exposait le plus clairement.',
+    expected_en: 'No client-side desync — the value players see equals the server value. The fix is most observable here.',
+    expected_fr: 'Pas de désync client — la valeur vue par les joueurs égale la valeur serveur. Le fix est le plus observable ici.'
+  },
+
+  // ============================================================
+  // COLLATERAL — what the server-only guard could have broken
+  // ============================================================
+  {
+    id: 'WIND-SIDED-RENDER-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Spool animation / rotation render still works on the client (collateral)',
+    title_fr: 'Animation / rotation du spool rend toujours côté client (collatéral)',
+    setup_en: 'Place a winding machine with a non-zero shaft speed and a coil + spool inside. Stand far enough that you only see the visual.',
+    setup_fr: 'Pose une winding machine avec shaft à vitesse non nulle et un coil + spool dedans. Place-toi pour ne voir que le visuel.',
+    steps_en: 'Verify the spool model still rotates / animates while the recipe is winding. The rotation animation is in manageRotation() (called from tick() AFTER performRecipe), not in performRecipe itself, so it must still run client-side.',
+    steps_fr: 'Vérifie que le modèle de spool tourne / s\'anime pendant l\'enroulage. L\'animation est dans manageRotation() (appelé depuis tick() APRÈS performRecipe), pas dans performRecipe, donc doit toujours tourner côté client.',
+    expected_en: 'Animation runs smoothly. The new sidedness guard is inside performRecipe only; manageRotation is unaffected.',
+    expected_fr: 'L\'animation tourne fluidement. Le nouveau guard est dans performRecipe seulement ; manageRotation est intact.'
+  },
+  {
+    id: 'WIND-SIDED-GOGGLE-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Goggle tooltip on the winding machine still updates as the recipe progresses (collateral)',
+    title_fr: 'Tooltip goggle sur la winding machine se met toujours à jour pendant la recette (collatéral)',
+    setup_en: 'Wear goggles. Insert a resistor at 50% target into a powered winding machine. Look at the machine.',
+    setup_fr: 'Porte des goggles. Insère une résistance à 50% target dans une winding machine alimentée. Regarde la machine.',
+    steps_en: 'The goggle overlay must show the current spool name, turns left, and progress, and these values MUST update live as winding proceeds. addToGoggleTooltip reads from the synced spool / inventory / amountWinded fields, so server-side updates plus sendData() must keep the tooltip current.',
+    steps_fr: 'L\'overlay goggle doit afficher le nom du spool, turns left, progress, et ces valeurs DOIVENT être mises à jour en live pendant l\'enroulage. addToGoggleTooltip lit les fields spool / inventory / amountWinded synchronisés, donc les updates server-side + sendData() doivent garder le tooltip à jour.',
+    expected_en: 'Tooltip values change as the recipe progresses; final value matches what the resistor / spool actually has.',
+    expected_fr: 'Les valeurs du tooltip changent pendant la recette ; la valeur finale match ce que la résistance / spool a réellement.'
+  },
+  {
+    id: 'WIND-SIDED-SLOT-INTERACTION-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Player can still insert / remove items from the input slot during winding (collateral)',
+    title_fr: 'Le joueur peut toujours insérer / retirer des items du slot input pendant l\'enroulage (collatéral)',
+    setup_en: 'Wind a resistor at 100% target. Mid-winding (e.g. RESISTANCE around 300), reach into the GUI and pull the resistor out, then put a different resistor in.',
+    setup_fr: 'Enroule une résistance à 100% target. Pendant l\'enroulage (ex. RESISTANCE ~300), va dans le GUI, sors la résistance, mets-en une différente.',
+    steps_en: 'Pulled resistor MUST hold its current RESISTANCE value (~300). Newly-inserted resistor MUST start fresh (RESISTANCE 0) and the machine winds it from there. The slot dirty path (copy + setStackInSlot + setChanged + sendData) is server-side only now; verify it still notifies clients on player interaction.',
+    steps_fr: 'La résistance retirée DOIT avoir sa valeur RESISTANCE courante (~300). La nouvelle résistance insérée DOIT démarrer à 0 et la machine l\'enroule à partir de là. Le chemin slot-dirty (copy + setStackInSlot + setChanged + sendData) est maintenant server-only ; vérifie qu\'il notifie toujours le client lors de l\'interaction joueur.',
+    expected_en: 'Slot interactions still work; the server is authoritative.',
+    expected_fr: 'Les interactions slot marchent toujours ; le serveur est autoritatif.'
+  },
+  {
+    id: 'WIND-SIDED-PERF-COLLATERAL',
+    sev: 'p2',
+    collateral: true,
+    title_en: 'Client tick CPU cost goes DOWN with the new guard (collateral perf)',
+    title_fr: 'Le coût CPU du tick client BAISSE avec le nouveau guard (perf collatéral)',
+    setup_en: 'Set up 16+ winding machines all running recipes simultaneously. Open spark profiler client-side (or any FPS overlay).',
+    setup_fr: 'Pose 16+ winding machines tournant toutes des recettes simultanément. Ouvre spark profiler client-side (ou un overlay FPS).',
+    steps_en: 'Compare the client tick time per frame before vs after b291e878. The new early return at the top of performRecipe means the client skips the entire method body for every winding machine, so client tick should drop slightly. Mark PASS if client perf is at least neutral; FAIL only if you see a measurable regression.',
+    steps_fr: 'Compare le temps de tick client par frame avant vs après b291e878. Le nouvel early return en haut de performRecipe fait que le client skip tout le corps de la méthode pour chaque winding machine, donc le tick client doit baisser légèrement. Marque PASS si la perf client est au moins neutre ; FAIL seulement si tu vois une régression mesurable.',
+    expected_en: 'Neutral or improved. Adding a return at the top of a method only saves cycles client-side; it cannot regress perf.',
+    expected_fr: 'Neutre ou amélioré. Ajouter un return en haut d\'une méthode ne fait qu\'économiser des cycles côté client ; ça ne peut pas régresser la perf.'
+  },
+  {
+    id: 'WIND-SIDED-LOAD-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Winding state survives a chunk reload mid-recipe (collateral)',
+    title_fr: 'L\'état winding survit à un reload de chunk en milieu de recette (collatéral)',
+    setup_en: 'Start winding a resistor at 100% target. Once RESISTANCE reaches some intermediate value (~400), save & quit. Reload the world.',
+    setup_fr: 'Lance l\'enroulage d\'une résistance à 100% target. Une fois RESISTANCE à une valeur intermédiaire (~400), sauvegarde & quitte. Recharge le monde.',
+    steps_en: 'Verify RESISTANCE persisted through reload (the resistor in the slot still shows ~400, not 0). Verify the spool SPOOL_AMOUNT also persisted. The machine should resume winding to 1000 and the spool drops by exactly the remaining 600.',
+    steps_fr: 'Vérifie que RESISTANCE a persisté au reload (la résistance dans le slot affiche toujours ~400, pas 0). Vérifie que le SPOOL_AMOUNT a aussi persisté. La machine doit reprendre l\'enroulage à 1000 et la spool baisse d\'exactement les 600 restants.',
+    expected_en: 'NBT round-trip is unaffected by the sidedness guard. write/read still write authoritative server state.',
+    expected_fr: 'Le round-trip NBT n\'est pas affecté par le guard de sidedness. write/read écrivent toujours l\'état serveur autoritatif.'
+  },
+  {
+    id: 'WIND-SIDED-SP-VS-DEDICATED-COLLATERAL',
+    sev: 'p2',
+    collateral: true,
+    title_en: 'Singleplayer integrated server still gives the same correct values as dedicated (collateral)',
+    title_fr: 'Le serveur intégré solo donne les mêmes valeurs correctes que le dédié (collatéral)',
+    setup_en: 'Run the WIND-SIDED-5PCT scenario in singleplayer specifically. The integrated server is in-process so the client/server distinction is fuzzier — verify the guard does not over-trigger and prevent the drain.',
+    setup_fr: 'Refais le scénario WIND-SIDED-5PCT spécifiquement en solo. Le serveur intégré tourne en in-process donc la distinction client/serveur est plus floue — vérifie que le guard ne se déclenche pas à tort et empêche le drain.',
+    steps_en: 'Spool drops from 1000 to exactly 950, resistor at 50 ohm. The level.isClientSide check uses the integrated server\'s ServerLevel for tick, so it should resolve to false there (server side) and let the drain run.',
+    steps_fr: 'La spool passe de 1000 à exactement 950, résistance à 50 ohm. Le check level.isClientSide utilise le ServerLevel du serveur intégré pour le tick, donc doit résoudre à false ici (côté serveur) et laisser le drain tourner.',
+    expected_en: 'Singleplayer behaviour identical to dedicated.',
+    expected_fr: 'Comportement solo identique au dédié.'
+  }
+];
+
+let state = {};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch (e) { state = {}; }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  flashSaved();
+}
+
+let saveTimer = null;
+function flashSaved() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.classList.add('saved');
+  el.textContent = '● saved';
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    el.classList.remove('saved');
+    el.textContent = '●';
+  }, 1200);
+}
+
+function setLang(lang) {
+  document.body.classList.toggle('fr', lang === 'fr');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+  localStorage.setItem(STORAGE_KEY + '-lang', lang);
+}
+
+function resetAll() {
+  if (!confirm('Reset all test results? / Réinitialiser tous les résultats ?')) return;
+  state = {};
+  saveState();
+  renderTests();
+  refreshStats();
+}
+
+function refreshStats() {
+  const total = TESTS.length;
+  let pass = 0, fail = 0, skip = 0;
+  TESTS.forEach(t => {
+    const v = state[t.id]?.verdict;
+    if (v === 'pass') pass++;
+    else if (v === 'fail') fail++;
+    else if (v === 'skip') skip++;
+  });
+  const done = pass + fail + skip;
+  const untested = total - done;
+  document.getElementById('stat-pass').textContent = pass;
+  document.getElementById('stat-fail').textContent = fail;
+  document.getElementById('stat-skip').textContent = skip;
+  document.getElementById('stat-untested').textContent = untested;
+  document.getElementById('progress-text').textContent = `${done} / ${total}`;
+  document.getElementById('progress-bar').style.width = `${total ? (done / total) * 100 : 0}%`;
+}
+
+function setVerdict(testId, verdict) {
+  state[testId] = state[testId] || {};
+  state[testId].verdict = verdict;
+  saveState();
+  renderTests();
+  refreshStats();
+}
+
+function setComment(testId, comment) {
+  state[testId] = state[testId] || {};
+  state[testId].comment = comment;
+  saveState();
+}
+
+function renderTests() {
+  const container = document.getElementById('tests');
+  container.innerHTML = '';
+  TESTS.forEach(t => {
+    const verdict = state[t.id]?.verdict || '';
+    const comment = state[t.id]?.comment || '';
+    const div = document.createElement('div');
+    div.className = 'test';
+    div.innerHTML = `
+      <div class="test-header">
+        <span class="test-id">${t.id}</span>
+        <span class="badge ${t.sev}">${t.sev.toUpperCase()}</span>
+        ${t.sided ? '<span class="badge sided">SIDED FIX</span>' : ''}
+        ${t.regression ? '<span class="badge regression">REGRESSION</span>' : ''}
+        ${t.collateral ? '<span class="badge collateral">COLLATERAL</span>' : ''}
+        <span class="test-title">
+          <span class="lang-en">${t.title_en}</span>
+          <span class="lang-fr">${t.title_fr}</span>
+        </span>
+      </div>
+      ${t.setup_en ? `
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Setup</span><span class="lang-fr">Préparation</span></div>
+        <div class="body">
+          <span class="lang-en">${t.setup_en}</span>
+          <span class="lang-fr">${t.setup_fr}</span>
+        </div>
+      </div>` : ''}
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Steps</span><span class="lang-fr">Étapes</span></div>
+        <div class="body">
+          <span class="lang-en">${t.steps_en}</span>
+          <span class="lang-fr">${t.steps_fr}</span>
+        </div>
+      </div>
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Expected</span><span class="lang-fr">Attendu</span></div>
+        <div class="body">
+          <span class="lang-en">${t.expected_en}</span>
+          <span class="lang-fr">${t.expected_fr}</span>
+        </div>
+      </div>
+      ${t.cmds && t.cmds.length ? `
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Setup commands</span><span class="lang-fr">Commandes setup</span></div>
+        <pre>${t.cmds.join('\n')}</pre>
+      </div>` : ''}
+      <div class="verdict">
+        <button class="pass ${verdict==='pass'?'active':''}" onclick="setVerdict('${t.id}','pass')">PASS</button>
+        <button class="fail ${verdict==='fail'?'active':''}" onclick="setVerdict('${t.id}','fail')">FAIL</button>
+        <button class="skip ${verdict==='skip'?'active':''}" onclick="setVerdict('${t.id}','skip')">SKIP</button>
+        <textarea placeholder="Comment / notes" oninput="setComment('${t.id}', this.value)">${comment}</textarea>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function exportJSON() {
+  const tester = document.getElementById('meta-tester').value || 'unknown';
+  const date = document.getElementById('meta-date').value || new Date().toISOString().slice(0,10);
+  const env = document.getElementById('meta-env').value;
+  const commit = document.getElementById('meta-commit').value;
+  const notes = document.getElementById('meta-notes').value;
+
+  const data = {
+    meta: {
+      project: 'TFMG',
+      scope: 'targeted-b291e878',
+      tester, date, environment: env, commit, notes,
+      exported_at: new Date().toISOString()
+    },
+    summary: {
+      total: TESTS.length,
+      pass: TESTS.filter(t => state[t.id]?.verdict === 'pass').length,
+      fail: TESTS.filter(t => state[t.id]?.verdict === 'fail').length,
+      skip: TESTS.filter(t => state[t.id]?.verdict === 'skip').length
+    },
+    tests: TESTS.map(t => ({
+      id: t.id,
+      sev: t.sev,
+      regression: !!t.regression,
+      collateral: !!t.collateral,
+      sided: !!t.sided,
+      title: t.title_en,
+      verdict: state[t.id]?.verdict || 'untested',
+      comment: state[t.id]?.comment || ''
+    }))
+  };
+
+  const text = JSON.stringify(data, null, 2);
+  document.getElementById('export-textarea').value = text;
+  document.getElementById('export-modal').classList.add('show');
+}
+
+function downloadJSON() {
+  const text = document.getElementById('export-textarea').value;
+  const tester = document.getElementById('meta-tester').value || 'unknown';
+  const date = document.getElementById('meta-date').value || new Date().toISOString().slice(0,10);
+  const blob = new Blob([text], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tfmg-test-b291e878-${tester}-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyJSON(e) {
+  const ta = document.getElementById('export-textarea');
+  ta.select();
+  document.execCommand('copy');
+  if (e && e.target) {
+    const orig = e.target.textContent;
+    e.target.textContent = 'Copied!';
+    setTimeout(() => e.target.textContent = orig, 1200);
+  }
+}
+
+function closeModal() {
+  document.getElementById('export-modal').classList.remove('show');
+}
+
+function init() {
+  loadState();
+  const lang = localStorage.getItem(STORAGE_KEY + '-lang') || 'en';
+  setLang(lang);
+  document.getElementById('meta-date').value = new Date().toISOString().slice(0,10);
+  ['meta-tester','meta-date','meta-env','meta-commit','meta-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const saved = localStorage.getItem(STORAGE_KEY + '-' + id);
+    if (saved) el.value = saved;
+    el.addEventListener('input', () => {
+      localStorage.setItem(STORAGE_KEY + '-' + id, el.value);
+      flashSaved();
+    });
+    el.addEventListener('change', () => {
+      localStorage.setItem(STORAGE_KEY + '-' + id, el.value);
+      flashSaved();
+    });
+  });
+  renderTests();
+  refreshStats();
+}
+init();
+</script>
+</body>
+</html>
