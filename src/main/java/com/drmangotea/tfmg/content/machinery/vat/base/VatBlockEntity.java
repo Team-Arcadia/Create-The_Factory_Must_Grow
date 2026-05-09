@@ -388,20 +388,24 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 } else doesntMatch = true;
             }
 
-            //same but with items
-            SmartInventory testInventory = new SmartInventory(8, this);
-
+            // Test ingredients against the INPUT inventory only. Looking at
+            // the output too made the recipe match when the only copy of an
+            // ingredient lived in the output (e.g. arc_furnace_steel produces
+            // coal_coke_dust at 0.9 chance — once it sat in the output, the
+            // matcher saw it as a usable ingredient even though the actual
+            // ingredient consumption loop only reads inputInventory). Result:
+            // recipe ran with output coal_coke_dust as the supposed input,
+            // tickRecipe tried to extract from input (nothing there to take),
+            // and output kept growing each cycle = a coal_coke_dust dupe.
+            SmartInventory testInventory = new SmartInventory(4, this);
             for (int i = 0; i < 4; i++) {
                 testInventory.setStackInSlot(i, inputInventory.getStackInSlot(i).copy());
-            }
-            for (int i = 0; i < 4; i++) {
-                testInventory.setStackInSlot(i + 4, outputInventory.getStackInSlot(i).copy());
             }
 
             for (int i = 0; i < testedRecipe.getIngredients().size(); i++) {
                 Ingredient ingredient = testedRecipe.getIngredients().get(i);
                 boolean found = false;
-                for (int y = 0; y < 8; y++) {
+                for (int y = 0; y < 4; y++) {
                     ItemStack stack = testInventory.getStackInSlot(y).copy();
                     if (ingredient.test(stack)) {
                         found = true;

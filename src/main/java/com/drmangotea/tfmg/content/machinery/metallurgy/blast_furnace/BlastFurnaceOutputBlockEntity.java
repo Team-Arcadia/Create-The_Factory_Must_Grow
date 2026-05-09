@@ -331,39 +331,53 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
         if (items.isEmpty())
             return;
 
-        ItemStack itemStack = items.get(0).getItem();
-
-        for (int i = 0; i < 64; i++) {
-
-            if (itemStack.isEmpty())
+        // Walk EVERY ItemEntity in the collection zone, not just the first
+        // one. The previous code locked onto items.get(0) and looped 64
+        // times against it, so when that first item could not be consumed
+        // (for example, surplus coal_coke_dust hitting the fuel cap), no
+        // other ItemEntity in the same zone was ever considered. Players
+        // reported quartz dropped after coal_coke_dust never made it into
+        // the BFO. Now we iterate items, and within each item we keep
+        // pulling units until the destination slot is full, then skip to
+        // the next item.
+        int budget = 64;
+        for (ItemEntity entity : items) {
+            if (budget <= 0)
                 return;
-
-            // Fuel takes priority. If the item is fuel and the storage is
-            // full, we MUST NOT fall through to the generic input slot —
-            // before this guard, overflowing coal_coke_dust spilled into
-            // inputInventory and blocked the recipe (the BFO had to be
-            // broken and replaced to clear it).
-            if (itemStack.is(TFMGTags.TFMGItemTags.BLAST_FURNACE_FUEL.tag)) {
-                if (fuel < STORAGE_SPACE) {
-                    fuel++;
-                    itemStack.shrink(1);
+            ItemStack itemStack = entity.getItem();
+            while (budget > 0 && !itemStack.isEmpty()) {
+                budget--;
+                if (itemStack.is(TFMGTags.TFMGItemTags.BLAST_FURNACE_FUEL.tag)) {
+                    if (fuel < STORAGE_SPACE) {
+                        fuel++;
+                        itemStack.shrink(1);
+                    } else {
+                        // Fuel cap reached — leave this item on the ground
+                        // and move on to the next ItemEntity instead of
+                        // letting the surplus block other drops behind it.
+                        break;
+                    }
+                    continue;
                 }
-                continue;
-            }
-            if (itemStack.is(TFMGTags.TFMGItemTags.FLUX.tag)) {
-                if (fluxInventory.getItem(0).getCount() < itemStack.getMaxStackSize()
-                        && (fluxInventory.isEmpty() || fluxInventory.getItem(0).is(itemStack.getItem()))) {
-                    fluxInventory.setItem(0, new ItemStack(itemStack.getItem(), fluxInventory.getItem(0).getCount() + 1));
-                    itemStack.shrink(1);
+                if (itemStack.is(TFMGTags.TFMGItemTags.FLUX.tag)) {
+                    if (fluxInventory.getItem(0).getCount() < itemStack.getMaxStackSize()
+                            && (fluxInventory.isEmpty() || fluxInventory.getItem(0).is(itemStack.getItem()))) {
+                        fluxInventory.setItem(0, new ItemStack(itemStack.getItem(), fluxInventory.getItem(0).getCount() + 1));
+                        itemStack.shrink(1);
+                    } else {
+                        break;
+                    }
+                    continue;
                 }
-                continue;
-            }
-            if (inputInventory.getItem(0).getCount() < itemStack.getMaxStackSize()) {
-                if (inputInventory.isEmpty() || inputInventory.getItem(0).is(itemStack.getItem())) {
+                if (inputInventory.getItem(0).getCount() < itemStack.getMaxStackSize()
+                        && (inputInventory.isEmpty() || inputInventory.getItem(0).is(itemStack.getItem()))) {
                     inputInventory.setItem(0, new ItemStack(itemStack.getItem(), inputInventory.getItem(0).getCount() + 1));
                     itemStack.shrink(1);
                     continue;
                 }
+                // Cannot place this unit (input slot full or holds a
+                // different item). Stop on this entity and try the next.
+                break;
             }
         }
     }

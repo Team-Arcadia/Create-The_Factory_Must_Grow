@@ -173,6 +173,24 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
 
         if (getSpeed() == 0)
             return;
+
+        // EARLY GUARD — short-circuit the whole tick when a resistor or coil
+        // already meets its target. Both the resistor branch and the coil
+        // branch below test '< target' but the generic recipe branch at the
+        // bottom of this method does not — without this guard it kept
+        // draining the spool every tick after the target was reached. The
+        // user reported 5% target on a resistor consuming 90 spool durability
+        // instead of 50; this guard runs first and caps it at exactly 50.
+        ItemStack guardItem = inventory.getItem(0);
+        int target = turnPercentage.getValue() * 10;
+        if (guardItem.is(TFMGBlocks.RESISTOR.asItem())
+                && guardItem.getOrDefault(TFMGDataComponents.RESISTANCE, defaultResistance) >= target) {
+            return;
+        }
+        if ((guardItem.is(TFMGItems.ELECTROMAGNETIC_COIL.get()) || guardItem.is(TFMGBlocks.LARGE_COIL.get().asItem()))
+                && guardItem.getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) >= target) {
+            return;
+        }
         // Apply set() to a fresh ItemStack reference and write it back via
         // setStackInSlot so SmartInventory marks the slot dirty and the new
         // component value is sync'd / saved. The previous code mutated
