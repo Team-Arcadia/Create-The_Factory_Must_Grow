@@ -166,126 +166,100 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
     }
 
     public void performRecipe() {
-        //Change these if you want. Just fallbacks if the component is null.
-        int defaultResistance = 0;
-        int defaultSpoolAmount = 0;
-        int defaultCoilTurns = 0;
-
-        // Server-only: this method mutates spool component values + slot
-        // contents. Running it on the client double-counted drains because
-        // tick() is called on both sides and the previous code had no
-        // sidedness guard — both ends incremented RESISTANCE/COIL_TURNS
-        // and decremented SPOOL_AMOUNT every tick before sendData()
-        // reconciled them. Tester reported 5% target (50 ohm) burning ~90
-        // spool durability instead of 50 = 50 server ticks + 40 client ticks
-        // shown to the user before the next sync overwrote them.
+        // Server-only. tick() runs on both sides; this method mutates
+        // authoritative state (spool component, slot stack, amountWinded)
+        // so it must not run client-side.
         if (level == null || level.isClientSide)
             return;
-
         if (getSpeed() == 0)
             return;
 
-        // EARLY GUARD — short-circuit the whole tick when a resistor or coil
-        // already meets its target. Both the resistor branch and the coil
-        // branch below test '< target' but the generic recipe branch at the
-        // bottom of this method does not — without this guard it kept
-        // draining the spool every tick after the target was reached. The
-        // user reported 5% target on a resistor consuming 90 spool durability
-        // instead of 50; this guard runs first and caps it at exactly 50.
-        ItemStack guardItem = inventory.getItem(0);
-        int target = turnPercentage.getValue() * 10;
-        if (guardItem.is(TFMGBlocks.RESISTOR.asItem())
-                && guardItem.getOrDefault(TFMGDataComponents.RESISTANCE, defaultResistance) >= target) {
-            return;
-        }
-        if ((guardItem.is(TFMGItems.ELECTROMAGNETIC_COIL.get()) || guardItem.is(TFMGBlocks.LARGE_COIL.get().asItem()))
-                && guardItem.getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) >= target) {
-            return;
-        }
-        // Apply set() to a fresh ItemStack reference and write it back via
-        // setStackInSlot so SmartInventory marks the slot dirty and the new
-        // component value is sync'd / saved. The previous code mutated
-        // inventory.getItem(0) in place, which left the slot's cached
-        // serialised form stale — the user reported pulling out 10
-        // resistors at the same target percentage and getting 5 different
-        // resistance values instead of a single one, because the slot
-        // would resync with whichever NBT the client last saw before the
-        // server-side mutation propagated.
-        if ((inventory.getItem(0).is(TFMGItems.ELECTROMAGNETIC_COIL.get())||inventory.getItem(0).is(TFMGBlocks.LARGE_COIL.get().asItem())) && spool.is(TFMGItems.COPPER_SPOOL.get()) && spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) > 0 && inventory.getItem(0).getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) < turnPercentage.getValue() * 10) {
-            if(inventory.getItem(0).getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) < turnPercentage.getValue() * 10){
-                spool.set(TFMGDataComponents.SPOOL_AMOUNT, spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) - 1);
-                ItemStack copy = inventory.getItem(0).copy();
-                copy.set(TFMGDataComponents.COIL_TURNS, copy.getOrDefault(TFMGDataComponents.COIL_TURNS, defaultCoilTurns) + 1);
-                inventory.setStackInSlot(0, copy);
-                setChanged();
-                sendData();
-                return;
-            }
-        }
-        if(spool.has(TFMGDataComponents.SPOOL_AMOUNT))
-            if (inventory.getItem(0).is(TFMGBlocks.RESISTOR.asItem()) && spool.is(TFMGItems.CONSTANTAN_SPOOL.get()) && spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) > 0 && inventory.getItem(0).getOrDefault(TFMGDataComponents.RESISTANCE, defaultResistance) < turnPercentage.getValue() * 10) {
-                if(inventory.getItem(0).getOrDefault(TFMGDataComponents.RESISTANCE, 0)< turnPercentage.getValue() * 10) {
-                    spool.set(TFMGDataComponents.SPOOL_AMOUNT, spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) - 1);
-                    ItemStack copy = inventory.getItem(0).copy();
-                    copy.set(TFMGDataComponents.RESISTANCE, copy.getOrDefault(TFMGDataComponents.RESISTANCE, defaultResistance) + 1);
-                    inventory.setStackInSlot(0, copy);
-                    setChanged();
-                    sendData();
-                    return;
-                }
-            }
-
-        if(spool.has(TFMGDataComponents.SPOOL_AMOUNT))
-            if (spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, defaultSpoolAmount) == 0 && !spool.is(TFMGItems.EMPTY_SPOOL.get()) && spool.getItem() instanceof SpoolItem)
-                spool = TFMGItems.EMPTY_SPOOL.asStack();
-
-        if (recipe == null) {
-            return;
-        }
-
-        // Stop here if the slot item is a resistor/coil that has already
-        // reached its scroll-value target. Without this guard the generic
-        // recipe branch below kept ticking — draining the spool by one per
-        // tick and incrementing amountWinded — even though the resistor was
-        // already at its target ohm value. The user reported 5% target on a
-        // resistor consuming 90 spool durability instead of 50, and 100%
-        // target ending at 960 ohm instead of 1000 because the extra drain
-        // burned through the spool before amountWinded had finished.
         ItemStack slotItem = inventory.getItem(0);
-        if (slotItem.is(TFMGBlocks.RESISTOR.asItem())
-                && slotItem.getOrDefault(TFMGDataComponents.RESISTANCE, 0) >= turnPercentage.getValue() * 10) {
-            return;
-        }
-        if ((slotItem.is(TFMGItems.ELECTROMAGNETIC_COIL.get()) || slotItem.is(TFMGBlocks.LARGE_COIL.get().asItem()))
-                && slotItem.getOrDefault(TFMGDataComponents.COIL_TURNS, 0) >= turnPercentage.getValue() * 10) {
+        int target = turnPercentage.getValue() * 10;
+        boolean isResistor = slotItem.is(TFMGBlocks.RESISTOR.asItem());
+        boolean isCoil = slotItem.is(TFMGItems.ELECTROMAGNETIC_COIL.get())
+                || slotItem.is(TFMGBlocks.LARGE_COIL.get().asItem());
+
+        // Resistor + constantan spool path. ONE drain per tick, no
+        // fall-through into the generic branch below. Returns after a
+        // successful drain and also returns if the target is already met.
+        if (isResistor && spool.is(TFMGItems.CONSTANTAN_SPOOL.get())) {
+            int resistance = slotItem.getOrDefault(TFMGDataComponents.RESISTANCE, 0);
+            if (resistance >= target)
+                return;
+            int spoolAmount = spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0);
+            if (spoolAmount <= 0)
+                return;
+            spool.set(TFMGDataComponents.SPOOL_AMOUNT, spoolAmount - 1);
+            ItemStack copy = slotItem.copy();
+            copy.set(TFMGDataComponents.RESISTANCE, resistance + 1);
+            inventory.setStackInSlot(0, copy);
+            convertEmptyIfDrained();
+            setChanged();
+            sendData();
             return;
         }
 
+        // Coil + copper spool path. Symmetric to the resistor path.
+        if (isCoil && spool.is(TFMGItems.COPPER_SPOOL.get())) {
+            int turns = slotItem.getOrDefault(TFMGDataComponents.COIL_TURNS, 0);
+            if (turns >= target)
+                return;
+            int spoolAmount = spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0);
+            if (spoolAmount <= 0)
+                return;
+            spool.set(TFMGDataComponents.SPOOL_AMOUNT, spoolAmount - 1);
+            ItemStack copy = slotItem.copy();
+            copy.set(TFMGDataComponents.COIL_TURNS, turns + 1);
+            inventory.setStackInSlot(0, copy);
+            convertEmptyIfDrained();
+            setChanged();
+            sendData();
+            return;
+        }
 
+        // Generic winding recipe path (sequenced assembly etc.).
+        if (recipe == null)
+            return;
+        // Resistor / coil items must NEVER take the generic branch; their
+        // dedicated branches above are the only paths that should drain
+        // their spool. The generic branch runs amountWinded++ which is
+        // unrelated to RESISTANCE / COIL_TURNS targeting.
+        if (isResistor || isCoil)
+            return;
 
         if (amountWinded >= recipe.getProcessingDuration()) {
             inventory.setStackInSlot(0, recipe.rollResults(level.random).get(0));
             recipe = null;
             amountWinded = 0;
-
             sendData();
             setChanged();
-
+            return;
+        }
+        if (spool.isEmpty() || spool.is(TFMGItems.EMPTY_SPOOL.get()))
+            return;
+        int spoolAmount = spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0);
+        if (spoolAmount > 0) {
+            if (recipe.getSpool().test(spool)) {
+                spool.set(TFMGDataComponents.SPOOL_AMOUNT, spoolAmount - 1);
+                amountWinded++;
+                convertEmptyIfDrained();
+            }
         } else {
-            if (spool.isEmpty() || spool.is(TFMGItems.EMPTY_SPOOL.get())) {
-                return;
-            }
-            if (spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0) > 0) {
-                if (recipe.getSpool().test(spool)) {
-                    spool.set(TFMGDataComponents.SPOOL_AMOUNT, spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0) - 1);
-                    amountWinded++;
-                }
-            } else {
-                inventory.setStackInSlot(0, recipe.rollResults(level.random).get(0));
-                sendData();
-                setChanged();
-            }
+            inventory.setStackInSlot(0, recipe.rollResults(level.random).get(0));
+            sendData();
+            setChanged();
+        }
+    }
 
+    /** Promote a depleted SpoolItem to an empty_spool. */
+    private void convertEmptyIfDrained() {
+        if (!spool.has(TFMGDataComponents.SPOOL_AMOUNT))
+            return;
+        if (spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0) == 0
+                && !spool.is(TFMGItems.EMPTY_SPOOL.get())
+                && spool.getItem() instanceof SpoolItem) {
+            spool = TFMGItems.EMPTY_SPOOL.asStack();
         }
     }
 
