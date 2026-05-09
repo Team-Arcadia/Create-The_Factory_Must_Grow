@@ -109,14 +109,12 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
         if (!level.isClientSide) {
             setChanged();
             sendData();
-            // Invalidate the cached capability so neighbouring pipes
-            // (Mekanism mechanical pipe, Create pump, ...) re-fetch the
-            // up-to-date IFluidHandler. Without this, players reported
-            // that occasionally — and seemingly at random — the output
-            // tank stopped accepting external extraction even though the
-            // fluid was visible. The pipe was holding a stale handler
-            // reference from before a chunk reload or BE re-init.
-            level.invalidateCapabilities(getBlockPos());
+            // Do NOT invalidate capabilities here — invalidating on every
+            // fluid change makes Create's mechanical pump lose its handler
+            // reference between extract attempts and stutter to a halt
+            // (Neymor16 saw 128 mB / break-and-replace bursts). We only
+            // need to invalidate on chunk-reload / BE-re-init scenarios,
+            // which are handled in read().
         }
     }
 
@@ -340,18 +338,25 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
             if (itemStack.isEmpty())
                 return;
 
-            if (itemStack.is(TFMGTags.TFMGItemTags.BLAST_FURNACE_FUEL.tag) && fuel < STORAGE_SPACE) {
-
-                fuel++;
-                itemStack.shrink(1);
+            // Fuel takes priority. If the item is fuel and the storage is
+            // full, we MUST NOT fall through to the generic input slot —
+            // before this guard, overflowing coal_coke_dust spilled into
+            // inputInventory and blocked the recipe (the BFO had to be
+            // broken and replaced to clear it).
+            if (itemStack.is(TFMGTags.TFMGItemTags.BLAST_FURNACE_FUEL.tag)) {
+                if (fuel < STORAGE_SPACE) {
+                    fuel++;
+                    itemStack.shrink(1);
+                }
                 continue;
             }
-            if (itemStack.is(TFMGTags.TFMGItemTags.FLUX.tag) && fluxInventory.getItem(0).getCount() < itemStack.getMaxStackSize()) {
-                if (fluxInventory.isEmpty() || fluxInventory.getItem(0).is(itemStack.getItem())) {
+            if (itemStack.is(TFMGTags.TFMGItemTags.FLUX.tag)) {
+                if (fluxInventory.getItem(0).getCount() < itemStack.getMaxStackSize()
+                        && (fluxInventory.isEmpty() || fluxInventory.getItem(0).is(itemStack.getItem()))) {
                     fluxInventory.setItem(0, new ItemStack(itemStack.getItem(), fluxInventory.getItem(0).getCount() + 1));
                     itemStack.shrink(1);
-                    continue;
                 }
+                continue;
             }
             if (inputInventory.getItem(0).getCount() < itemStack.getMaxStackSize()) {
                 if (inputInventory.isEmpty() || inputInventory.getItem(0).is(itemStack.getItem())) {

@@ -214,6 +214,24 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
             return;
         }
 
+        // Stop here if the slot item is a resistor/coil that has already
+        // reached its scroll-value target. Without this guard the generic
+        // recipe branch below kept ticking — draining the spool by one per
+        // tick and incrementing amountWinded — even though the resistor was
+        // already at its target ohm value. The user reported 5% target on a
+        // resistor consuming 90 spool durability instead of 50, and 100%
+        // target ending at 960 ohm instead of 1000 because the extra drain
+        // burned through the spool before amountWinded had finished.
+        ItemStack slotItem = inventory.getItem(0);
+        if (slotItem.is(TFMGBlocks.RESISTOR.asItem())
+                && slotItem.getOrDefault(TFMGDataComponents.RESISTANCE, 0) >= turnPercentage.getValue() * 10) {
+            return;
+        }
+        if ((slotItem.is(TFMGItems.ELECTROMAGNETIC_COIL.get()) || slotItem.is(TFMGBlocks.LARGE_COIL.get().asItem()))
+                && slotItem.getOrDefault(TFMGDataComponents.COIL_TURNS, 0) >= turnPercentage.getValue() * 10) {
+            return;
+        }
+
 
 
         if (amountWinded >= recipe.getProcessingDuration()) {

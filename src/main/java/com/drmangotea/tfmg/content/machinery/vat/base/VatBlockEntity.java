@@ -566,25 +566,29 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         if (timer >= recipe.getProcessingDuration()) {
 
             // Pre-flight: make sure ALL outputs (items + fluids) can be placed
-            // before consuming any inputs. The previous code drained the input
-            // fluids first and only then tried to write outputs, so a full
-            // output tank or a full output inventory silently destroyed the
-            // ingredients (the user reported a 'mixer accepts everything but
-            // produces nothing' on a recipe whose output had nowhere to go).
+            // before consuming any inputs.
             if (!canFitAllOutputs(recipe)) {
                 return;
             }
 
+            // Capture the active recipe in a local. The drain / fill / extract
+            // calls below trigger onInventoryChanged callbacks (via the tank
+            // change listeners and SmartInventory observers), which call
+            // getMatchingRecipe and may NULL the this.recipe field mid-cycle
+            // because the inputs are no longer enough for a fresh match. The
+            // reported NPE in handleRecipe@604 ('this.recipe is null') hit
+            // exactly at the item-output loop right after the fluid drain.
+            // Using activeRecipe locally keeps the transaction consistent.
+            VatMachineRecipe activeRecipe = recipe;
+
             // Drain the input tank's fluid ingredients directly via the
             // TankSegments, NOT through inputTank.getCapability(). The
-            // capability now has forbidExtraction() applied to stop external
-            // pipes from draining ingredients (commit 9c3d43c9), which had
-            // the side effect of also blocking the recipe's own internal
-            // drain — the user reported 'fluids never get consumed but the
-            // output is still produced'. The TankSegments expose a direct
-            // SmartFluidTank that always honours drain.
+            // capability has forbidExtraction() applied to stop external
+            // pipes from draining ingredients; that wrapper also blocked the
+            // recipe's own internal drain. The TankSegments bypass the
+            // wrapper.
             SmartFluidTankBehaviour.TankSegment[] inputSegs = inputTank.getTanks();
-            for (SizedFluidIngredient ingredient : recipe.getFluidIngredients()) {
+            for (SizedFluidIngredient ingredient : activeRecipe.getFluidIngredients()) {
                 int remaining = ingredient.amount();
                 for (SmartFluidTankBehaviour.TankSegment seg : inputSegs) {
                     if (remaining <= 0)
@@ -601,7 +605,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             }
             //item output
 
-            for (ProcessingOutput output : recipe.getRollableResults()) {
+            for (ProcessingOutput output : activeRecipe.getRollableResults()) {
 
                 ItemStack itemStack = output.rollOutput(level.random);
 
@@ -630,51 +634,42 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 }
             }
             //item input
-            if (recipe != null)
-                for (Ingredient ingredient : recipe.getIngredients()) {
-                    int needed = ingredient.getItems().length > 0 ? ingredient.getItems()[0].getCount() : 1;
-                    for (int i = 0; i < inputInventory.getSlots(); i++) {
-                        ItemStack stackInInv = inputInventory.getStackInSlot(i);
-                        if (stackInInv.isEmpty())
-                            continue;
-                        if (ingredient.test(stackInInv) && stackInInv.getCount() >= needed) {
-                            inputInventory.extractItem(i, needed, false);
-                            break;
-                        }
+            for (Ingredient ingredient : activeRecipe.getIngredients()) {
+                int needed = ingredient.getItems().length > 0 ? ingredient.getItems()[0].getCount() : 1;
+                for (int i = 0; i < inputInventory.getSlots(); i++) {
+                    ItemStack stackInInv = inputInventory.getStackInSlot(i);
+                    if (stackInInv.isEmpty())
+                        continue;
+                    if (ingredient.test(stackInInv) && stackInInv.getCount() >= needed) {
+                        inputInventory.extractItem(i, needed, false);
+                        break;
                     }
                 }
-            //fluid output — cascade across multiple output segments for
-            // the same fluid so that a 144 mB output isn't truncated to
-            // whatever fit in the first matching segment. canFitAllOutputs
-            // already guaranteed the total room exists, so the loop is safe
-            // to spill across segments.
-            if (recipe != null) {
-                SmartFluidTankBehaviour.TankSegment[] segs = outputTank.getTanks();
-                for (FluidStack fluidStack : recipe.getFluidResults()) {
-                    if (fluidStack.isEmpty())
+            }
+            //fluid output — cascade across multiple output segments
+            SmartFluidTankBehaviour.TankSegment[] segs = outputTank.getTanks();
+            for (FluidStack fluidStack : activeRecipe.getFluidResults()) {
+                if (fluidStack.isEmpty())
+                    continue;
+                int remaining = fluidStack.getAmount();
+                for (SmartFluidTankBehaviour.TankSegment tankSegment : segs) {
+                    if (remaining <= 0)
+                        break;
+                    SmartFluidTank tank = ((TankSegmentAccessor) tankSegment).tfmg$tank();
+                    FluidStack fluidInTank = tank.getFluid();
+                    if (fluidInTank.isEmpty() || !fluidInTank.getFluid().isSame(fluidStack.getFluid()))
                         continue;
-                    int remaining = fluidStack.getAmount();
-                    // Same-fluid segments first.
-                    for (SmartFluidTankBehaviour.TankSegment tankSegment : segs) {
-                        if (remaining <= 0)
-                            break;
-                        SmartFluidTank tank = ((TankSegmentAccessor) tankSegment).tfmg$tank();
-                        FluidStack fluidInTank = tank.getFluid();
-                        if (fluidInTank.isEmpty() || !fluidInTank.getFluid().isSame(fluidStack.getFluid()))
-                            continue;
-                        int filled = tank.fill(new FluidStack(fluidStack.getFluid(), remaining), IFluidHandler.FluidAction.EXECUTE);
-                        remaining -= filled;
-                    }
-                    // Then empty segments.
-                    for (SmartFluidTankBehaviour.TankSegment tankSegment : segs) {
-                        if (remaining <= 0)
-                            break;
-                        SmartFluidTank tank = ((TankSegmentAccessor) tankSegment).tfmg$tank();
-                        if (!tank.getFluid().isEmpty())
-                            continue;
-                        int filled = tank.fill(new FluidStack(fluidStack.getFluid(), remaining), IFluidHandler.FluidAction.EXECUTE);
-                        remaining -= filled;
-                    }
+                    int filled = tank.fill(new FluidStack(fluidStack.getFluid(), remaining), IFluidHandler.FluidAction.EXECUTE);
+                    remaining -= filled;
+                }
+                for (SmartFluidTankBehaviour.TankSegment tankSegment : segs) {
+                    if (remaining <= 0)
+                        break;
+                    SmartFluidTank tank = ((TankSegmentAccessor) tankSegment).tfmg$tank();
+                    if (!tank.getFluid().isEmpty())
+                        continue;
+                    int filled = tank.fill(new FluidStack(fluidStack.getFluid(), remaining), IFluidHandler.FluidAction.EXECUTE);
+                    remaining -= filled;
                 }
             }
             recipe = null;
