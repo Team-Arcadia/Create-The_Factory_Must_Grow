@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFMG Targeted Test — 242a522b (vat NPE + winding overdraw + BFO pump stutter + BFO fuel overflow)</title>
+<style>
+  :root {
+    --bg: #15181d;
+    --panel: #1f2329;
+    --panel2: #272c34;
+    --panel3: #313742;
+    --border: #3a404d;
+    --text: #e6e8eb;
+    --muted: #8a93a3;
+    --accent: #f0a050;
+    --accent-soft: rgba(240,160,80,0.12);
+    --pass: #4caf50;
+    --fail: #e54848;
+    --skip: #7a828f;
+    --warn: #f0a050;
+    --regression: #e54848;
+    --info: #5fa8e8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 5px; }
+
+  header {
+    background: linear-gradient(135deg, #2a2f38, #15181d);
+    padding: 20px 28px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 19px; color: var(--accent); flex: 0 0 auto; }
+  header .sub { color: var(--muted); font-size: 12px; flex: 1; }
+  .lang-switch { display: flex; gap: 4px; }
+  .lang-switch button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #15181d;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  body:not(.fr) .lang-fr { display: none; }
+  body.fr .lang-en { display: none; }
+
+  .container { padding: 20px 28px 140px; max-width: 1300px; margin: 0 auto; }
+
+  .meta {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .meta label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .meta input, .meta select, .meta textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .meta textarea { grid-column: 1 / -1; resize: vertical; min-height: 50px; }
+
+  .scope-banner {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .scope-banner h3 { margin: 0 0 10px; color: var(--accent); font-size: 14px; }
+  .scope-banner ul { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: var(--text); }
+  .scope-banner li { margin-bottom: 6px; }
+  .scope-banner code { background: var(--bg); padding: 1px 6px; border-radius: 3px; font-size: 11px; color: var(--accent); }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .toolbar button.primary { background: var(--accent); color: #15181d; border-color: var(--accent); font-weight: 600; }
+  .toolbar button.danger { background: var(--regression); color: white; border-color: var(--regression); }
+  .toolbar .stats { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+  .toolbar .stats span { display: flex; align-items: center; gap: 4px; }
+  .toolbar .stats .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  .toolbar .progress {
+    flex: 1;
+    height: 26px;
+    min-width: 200px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .toolbar .progress-bar { height: 100%; background: linear-gradient(90deg, var(--pass), var(--accent)); transition: width .25s; }
+  .toolbar .progress-text {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text);
+  }
+  .toolbar .save-indicator {
+    color: var(--muted);
+    font-size: 12px;
+    transition: color 0.4s;
+  }
+  .toolbar .save-indicator.saved { color: var(--pass); }
+
+  .test {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .test-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .test-id {
+    font-family: monospace;
+    background: var(--bg);
+    padding: 3px 8px;
+    border-radius: 3px;
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .test-title { font-weight: 600; flex: 1; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge.p0 { background: var(--regression); color: white; }
+  .badge.p1 { background: var(--accent); color: #15181d; }
+  .badge.p2 { background: var(--panel3); color: var(--text); }
+  .badge.regression { background: rgba(229,72,72,0.15); color: var(--regression); border: 1px solid var(--regression); }
+  .badge.collateral { background: rgba(95,168,232,0.15); color: var(--info); border: 1px solid var(--info); }
+  .badge.crash { background: rgba(229,72,72,0.3); color: white; border: 1px solid var(--regression); }
+
+  .test-section { margin: 8px 0; font-size: 13px; }
+  .test-section .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  .test-section .body { line-height: 1.6; }
+  .test-section code {
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .test-section pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-size: 11.5px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+
+  .verdict {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+  .verdict button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .verdict button.pass.active { background: var(--pass); border-color: var(--pass); color: white; }
+  .verdict button.fail.active { background: var(--regression); border-color: var(--regression); color: white; }
+  .verdict button.skip.active { background: var(--skip); border-color: var(--skip); color: white; }
+  .verdict textarea {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+    min-height: 32px;
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal h2 { margin: 0 0 14px; color: var(--accent); }
+  .modal textarea {
+    width: 100%;
+    min-height: 250px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: monospace;
+    font-size: 11px;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+  .modal-actions button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 18px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .modal-actions button.primary { background: var(--accent); color: #15181d; border-color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TFMG Targeted Test — commit 242a522b</h1>
+  <div class="sub">
+    <span class="lang-en">Scope: only the four fixes shipped in <code style="font-family:monospace">242a522b</code> (vat NPE crash, winding spool overdraw, BFO Create pump stutter, BFO fuel-overflow input poisoning) plus the regressions each could have introduced. Do not retest unrelated features here.</span>
+    <span class="lang-fr">Périmètre : uniquement les quatre fixes du commit <code style="font-family:monospace">242a522b</code> (crash NPE vat, overdraw spool winding, stutter pompe Create BFO, fuel overflow polluant input BFO) plus les régressions que chacun aurait pu introduire. Ne pas retester d'autres features ici.</span>
+  </div>
+  <div class="lang-switch">
+    <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+    <button id="btn-fr" onclick="setLang('fr')">FR</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="meta">
+    <div>
+      <label><span class="lang-en">Tester name</span><span class="lang-fr">Nom du testeur</span></label>
+      <input type="text" id="meta-tester" placeholder="vyrriox">
+    </div>
+    <div>
+      <label><span class="lang-en">Test date</span><span class="lang-fr">Date du test</span></label>
+      <input type="date" id="meta-date">
+    </div>
+    <div>
+      <label><span class="lang-en">Environment</span><span class="lang-fr">Environnement</span></label>
+      <select id="meta-env">
+        <option value="singleplayer">Singleplayer</option>
+        <option value="lan">LAN</option>
+        <option value="dedicated">Dedicated server</option>
+        <option value="creative">Creative test world</option>
+      </select>
+    </div>
+    <div>
+      <label><span class="lang-en">Build commit</span><span class="lang-fr">Commit testé</span></label>
+      <input type="text" id="meta-commit" placeholder="242a522b" value="242a522b">
+    </div>
+    <div style="grid-column:1/-1">
+      <label><span class="lang-en">Notes</span><span class="lang-fr">Notes</span></label>
+      <textarea id="meta-notes" placeholder=""></textarea>
+    </div>
+  </div>
+
+  <div class="scope-banner">
+    <h3>
+      <span class="lang-en">▸ Scope of this test pass</span>
+      <span class="lang-fr">▸ Périmètre de cette passe</span>
+    </h3>
+    <div class="lang-en">
+      <p>Four follow-up fixes shipped in <code>242a522b</code> after Neymor16's f94fbeef report (one server crash + four behaviour regressions). Tests are grouped per fix: a primary test that validates the fix and 1–2 collateral tests that catch the most likely regression each fix could have caused.</p>
+      <ul>
+        <li><strong>VAT-NPE</strong> — server crashed within seconds of inserting an asphalt_mixture into a vat (NPE at <code>VatBlockEntity.handleRecipe:604</code> on <code>this.recipe.getRollableResults()</code>). Cause: <code>tank.drain</code> in <code>tickRecipe</code> triggered a fluid-update listener that called <code>getMatchingRecipe</code>; with the water just drained the recipe no longer matched and <code>this.recipe</code> was set to null mid-cycle. The fluid-output and item-output loops then NPE'd. Fix captures the recipe in a local <code>activeRecipe</code> before the drain so the rest of the transaction stays consistent.</li>
+        <li><strong>WIND-OVERDRAW</strong> — winding a resistor at 5% target consumed ~90 spool durability instead of 50, and at 100% target produced 960 ohm instead of 1000. <code>performRecipe</code> had a resistor branch that returned after one decrement, but once <code>RESISTANCE</code> reached its target the branch skipped and execution fell into the generic recipe branch below — which kept decrementing the spool every tick (incrementing <code>amountWinded</code> but not <code>RESISTANCE</code>). Fix adds an early return when the slot item is a resistor / coil already at its target.</li>
+        <li><strong>BFO-PUMP-STUTTER</strong> — Create's mechanical pump extracted 128 mB then immediately stalled after the previous fix added <code>level.invalidateCapabilities</code> on every <code>onFluidChanged</code>. Each invalidation made the pump drop its cached handler and re-fetch on the next tick, killing the steady-state stream. Fix removes the per-tick invalidation; only the <code>read()</code> invalidation remains (the actual chunk-reload bug we wanted to fix).</li>
+        <li><strong>BFO-FUEL-OVERFLOW</strong> — once the fuel buffer hit its 64-item cap, additional coal_coke_dust dropped on the BFO fell through into the input slot and blocked the recipe (only break-and-replace recovered). <code>collectItems</code> tested 'is fuel AND fuel &lt; cap' and on cap-reached fall-through it stuffed the item into <code>inputInventory</code>. Fix: any item tagged <code>BLAST_FURNACE_FUEL</code> always <code>continue</code>s — when the cap is full the item simply isn't picked up. Same guard applied to FLUX for symmetry.</li>
+      </ul>
+    </div>
+    <div class="lang-fr">
+      <p>Quatre fixes de suivi livrés dans <code>242a522b</code> après le rapport f94fbeef de Neymor16 (un crash serveur + quatre régressions de comportement). Tests groupés par fix : un test principal qui valide le fix et 1–2 tests collatéraux qui captent la régression la plus probable.</p>
+      <ul>
+        <li><strong>VAT-NPE</strong> — Le serveur crashait dans les secondes suivant l'insertion d'asphalt_mixture dans un vat (NPE à <code>VatBlockEntity.handleRecipe:604</code> sur <code>this.recipe.getRollableResults()</code>). Cause : <code>tank.drain</code> dans <code>tickRecipe</code> déclenchait un listener qui appelait <code>getMatchingRecipe</code> ; l'eau venant d'être drainée, la recette ne matchait plus et <code>this.recipe</code> était set à null en plein cycle. Les loops fluid/item output NPE'aient ensuite. Fix : capturer la recette dans un local <code>activeRecipe</code> AVANT le drain pour que le reste de la transaction reste cohérent.</li>
+        <li><strong>WIND-OVERDRAW</strong> — Enrouler une résistance à 5% target consommait ~90 durabilité spool au lieu de 50, et à 100% target produisait 960 ohm au lieu de 1000. <code>performRecipe</code> avait une branche resistor qui return après 1 decrement, mais une fois <code>RESISTANCE</code> au target la branche skip et l'exécution tombait dans la branche generic en dessous — qui continuait à drainer le spool à chaque tick (incrémente <code>amountWinded</code> mais pas <code>RESISTANCE</code>). Fix : early return quand l'item est resistor / coil déjà au target.</li>
+        <li><strong>BFO-PUMP-STUTTER</strong> — La pompe Create extrayait 128 mB puis s'arrêtait immédiatement après que le fix précédent ait ajouté <code>level.invalidateCapabilities</code> à chaque <code>onFluidChanged</code>. Chaque invalidation faisait perdre le handler caché à la pompe qui devait re-fetch au tick suivant — le stream continu était cassé. Fix : retire l'invalidation per-tick ; seule celle dans <code>read()</code> reste (le vrai fix chunk-reload qu'on voulait).</li>
+        <li><strong>BFO-FUEL-OVERFLOW</strong> — Une fois le buffer fuel à 64 items, le coal_coke_dust supplémentaire posé sur le BFO tombait dans le slot d'input et bloquait la recette (seul casser/reposer libérait). <code>collectItems</code> testait 'est fuel ET fuel &lt; cap' et sur cap-atteint, fall-through dans la branche generic qui mettait l'item dans <code>inputInventory</code>. Fix : tout item taggé <code>BLAST_FURNACE_FUEL</code> fait toujours <code>continue</code> — cap atteint = item simplement non ramassé. Même guard appliqué à FLUX par symétrie.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="progress">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+      <div class="progress-text" id="progress-text">0 / 0</div>
+    </div>
+    <div class="stats">
+      <span><i class="dot" style="background:var(--pass)"></i><span id="stat-pass">0</span></span>
+      <span><i class="dot" style="background:var(--regression)"></i><span id="stat-fail">0</span></span>
+      <span><i class="dot" style="background:var(--skip)"></i><span id="stat-skip">0</span></span>
+      <span><i class="dot" style="background:var(--panel3)"></i><span id="stat-untested">0</span></span>
+    </div>
+    <span class="save-indicator" id="save-indicator">●</span>
+    <button class="danger" onclick="resetAll()"><span class="lang-en">Reset</span><span class="lang-fr">Réinit.</span></button>
+    <button class="primary" onclick="exportJSON()"><span class="lang-en">Export JSON</span><span class="lang-fr">Exporter JSON</span></button>
+  </div>
+
+  <div id="tests"></div>
+</div>
+
+<div class="modal" id="export-modal">
+  <div class="modal-content">
+    <h2><span class="lang-en">Export</span><span class="lang-fr">Export</span></h2>
+    <textarea id="export-textarea" readonly></textarea>
+    <div class="modal-actions">
+      <button onclick="downloadJSON()"><span class="lang-en">Download .json</span><span class="lang-fr">Télécharger .json</span></button>
+      <button class="primary" onclick="copyJSON(event)"><span class="lang-en">Copy</span><span class="lang-fr">Copier</span></button>
+      <button onclick="closeModal()"><span class="lang-en">Close</span><span class="lang-fr">Fermer</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'tfmg-test-242a522b-targeted';
+
+const TESTS = [
+  // ============================================================
+  // FIX 1: VAT NPE CRASH (highest priority)
+  // ============================================================
+  {
+    id: 'VAT-NPE-PRIMARY',
+    sev: 'p0',
+    regression: true,
+    crash: true,
+    title_en: 'No more NPE crash when a vat recipe completes (primary fix)',
+    title_fr: 'Plus de crash NPE quand une recette vat se complète (fix principal)',
+    setup_en: 'Build a 1×2×1 mechanical vat with industrial mixer on top in mixing mode + a heat source below. Fill the input tank with 250 mB water + insert 1 asphalt_mixture into the input slot.',
+    setup_fr: 'Monte un mechanical vat 1×2×1 avec industrial mixer sur le dessus en mode mixing + source de chaleur en dessous. Remplis l\'input tank avec 250 mB d\'eau + insère 1 asphalt_mixture dans le slot d\'input.',
+    steps_en: '1) Wait for the recipe to complete (~100 ticks). 2) The server MUST NOT crash. 3) Check that the input water is consumed (0 mB), the asphalt_mixture item is consumed, and the output tank holds 1000 mB liquid_asphalt. 4) Insert another set of inputs and run a second cycle to confirm the fix is stable across multiple completions.',
+    steps_fr: '1) Attends la fin de la recette (~100 ticks). 2) Le serveur NE DOIT PAS crasher. 3) Vérifie que l\'eau est consommée (0 mB), l\'asphalt_mixture aussi, et l\'output tank contient 1000 mB de liquid_asphalt. 4) Réinsère un set d\'inputs et lance un 2e cycle pour confirmer la stabilité sur plusieurs complétions.',
+    expected_en: 'Recipe completes cleanly, server stays up, both inputs consumed AND output produced. Before 242a522b, tank.drain triggered onInventoryChanged which nulled this.recipe mid-tick — the next loop iteration NPE\'d on recipe.getRollableResults().',
+    expected_fr: 'La recette se complète proprement, le serveur reste up, les deux inputs sont consommés ET l\'output produit. Avant 242a522b, tank.drain déclenchait onInventoryChanged qui nullait this.recipe en plein tick — la loop suivante NPE\'ait sur recipe.getRollableResults().',
+    cmds: [
+      '/give @s tfmg:asphalt_mixture 16',
+      '/give @s minecraft:water_bucket'
+    ]
+  },
+  {
+    id: 'VAT-NPE-MULTI-OUTPUT',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Recipe with multiple item AND fluid outputs completes without NPE (collateral)',
+    title_fr: 'Recette avec plusieurs outputs item ET fluide se complète sans NPE (collatéral)',
+    setup_en: 'Build a firebrick-lined vat large enough to satisfy arc_furnace_steel (3×3×1 minimum, with 3 graphite electrodes on top and a heat source). Fill input with crushed_raw_iron + flux + coal_coke_dust.',
+    setup_fr: 'Monte un firebrick lined vat suffisant pour arc_furnace_steel (3×3×1 minimum, 3 graphite electrodes sur le dessus, source de chaleur). Remplis input avec crushed_raw_iron + flux + coal_coke_dust.',
+    steps_en: 'Run the recipe (3 outputs: chance coal_coke_dust + 144 mB molten_steel + 288 mB molten_slag). Confirm no crash, all 3 outputs land where they should, items are consumed.',
+    steps_fr: 'Lance la recette (3 outputs : chance coal_coke_dust + 144 mB molten_steel + 288 mB molten_slag). Confirme aucun crash, les 3 outputs atterrissent au bon endroit, les items sont consommés.',
+    expected_en: 'activeRecipe local survives across the drain, fluid output cascade and item output writes — no NPE on getFluidResults() or getRollableResults().',
+    expected_fr: 'Le local activeRecipe survit au drain, à la cascade fluid output et aux item output writes — pas de NPE sur getFluidResults() ou getRollableResults().'
+  },
+  {
+    id: 'VAT-NPE-PIPE-INSERT-DURING-DRAIN',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Mekanism pipe pushing fluid during the drain tick does not corrupt the recipe (collateral)',
+    title_fr: 'Pipe Mekanism qui pousse du fluide pendant le tick drain ne corrompt pas la recette (collatéral)',
+    setup_en: 'Same vat as VAT-NPE-PRIMARY but with a Mekanism mechanical pipe in PUSH mode continuously sending water from a buffer tank into the vat input.',
+    setup_fr: 'Même vat que VAT-NPE-PRIMARY mais avec une pipe Mekanism en PUSH mode envoyant continuellement de l\'eau depuis un tank buffer vers l\'input du vat.',
+    steps_en: 'Run several cycles back-to-back. The vat will be receiving fluid from the pipe at the same time it drains for the recipe. Confirm no crash, no NPE, recipes complete with correct accounting.',
+    steps_fr: 'Lance plusieurs cycles. Le vat reçoit du fluide via la pipe en même temps qu\'il draine pour la recette. Confirme aucun crash, pas de NPE, recettes complètes avec comptage correct.',
+    expected_en: 'Even when listeners fire mid-drain, activeRecipe protects the transaction. Cycles complete consistently.',
+    expected_fr: 'Même quand des listeners se déclenchent en plein drain, activeRecipe protège la transaction. Les cycles se complètent.'
+  },
+
+  // ============================================================
+  // FIX 2: WINDING SPOOL OVERDRAW
+  // ============================================================
+  {
+    id: 'WIND-OVERDRAW-PRIMARY',
+    sev: 'p0',
+    regression: true,
+    title_en: 'Winding a resistor at 5% target consumes exactly 50 spool durability (primary fix)',
+    title_fr: 'Enrouler une résistance à 5% target consomme exactement 50 spool durability (fix principal)',
+    setup_en: 'Place a winding machine, drive its shaft at non-zero speed. Set turn percentage to 5%. Insert a fresh constantan spool with known SPOOL_AMOUNT (e.g. 1000).',
+    setup_fr: 'Pose une winding machine, fais tourner son shaft à vitesse non nulle. Règle turn percentage à 5%. Insère une constantan spool fraîche avec SPOOL_AMOUNT connu (ex. 1000).',
+    steps_en: '1) Note the spool\'s SPOOL_AMOUNT. 2) Insert a plain resistor. 3) Wait until the in-machine display stops changing (resistor is at 50 ohm). 4) Note the spool\'s SPOOL_AMOUNT now. 5) Difference MUST be exactly 50.',
+    steps_fr: '1) Note le SPOOL_AMOUNT de la spool. 2) Insère une résistance vierge. 3) Attends que l\'affichage se stabilise (résistance à 50 ohm). 4) Note le SPOOL_AMOUNT maintenant. 5) La différence DOIT être exactement 50.',
+    expected_en: 'Spool drained by 50 (1000 → 950). Before 242a522b, the spool was drained by ~90 because the generic recipe branch kept ticking after the resistor reached target.',
+    expected_fr: 'Spool drainée de 50 (1000 → 950). Avant 242a522b, la spool était drainée de ~90 parce que la branche generic continuait à tick après que la résistance ait atteint son target.',
+    cmds: [
+      '/give @s tfmg:resistor 4',
+      '/give @s tfmg:constantan_spool 4'
+    ]
+  },
+  {
+    id: 'WIND-OVERDRAW-100-TARGET',
+    sev: 'p0',
+    regression: true,
+    title_en: 'Winding a resistor at 100% target produces exactly 1000 ohm (primary fix)',
+    title_fr: 'Enrouler une résistance à 100% target produit exactement 1000 ohm (fix principal)',
+    setup_en: 'Same setup as WIND-OVERDRAW-PRIMARY but turn percentage = 100%. Use a constantan spool with SPOOL_AMOUNT >= 1000.',
+    setup_fr: 'Même setup que WIND-OVERDRAW-PRIMARY mais turn percentage = 100%. Utilise une constantan spool avec SPOOL_AMOUNT >= 1000.',
+    steps_en: 'Insert a plain resistor. Let the machine wind it fully (display stops changing). Pull the resistor out. Read its NBT — RESISTANCE MUST be exactly 1000.',
+    steps_fr: 'Insère une résistance vierge. Laisse la machine enrouler complètement (affichage stable). Sors la résistance. Lis son NBT — RESISTANCE DOIT être exactement 1000.',
+    expected_en: 'Resistor at exactly 1000 ohm. Before 242a522b, the user reported coming out at 960 ohm because the spool got drained by ~40 extra ticks via the generic branch and ran out before the resistor reached target.',
+    expected_fr: 'Résistance à exactement 1000 ohm. Avant 242a522b, le user reportait 960 ohm parce que la spool était drainée par ~40 ticks supplémentaires via la branche generic et s\'épuisait avant que la résistance n\'atteigne son target.'
+  },
+  {
+    id: 'WIND-OVERDRAW-COIL-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Coil winding (electromagnetic_coil + copper_spool) still consumes the right amount (collateral)',
+    title_fr: 'Coil winding (electromagnetic_coil + copper_spool) consomme la bonne quantité (collatéral)',
+    setup_en: 'Winding machine with copper_spool. Set turn percentage to 50%. Insert an electromagnetic_coil. Note copper_spool SPOOL_AMOUNT before/after. Pull coil and read COIL_TURNS.',
+    setup_fr: 'Winding machine avec copper_spool. Règle turn percentage à 50%. Insère un electromagnetic_coil. Note SPOOL_AMOUNT du copper_spool avant/après. Sors le coil et lis COIL_TURNS.',
+    steps_en: 'Spool consumption MUST be exactly 500. Coil COIL_TURNS MUST be exactly 500.',
+    steps_fr: 'Consommation spool DOIT être exactement 500. COIL_TURNS DOIT être exactement 500.',
+    expected_en: 'Coil branch uses the same target-reached early-return as the resistor branch. Both gates share the fix.',
+    expected_fr: 'La branche coil utilise le même early-return que la branche resistor. Les deux gates partagent le fix.',
+    cmds: [
+      '/give @s tfmg:electromagnetic_coil 4',
+      '/give @s tfmg:copper_spool 4'
+    ]
+  },
+  {
+    id: 'WIND-OVERDRAW-IDLE-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Winding machine with finished resistor still in slot does not drain the spool (collateral)',
+    title_fr: 'Winding machine avec résistance finie encore dans le slot ne draine pas la spool (collatéral)',
+    setup_en: 'Wind a resistor to its target value (e.g. 5% = 50 ohm). Leave both the resistor AND the spool in the machine. Note the spool\'s SPOOL_AMOUNT.',
+    setup_fr: 'Enroule une résistance jusqu\'à son target (ex. 5% = 50 ohm). Laisse la résistance ET la spool dans la machine. Note le SPOOL_AMOUNT de la spool.',
+    steps_en: 'Wait 30 seconds with the shaft still rotating. Re-check the spool\'s SPOOL_AMOUNT — it MUST be unchanged. Before the fix, the generic branch kept idling and drained the spool.',
+    steps_fr: 'Attends 30 secondes avec le shaft tournant. Re-vérifie le SPOOL_AMOUNT — DOIT être inchangé. Avant le fix, la branche generic continuait à tourner et drainait la spool.',
+    expected_en: 'Spool stays at the same value. The early-return guards against idle drain.',
+    expected_fr: 'Spool reste à la même valeur. L\'early-return empêche le drain à vide.'
+  },
+  {
+    id: 'WIND-OVERDRAW-PROGRESS-BAR-NOTE',
+    sev: 'p2',
+    collateral: true,
+    title_en: 'Goggle "Progress" bar — known display issue from Neymor16 r10 report',
+    title_fr: 'Barre "Progress" goggle — problème d\'affichage connu rapport r10 Neymor16',
+    setup_en: 'Just wear goggles and look at a winding machine while it operates. Do not test the actual winding — that is covered by the other tests.',
+    setup_fr: 'Mets les goggles et regarde une winding machine en cours d\'opération. Ne teste pas l\'enroulage — couvert par les autres tests.',
+    steps_en: 'Note whether the goggle "Progress" bar tracks the actual winding accurately. Neymor16 reported it always fills too early regardless of spool used. Mark PASS if the bar now matches; mark SKIP if you do not want to evaluate this UX-only point.',
+    steps_fr: 'Note si la barre "Progress" du goggle suit fidèlement l\'enroulage réel. Neymor16 a reporté qu\'elle se remplit toujours trop tôt peu importe la spool. Marque PASS si la barre matche désormais ; marque SKIP si tu ne veux pas évaluer ce point UX.',
+    expected_en: 'Cosmetic only — the spool consumption is the source of truth. We have not changed this UI in 242a522b; flag it for a possible future cosmetic pass.',
+    expected_fr: 'Cosmétique uniquement — la consommation spool est la vérité. Pas de changement UI en 242a522b ; flagger pour une éventuelle passe cosmétique future.'
+  },
+
+  // ============================================================
+  // FIX 3: BFO CREATE PUMP STUTTER
+  // ============================================================
+  {
+    id: 'BFO-PUMP-PRIMARY',
+    sev: 'p0',
+    regression: true,
+    title_en: 'Create mechanical pump pulls steadily from BFO without stalling (primary fix)',
+    title_fr: 'La pompe mécanique Create draine continûment depuis le BFO sans s\'arrêter (fix principal)',
+    setup_en: 'Build a working blast furnace producing molten_steel (or liquid_silicon) into the BFO. Wait until BFO holds at least 2000 mB. Connect a Create mechanical pump (powered, valid kinetic side facing) + fluid pipes draining into a separate steel tank.',
+    setup_fr: 'Monte un blast furnace fonctionnel produisant du molten_steel (ou liquid_silicon) dans le BFO. Attends que le BFO contienne au moins 2000 mB. Connecte une pompe mécanique Create (alimentée, face cinétique correcte) + pipes fluides drainant vers un steel tank séparé.',
+    steps_en: '1) Watch the destination tank for 2 minutes. 2) Fluid level MUST climb continuously. 3) The pump MUST NOT stall after 128 mB and require break/replace to resume.',
+    steps_fr: '1) Observe le tank de destination 2 min. 2) Le niveau DOIT monter continuellement. 3) La pompe NE DOIT PAS s\'arrêter après 128 mB et demander un casser/replacer.',
+    expected_en: 'Steady extraction. Before 242a522b, invalidateCapabilities was called on every onFluidChanged tick — the pump kept dropping its cached handler between extracts and stuttered to a halt.',
+    expected_fr: 'Extraction continue. Avant 242a522b, invalidateCapabilities était appelé à chaque tick onFluidChanged — la pompe perdait son handler caché entre les extracts et stutterait jusqu\'à l\'arrêt.'
+  },
+  {
+    id: 'BFO-PUMP-RELOAD-COLLATERAL',
+    sev: 'p0',
+    collateral: true,
+    title_en: 'Pump still resumes after world reload (the original f94fbeef fix is preserved)',
+    title_fr: 'La pompe reprend toujours après reload du monde (le fix d\'origine f94fbeef est préservé)',
+    setup_en: 'Same setup as BFO-PUMP-PRIMARY, pump actively extracting.',
+    setup_fr: 'Même setup que BFO-PUMP-PRIMARY, pompe en extraction.',
+    steps_en: '1) Save & quit. 2) Reload the world. 3) Without breaking anything, wait 5 seconds. 4) Pump MUST resume extraction within those 5 seconds. 5) Repeat by walking ~200 blocks away to unload the BFO chunk and back.',
+    steps_fr: '1) Sauvegarde & quitte. 2) Recharge le monde. 3) Sans rien casser, attends 5 secondes. 4) La pompe DOIT reprendre l\'extraction dans ces 5 secondes. 5) Répète en t\'éloignant ~200 blocs pour décharger la chunk du BFO et revenir.',
+    expected_en: 'Reload-only invalidation in read() still fires. The chunk-reload fix is preserved.',
+    expected_fr: 'L\'invalidation au reload uniquement (dans read()) tire toujours. Le fix chunk-reload est préservé.'
+  },
+  {
+    id: 'BFO-PUMP-MEKANISM-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Mekanism mechanical pipe extract still works (collateral)',
+    title_fr: 'Mekanism mechanical pipe en extract fonctionne toujours (collatéral)',
+    setup_en: 'Same BFO with fluid. Use Mekanism mechanical pipe in PULL mode instead of Create pump.',
+    setup_fr: 'Même BFO avec fluide. Utilise une mechanical pipe Mekanism en PULL au lieu de la pompe Create.',
+    steps_en: 'Watch the destination tank fill steadily. No stutter. Reload world and confirm extraction resumes.',
+    steps_fr: 'Observe le tank de destination se remplir continûment. Pas de stutter. Recharge le monde et confirme que l\'extraction reprend.',
+    expected_en: 'Both pipe families work; the per-tick invalidation that broke the Create pump was a regression we just fixed.',
+    expected_fr: 'Les deux familles de pipe marchent ; l\'invalidation per-tick qui cassait la pompe Create était une régression qu\'on vient de fix.'
+  },
+
+  // ============================================================
+  // FIX 4: BFO FUEL OVERFLOW POISONS INPUT
+  // ============================================================
+  {
+    id: 'BFO-FUEL-OVERFLOW-PRIMARY',
+    sev: 'p0',
+    regression: true,
+    title_en: 'Coal coke dust beyond the fuel cap does not pollute the input slot (primary fix)',
+    title_fr: 'Le coal_coke_dust au-delà du cap fuel ne pollue plus le slot d\'input (fix principal)',
+    setup_en: 'Build a BFO. Drop a stack of coal_coke_dust (e.g. 80 items) on top of it as ItemEntities — collectItems will pick them up.',
+    setup_fr: 'Monte un BFO. Drop un stack de coal_coke_dust (ex. 80 items) au-dessus en ItemEntities — collectItems va les ramasser.',
+    steps_en: '1) Watch the BFO\'s fuel counter rise to 64. 2) The remaining 16 coal_coke_dust items MUST stay on the ground (not move into inputInventory). 3) Verify inputInventory remains empty (or contains only the recipe input you put there). 4) Confirm a recipe still triggers correctly with appropriate ore + flux + fuel set.',
+    steps_fr: '1) Observe le compteur fuel du BFO monter à 64. 2) Les 16 coal_coke_dust restants DOIVENT rester au sol (pas entrer dans inputInventory). 3) Vérifie que inputInventory reste vide (ou contient seulement l\'input recipe que tu as mis). 4) Confirme qu\'une recette se déclenche correctement avec ore + flux + fuel approprié.',
+    expected_en: 'Fuel cap stops collection cleanly; surplus stays as items on the ground. Before 242a522b, coal_coke_dust spilled into inputInventory and blocked the recipe — only break/replace recovered.',
+    expected_fr: 'Le cap fuel arrête la collecte proprement ; le surplus reste en items au sol. Avant 242a522b, le coal_coke_dust débordait dans inputInventory et bloquait la recette — seul casser/reposer libérait.',
+    cmds: [
+      '/give @s tfmg:coal_coke_dust 80'
+    ]
+  },
+  {
+    id: 'BFO-FUEL-OVERFLOW-FLUX-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Flux dust beyond the slot cap also does not pollute input (collateral)',
+    title_fr: 'Flux dust au-delà du cap du slot ne pollue pas non plus l\'input (collatéral)',
+    setup_en: 'BFO. Fill the flux slot manually with 64 limesand. Drop additional limesand stacks on top.',
+    setup_fr: 'BFO. Remplis le slot flux à la main avec 64 limesand. Drop d\'autres stacks de limesand au-dessus.',
+    steps_en: 'The extra limesand stays on the ground; inputInventory stays empty.',
+    steps_fr: 'Le limesand supplémentaire reste au sol ; inputInventory reste vide.',
+    expected_en: 'The same continue guard now also covers FLUX so a fully-stocked flux slot does not poison input.',
+    expected_fr: 'Le même continue guard couvre maintenant aussi FLUX donc un slot flux plein ne pollue pas l\'input.',
+    cmds: [
+      '/give @s tfmg:limesand 80'
+    ]
+  },
+  {
+    id: 'BFO-FUEL-OVERFLOW-RECIPE-INPUT-COLLATERAL',
+    sev: 'p0',
+    collateral: true,
+    title_en: 'Recipe inputs still land in inputInventory normally (collateral)',
+    title_fr: 'Les inputs de recette tombent toujours bien dans inputInventory (collatéral)',
+    setup_en: 'BFO with empty input. Drop crushed_raw_iron stacks (NOT fuel, NOT flux).',
+    setup_fr: 'BFO avec input vide. Drop des stacks de crushed_raw_iron (PAS fuel, PAS flux).',
+    steps_en: 'Confirm the iron lands in inputInventory and starts the recipe normally (with fuel and flux available).',
+    steps_fr: 'Confirme que le fer tombe dans inputInventory et lance la recette normalement (avec fuel et flux dispo).',
+    expected_en: 'Non-fuel, non-flux items still flow through to inputInventory. The fix only blocks the wrong fall-through, not the normal path.',
+    expected_fr: 'Les items non-fuel, non-flux atterrissent toujours dans inputInventory. Le fix bloque seulement le fall-through fautif, pas le chemin normal.'
+  },
+  {
+    id: 'BFO-FUEL-OVERFLOW-MIXED-PIPE-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Mekanism logistical transporter feeding mixed items still routes correctly (collateral)',
+    title_fr: 'Mekanism logistical transporter envoyant des items mixtes route toujours correctement (collatéral)',
+    setup_en: 'Set up a Mekanism logistical transporter pushing crushed_raw_iron + coal_coke_dust + limesand into the BFO simultaneously.',
+    setup_fr: 'Branche un Mekanism logistical transporter qui pousse crushed_raw_iron + coal_coke_dust + limesand simultanément dans le BFO.',
+    steps_en: 'Verify items go to the right slot: iron → inputInventory, fuel → fuel counter (capped at 64), limesand → flux slot. No cross-contamination.',
+    steps_fr: 'Vérifie que les items vont dans le bon slot : fer → inputInventory, fuel → compteur fuel (cap à 64), limesand → slot flux. Aucune contamination croisée.',
+    expected_en: 'Routing is type-aware; the cap-reached early-return only stops the over-cap items, it does not affect routing of fresh items of other types.',
+    expected_fr: 'Le routing est type-aware ; l\'early-return de cap n\'arrête que les items over-cap, n\'affecte pas le routing des items frais d\'autres types.'
+  }
+];
+
+let state = {};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch (e) { state = {}; }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  flashSaved();
+}
+
+let saveTimer = null;
+function flashSaved() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.classList.add('saved');
+  el.textContent = '● saved';
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    el.classList.remove('saved');
+    el.textContent = '●';
+  }, 1200);
+}
+
+function setLang(lang) {
+  document.body.classList.toggle('fr', lang === 'fr');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+  localStorage.setItem(STORAGE_KEY + '-lang', lang);
+}
+
+function resetAll() {
+  if (!confirm('Reset all test results? / Réinitialiser tous les résultats ?')) return;
+  state = {};
+  saveState();
+  renderTests();
+  refreshStats();
+}
+
+function refreshStats() {
+  const total = TESTS.length;
+  let pass = 0, fail = 0, skip = 0;
+  TESTS.forEach(t => {
+    const v = state[t.id]?.verdict;
+    if (v === 'pass') pass++;
+    else if (v === 'fail') fail++;
+    else if (v === 'skip') skip++;
+  });
+  const done = pass + fail + skip;
+  const untested = total - done;
+  document.getElementById('stat-pass').textContent = pass;
+  document.getElementById('stat-fail').textContent = fail;
+  document.getElementById('stat-skip').textContent = skip;
+  document.getElementById('stat-untested').textContent = untested;
+  document.getElementById('progress-text').textContent = `${done} / ${total}`;
+  document.getElementById('progress-bar').style.width = `${total ? (done / total) * 100 : 0}%`;
+}
+
+function setVerdict(testId, verdict) {
+  state[testId] = state[testId] || {};
+  state[testId].verdict = verdict;
+  saveState();
+  renderTests();
+  refreshStats();
+}
+
+function setComment(testId, comment) {
+  state[testId] = state[testId] || {};
+  state[testId].comment = comment;
+  saveState();
+}
+
+function renderTests() {
+  const container = document.getElementById('tests');
+  container.innerHTML = '';
+  TESTS.forEach(t => {
+    const verdict = state[t.id]?.verdict || '';
+    const comment = state[t.id]?.comment || '';
+    const div = document.createElement('div');
+    div.className = 'test';
+    div.innerHTML = `
+      <div class="test-header">
+        <span class="test-id">${t.id}</span>
+        <span class="badge ${t.sev}">${t.sev.toUpperCase()}</span>
+        ${t.crash ? '<span class="badge crash">CRASH FIX</span>' : ''}
+        ${t.regression ? '<span class="badge regression">REGRESSION</span>' : ''}
+        ${t.collateral ? '<span class="badge collateral">COLLATERAL</span>' : ''}
+        <span class="test-title">
+          <span class="lang-en">${t.title_en}</span>
+          <span class="lang-fr">${t.title_fr}</span>
+        </span>
+      </div>
+      ${t.setup_en ? `
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Setup</span><span class="lang-fr">Préparation</span></div>
+        <div class="body">
+          <span class="lang-en">${t.setup_en}</span>
+          <span class="lang-fr">${t.setup_fr}</span>
+        </div>
+      </div>` : ''}
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Steps</span><span class="lang-fr">Étapes</span></div>
+        <div class="body">
+          <span class="lang-en">${t.steps_en}</span>
+          <span class="lang-fr">${t.steps_fr}</span>
+        </div>
+      </div>
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Expected</span><span class="lang-fr">Attendu</span></div>
+        <div class="body">
+          <span class="lang-en">${t.expected_en}</span>
+          <span class="lang-fr">${t.expected_fr}</span>
+        </div>
+      </div>
+      ${t.cmds && t.cmds.length ? `
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Setup commands</span><span class="lang-fr">Commandes setup</span></div>
+        <pre>${t.cmds.join('\n')}</pre>
+      </div>` : ''}
+      <div class="verdict">
+        <button class="pass ${verdict==='pass'?'active':''}" onclick="setVerdict('${t.id}','pass')">PASS</button>
+        <button class="fail ${verdict==='fail'?'active':''}" onclick="setVerdict('${t.id}','fail')">FAIL</button>
+        <button class="skip ${verdict==='skip'?'active':''}" onclick="setVerdict('${t.id}','skip')">SKIP</button>
+        <textarea placeholder="Comment / notes" oninput="setComment('${t.id}', this.value)">${comment}</textarea>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function exportJSON() {
+  const tester = document.getElementById('meta-tester').value || 'unknown';
+  const date = document.getElementById('meta-date').value || new Date().toISOString().slice(0,10);
+  const env = document.getElementById('meta-env').value;
+  const commit = document.getElementById('meta-commit').value;
+  const notes = document.getElementById('meta-notes').value;
+
+  const data = {
+    meta: {
+      project: 'TFMG',
+      scope: 'targeted-242a522b',
+      tester, date, environment: env, commit, notes,
+      exported_at: new Date().toISOString()
+    },
+    summary: {
+      total: TESTS.length,
+      pass: TESTS.filter(t => state[t.id]?.verdict === 'pass').length,
+      fail: TESTS.filter(t => state[t.id]?.verdict === 'fail').length,
+      skip: TESTS.filter(t => state[t.id]?.verdict === 'skip').length
+    },
+    tests: TESTS.map(t => ({
+      id: t.id,
+      sev: t.sev,
+      regression: !!t.regression,
+      collateral: !!t.collateral,
+      crash: !!t.crash,
+      title: t.title_en,
+      verdict: state[t.id]?.verdict || 'untested',
+      comment: state[t.id]?.comment || ''
+    }))
+  };
+
+  const text = JSON.stringify(data, null, 2);
+  document.getElementById('export-textarea').value = text;
+  document.getElementById('export-modal').classList.add('show');
+}
+
+function downloadJSON() {
+  const text = document.getElementById('export-textarea').value;
+  const tester = document.getElementById('meta-tester').value || 'unknown';
+  const date = document.getElementById('meta-date').value || new Date().toISOString().slice(0,10);
+  const blob = new Blob([text], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tfmg-test-242a522b-${tester}-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyJSON(e) {
+  const ta = document.getElementById('export-textarea');
+  ta.select();
+  document.execCommand('copy');
+  if (e && e.target) {
+    const orig = e.target.textContent;
+    e.target.textContent = 'Copied!';
+    setTimeout(() => e.target.textContent = orig, 1200);
+  }
+}
+
+function closeModal() {
+  document.getElementById('export-modal').classList.remove('show');
+}
+
+function init() {
+  loadState();
+  const lang = localStorage.getItem(STORAGE_KEY + '-lang') || 'en';
+  setLang(lang);
+  document.getElementById('meta-date').value = new Date().toISOString().slice(0,10);
+  ['meta-tester','meta-date','meta-env','meta-commit','meta-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const saved = localStorage.getItem(STORAGE_KEY + '-' + id);
+    if (saved) el.value = saved;
+    el.addEventListener('input', () => {
+      localStorage.setItem(STORAGE_KEY + '-' + id, el.value);
+      flashSaved();
+    });
+    el.addEventListener('change', () => {
+      localStorage.setItem(STORAGE_KEY + '-' + id, el.value);
+      flashSaved();
+    });
+  });
+  renderTests();
+  refreshStats();
+}
+init();
+</script>
+</body>
+</html>
