@@ -171,6 +171,17 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         int defaultSpoolAmount = 0;
         int defaultCoilTurns = 0;
 
+        // Server-only: this method mutates spool component values + slot
+        // contents. Running it on the client double-counted drains because
+        // tick() is called on both sides and the previous code had no
+        // sidedness guard — both ends incremented RESISTANCE/COIL_TURNS
+        // and decremented SPOOL_AMOUNT every tick before sendData()
+        // reconciled them. Tester reported 5% target (50 ohm) burning ~90
+        // spool durability instead of 50 = 50 server ticks + 40 client ticks
+        // shown to the user before the next sync overwrote them.
+        if (level == null || level.isClientSide)
+            return;
+
         if (getSpeed() == 0)
             return;
 
