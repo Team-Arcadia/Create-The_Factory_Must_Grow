@@ -229,7 +229,21 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
             return;
 
         if (amountWinded >= recipe.getProcessingDuration()) {
-            inventory.setStackInSlot(0, recipe.rollResults(level.random).get(0));
+            // Stamp the freshly-crafted output with the scroll-value target
+            // if it's a resistor / coil. Otherwise the recipe's static
+            // default (RESISTANCE = 10, COIL_TURNS = 100) would be applied
+            // and the dedicated branch above would then drain 40 extra spool
+            // units climbing back up to the player's target — that was the
+            // mysterious '+40 leak'. Bake the target into the result so the
+            // dedicated branch sees RESISTANCE == target immediately and
+            // exits without further drains.
+            ItemStack result = recipe.rollResults(level.random).get(0);
+            if (result.is(TFMGBlocks.RESISTOR.asItem()))
+                result.set(TFMGDataComponents.RESISTANCE, target);
+            else if (result.is(TFMGItems.ELECTROMAGNETIC_COIL.get())
+                    || result.is(TFMGBlocks.LARGE_COIL.get().asItem()))
+                result.set(TFMGDataComponents.COIL_TURNS, target);
+            inventory.setStackInSlot(0, result);
             recipe = null;
             amountWinded = 0;
             sendData();
