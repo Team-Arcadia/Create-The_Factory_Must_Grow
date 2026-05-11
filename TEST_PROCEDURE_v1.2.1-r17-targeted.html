@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TFMG Targeted Test — ea0fc0ad (winding goggle/spool bar update live during generic branch)</title>
+<style>
+  :root {
+    --bg: #15181d;
+    --panel: #1f2329;
+    --panel2: #272c34;
+    --panel3: #313742;
+    --border: #3a404d;
+    --text: #e6e8eb;
+    --muted: #8a93a3;
+    --accent: #f0a050;
+    --accent-soft: rgba(240,160,80,0.12);
+    --pass: #4caf50;
+    --fail: #e54848;
+    --skip: #7a828f;
+    --warn: #f0a050;
+    --regression: #e54848;
+    --info: #5fa8e8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--panel3); border-radius: 5px; }
+
+  header {
+    background: linear-gradient(135deg, #2a2f38, #15181d);
+    padding: 20px 28px;
+    border-bottom: 2px solid var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 19px; color: var(--accent); flex: 0 0 auto; }
+  header .sub { color: var(--muted); font-size: 12px; flex: 1; }
+  .lang-switch { display: flex; gap: 4px; }
+  .lang-switch button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .lang-switch button.active {
+    background: var(--accent);
+    color: #15181d;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  body:not(.fr) .lang-fr { display: none; }
+  body.fr .lang-en { display: none; }
+
+  .container { padding: 20px 28px 140px; max-width: 1300px; margin: 0 auto; }
+
+  .meta {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .meta label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .meta input, .meta select, .meta textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .meta textarea { grid-column: 1 / -1; resize: vertical; min-height: 50px; }
+
+  .scope-banner {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .scope-banner h3 { margin: 0 0 10px; color: var(--accent); font-size: 14px; }
+  .scope-banner ul { margin: 8px 0 0; padding-left: 18px; font-size: 12px; color: var(--text); }
+  .scope-banner li { margin-bottom: 6px; }
+  .scope-banner code { background: var(--bg); padding: 1px 6px; border-radius: 3px; font-size: 11px; color: var(--accent); }
+  .scope-banner table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+  .scope-banner th, .scope-banner td { padding: 4px 8px; border: 1px solid var(--border); text-align: left; }
+  .scope-banner th { background: var(--panel2); color: var(--muted); }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    margin-bottom: 14px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .toolbar button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  .toolbar button.primary { background: var(--accent); color: #15181d; border-color: var(--accent); font-weight: 600; }
+  .toolbar button.danger { background: var(--regression); color: white; border-color: var(--regression); }
+  .toolbar .stats { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+  .toolbar .stats span { display: flex; align-items: center; gap: 4px; }
+  .toolbar .stats .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  .toolbar .progress {
+    flex: 1;
+    height: 26px;
+    min-width: 200px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+  .toolbar .progress-bar { height: 100%; background: linear-gradient(90deg, var(--pass), var(--accent)); transition: width .25s; }
+  .toolbar .progress-text {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: var(--text);
+  }
+  .toolbar .save-indicator {
+    color: var(--muted);
+    font-size: 12px;
+    transition: color 0.4s;
+  }
+  .toolbar .save-indicator.saved { color: var(--pass); }
+
+  .test {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .test-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .test-id {
+    font-family: monospace;
+    background: var(--bg);
+    padding: 3px 8px;
+    border-radius: 3px;
+    color: var(--accent);
+    font-size: 12px;
+  }
+  .test-title { font-weight: 600; flex: 1; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge.p0 { background: var(--regression); color: white; }
+  .badge.p1 { background: var(--accent); color: #15181d; }
+  .badge.p2 { background: var(--panel3); color: var(--text); }
+  .badge.regression { background: rgba(229,72,72,0.15); color: var(--regression); border: 1px solid var(--regression); }
+  .badge.collateral { background: rgba(95,168,232,0.15); color: var(--info); border: 1px solid var(--info); }
+  .badge.scale { background: rgba(76,175,80,0.3); color: white; border: 1px solid var(--pass); }
+  .badge.live { background: rgba(95,168,232,0.3); color: white; border: 1px solid var(--info); }
+
+  .test-section { margin: 8px 0; font-size: 13px; }
+  .test-section .label {
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  .test-section .body { line-height: 1.6; }
+  .test-section code {
+    background: var(--bg);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .test-section pre {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    font-size: 11.5px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+
+  .verdict {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: center;
+  }
+  .verdict button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .verdict button.pass.active { background: var(--pass); border-color: var(--pass); color: white; }
+  .verdict button.fail.active { background: var(--regression); border-color: var(--regression); color: white; }
+  .verdict button.skip.active { background: var(--skip); border-color: var(--skip); color: white; }
+  .verdict textarea {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    resize: vertical;
+    min-height: 32px;
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal.show { display: flex; }
+  .modal-content {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal h2 { margin: 0 0 14px; color: var(--accent); }
+  .modal textarea {
+    width: 100%;
+    min-height: 250px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: monospace;
+    font-size: 11px;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+  .modal-actions button {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 18px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .modal-actions button.primary { background: var(--accent); color: #15181d; border-color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TFMG Targeted Test — commit ea0fc0ad</h1>
+  <div class="sub">
+    <span class="lang-en">Scope: only the fix shipped in <code style="font-family:monospace">ea0fc0ad</code> — the generic winding branch now calls <code style="font-family:monospace">setChanged()</code>/<code style="font-family:monospace">sendData()</code> on every drain tick, so the goggle progress counter and the spool durability bar update LIVE instead of jumping at recipe end. Goggle denominator also follows the scaled <code style="font-family:monospace">requiredDuration</code> (1 unit = 1 ohm / 1 turn).</span>
+    <span class="lang-fr">Périmètre : uniquement le fix du commit <code style="font-family:monospace">ea0fc0ad</code> — la branche generic appelle désormais <code style="font-family:monospace">setChanged()</code>/<code style="font-family:monospace">sendData()</code> à chaque tick de drain, donc le compteur goggle et la jauge de durabilité de la bobine se mettent à jour EN DIRECT au lieu de sauter à la fin. Le dénominateur du goggle suit aussi le <code style="font-family:monospace">requiredDuration</code> scalé (1 unité = 1 ohm / 1 turn).</span>
+  </div>
+  <div class="lang-switch">
+    <button id="btn-en" class="active" onclick="setLang('en')">EN</button>
+    <button id="btn-fr" onclick="setLang('fr')">FR</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="meta">
+    <div>
+      <label><span class="lang-en">Tester name</span><span class="lang-fr">Nom du testeur</span></label>
+      <input type="text" id="meta-tester" placeholder="vyrriox">
+    </div>
+    <div>
+      <label><span class="lang-en">Test date</span><span class="lang-fr">Date du test</span></label>
+      <input type="date" id="meta-date">
+    </div>
+    <div>
+      <label><span class="lang-en">Environment</span><span class="lang-fr">Environnement</span></label>
+      <select id="meta-env">
+        <option value="singleplayer">Singleplayer</option>
+        <option value="lan">LAN</option>
+        <option value="dedicated">Dedicated server</option>
+        <option value="creative">Creative test world</option>
+      </select>
+    </div>
+    <div>
+      <label><span class="lang-en">Build commit</span><span class="lang-fr">Commit testé</span></label>
+      <input type="text" id="meta-commit" placeholder="ea0fc0ad" value="ea0fc0ad">
+    </div>
+    <div style="grid-column:1/-1">
+      <label><span class="lang-en">Notes</span><span class="lang-fr">Notes</span></label>
+      <textarea id="meta-notes" placeholder=""></textarea>
+    </div>
+  </div>
+
+  <div class="scope-banner">
+    <h3>
+      <span class="lang-en">▸ Scope of this test pass</span>
+      <span class="lang-fr">▸ Périmètre de cette passe</span>
+    </h3>
+    <div class="lang-en">
+      <p>After a66abd58 was validated 12/12 by Neymor16, one display bug remained: when an <code>unfinished_resistor</code>, <code>unfinished_electromagnetic_coil</code> or <code>laminated_magnetic_alloy_block</code> was being wound, the goggle progress counter and the spool durability bar stayed frozen until the recipe finished — they jumped from 0/X to X/X in one frame. Already-finished resistor / electromagnetic coil / copper coil block inputs were fine (they take the dedicated branch which already syncs per tick).</p>
+      <p>Two root causes in the generic branch:</p>
+      <ul>
+        <li>Missing <code>setChanged()</code> / <code>sendData()</code> after the per-tick drain — the client never received the live SPOOL_AMOUNT / amountWinded updates.</li>
+        <li>The goggle tooltip displayed <code>amountWinded / recipe.getProcessingDuration()</code> (always 50 or 100), but the actual contract since a66abd58 is <code>amountWinded / target</code> (up to 1000). Denominator was lying.</li>
+      </ul>
+      <p>Commit ea0fc0ad adds the missing sync at the per-tick drain site AND extracts the scaled-duration logic into a shared <code>currentRequiredDuration()</code> helper used by both <code>performRecipe</code> and <code>addToGoggleTooltip</code>, so the displayed denominator always matches the real one.</p>
+      <p><strong>Expected goggle behaviour (generic-branch inputs):</strong></p>
+      <table>
+        <tr><th>Input</th><th>Target</th><th>Goggle progress (live)</th><th>Spool bar</th></tr>
+        <tr><td>unfinished_resistor</td><td>5%</td><td>0/50 → 1/50 → 2/50 → … → 50/50</td><td>1000 → 999 → … → 950 (live)</td></tr>
+        <tr><td>unfinished_resistor</td><td>100%</td><td>0/1000 → … → 1000/1000</td><td>1000 → 0 (live)</td></tr>
+        <tr><td>unfinished_electromagnetic_coil</td><td>50%</td><td>0/500 → … → 500/500</td><td>1000 → 500 (live)</td></tr>
+        <tr><td>laminated_magnetic_alloy_block</td><td>any</td><td>tick-by-tick</td><td>tick-by-tick</td></tr>
+      </table>
+    </div>
+    <div class="lang-fr">
+      <p>Après que le commit a66abd58 a été validé 12/12 par Neymor16, un bug visuel restait : pendant l'enroulement d'un <code>unfinished_resistor</code>, d'un <code>unfinished_electromagnetic_coil</code> ou d'un <code>laminated_magnetic_alloy_block</code>, le compteur de progression du goggle et la jauge de durabilité de la bobine restaient figés jusqu'à la fin du craft — ils sautaient de 0/X à X/X en une frame. Les inputs déjà finis (resistor, electromagnetic_coil, copper_coil_block) fonctionnaient (branche dédiée, sync déjà fait par tick).</p>
+      <p>Deux causes racines dans la branche generic :</p>
+      <ul>
+        <li>Pas de <code>setChanged()</code> / <code>sendData()</code> après le drain par tick — le client ne recevait jamais les updates SPOOL_AMOUNT / amountWinded en direct.</li>
+        <li>Le goggle affichait <code>amountWinded / recipe.getProcessingDuration()</code> (toujours 50 ou 100), alors que depuis a66abd58 le contrat réel est <code>amountWinded / target</code> (jusqu'à 1000). Le dénominateur mentait.</li>
+      </ul>
+      <p>Le commit ea0fc0ad ajoute la sync manquante au site du drain par tick ET extrait la logique de scaling dans un helper partagé <code>currentRequiredDuration()</code> utilisé à la fois par <code>performRecipe</code> et <code>addToGoggleTooltip</code>, donc le dénominateur affiché match toujours le vrai.</p>
+      <p><strong>Comportement goggle attendu (inputs branche generic) :</strong></p>
+      <table>
+        <tr><th>Input</th><th>Target</th><th>Progress goggle (live)</th><th>Jauge spool</th></tr>
+        <tr><td>unfinished_resistor</td><td>5%</td><td>0/50 → 1/50 → 2/50 → … → 50/50</td><td>1000 → 999 → … → 950 (live)</td></tr>
+        <tr><td>unfinished_resistor</td><td>100%</td><td>0/1000 → … → 1000/1000</td><td>1000 → 0 (live)</td></tr>
+        <tr><td>unfinished_electromagnetic_coil</td><td>50%</td><td>0/500 → … → 500/500</td><td>1000 → 500 (live)</td></tr>
+        <tr><td>laminated_magnetic_alloy_block</td><td>n'importe</td><td>tick par tick</td><td>tick par tick</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="progress">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+      <div class="progress-text" id="progress-text">0 / 0</div>
+    </div>
+    <div class="stats">
+      <span><i class="dot" style="background:var(--pass)"></i><span id="stat-pass">0</span></span>
+      <span><i class="dot" style="background:var(--regression)"></i><span id="stat-fail">0</span></span>
+      <span><i class="dot" style="background:var(--skip)"></i><span id="stat-skip">0</span></span>
+      <span><i class="dot" style="background:var(--panel3)"></i><span id="stat-untested">0</span></span>
+    </div>
+    <span class="save-indicator" id="save-indicator">●</span>
+    <button class="danger" onclick="resetAll()"><span class="lang-en">Reset</span><span class="lang-fr">Réinit.</span></button>
+    <button class="primary" onclick="exportJSON()"><span class="lang-en">Export JSON</span><span class="lang-fr">Exporter JSON</span></button>
+  </div>
+
+  <div id="tests"></div>
+</div>
+
+<div class="modal" id="export-modal">
+  <div class="modal-content">
+    <h2><span class="lang-en">Export</span><span class="lang-fr">Export</span></h2>
+    <textarea id="export-textarea" readonly></textarea>
+    <div class="modal-actions">
+      <button onclick="downloadJSON()"><span class="lang-en">Download .json</span><span class="lang-fr">Télécharger .json</span></button>
+      <button class="primary" onclick="copyJSON(event)"><span class="lang-en">Copy</span><span class="lang-fr">Copier</span></button>
+      <button onclick="closeModal()"><span class="lang-en">Close</span><span class="lang-fr">Fermer</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'tfmg-test-ea0fc0ad-targeted';
+
+const TESTS = [
+  // ============================================================
+  // PRIMARY — goggle progress + spool durability bar update LIVE
+  // during the generic branch (unfinished_resistor / unfinished_coil /
+  // laminated_magnetic_alloy_block inputs)
+  // ============================================================
+  {
+    id: 'WIND-GOGGLE-UNFINISHED-RESISTOR',
+    sev: 'p0',
+    regression: true,
+    live: true,
+    title_en: 'Goggle progress counter advances tick-by-tick while winding unfinished_resistor',
+    title_fr: 'Le compteur goggle avance tick par tick pendant l\'enroulement d\'un unfinished_resistor',
+    setup_en: 'Wear goggles. Winding machine driven at non-zero speed. Turn percentage = 100% (target = 1000). constantan_spool with SPOOL_AMOUNT = 1000.',
+    setup_fr: 'Porte les goggles. Winding machine entraînée à vitesse non nulle. Turn percentage = 100% (target = 1000). constantan_spool avec SPOOL_AMOUNT = 1000.',
+    steps_en: '1) Insert one unfinished_resistor. 2) Look at the machine through the goggles continuously from start to finish. 3) The progress line MUST read 0/1000 at start, then 1/1000, 2/1000, … advancing visibly every ~1 tick. 4) It MUST NOT stay frozen on 0/1000 and then jump to 1000/1000 at the end.',
+    steps_fr: '1) Insère un unfinished_resistor. 2) Regarde la machine avec les goggles en continu du début à la fin. 3) La ligne de progression DOIT afficher 0/1000 au début, puis 1/1000, 2/1000, … en avançant visiblement à chaque tick. 4) Elle NE DOIT PAS rester figée à 0/1000 puis sauter à 1000/1000 à la fin.',
+    expected_en: 'Live, smooth counter. This is exactly the bug Neymor16 reported: previously the value stayed frozen until completion.',
+    expected_fr: 'Compteur live, fluide. C\'est précisément le bug rapporté par Neymor16 : avant la valeur restait figée jusqu\'à la fin.',
+    cmds: [
+      '/give @s tfmg:unfinished_resistor 8',
+      '/give @s tfmg:constantan_spool 2'
+    ]
+  },
+  {
+    id: 'WIND-GOGGLE-SPOOL-BAR-LIVE',
+    sev: 'p0',
+    regression: true,
+    live: true,
+    title_en: 'Spool durability bar visibly decreases tick-by-tick during unfinished_resistor recipe',
+    title_fr: 'La jauge de durabilité de la bobine baisse visiblement tick par tick pendant la recette unfinished_resistor',
+    setup_en: 'Wear goggles. Same setup as previous test. Turn percentage = 100%. constantan_spool SPOOL_AMOUNT = 1000.',
+    setup_fr: 'Porte les goggles. Même setup que le test précédent. Turn percentage = 100%. constantan_spool SPOOL_AMOUNT = 1000.',
+    steps_en: '1) Insert one unfinished_resistor. 2) Watch the spool durability bar (the colored bar under the item icon in the goggle tooltip, and the turns-left line). 3) The bar MUST shrink continuously and the turns-left number MUST decrement live. 4) It MUST NOT stay full and then suddenly drop to empty at the end.',
+    steps_fr: '1) Insère un unfinished_resistor. 2) Regarde la jauge de durabilité de la bobine (la barre colorée sous l\'icône de l\'item dans le goggle tooltip, et la ligne turns-left). 3) La jauge DOIT rétrécir en continu et le nombre turns-left DOIT décrémenter en direct. 4) Elle NE DOIT PAS rester pleine puis chuter d\'un coup à la fin.',
+    expected_en: 'Live spool bar. The fix\'s sendData() call propagates the SPOOL_AMOUNT component update to the client every tick.',
+    expected_fr: 'Jauge spool en direct. Le sendData() du fix propage la mise à jour SPOOL_AMOUNT au client à chaque tick.'
+  },
+  {
+    id: 'WIND-GOGGLE-UNFINISHED-COIL',
+    sev: 'p0',
+    regression: true,
+    live: true,
+    title_en: 'Goggle progress + spool bar live for unfinished_electromagnetic_coil + copper_spool',
+    title_fr: 'Progress goggle + jauge spool en direct pour unfinished_electromagnetic_coil + copper_spool',
+    setup_en: 'Wear goggles. Turn percentage = 50% (target = 500). copper_spool SPOOL_AMOUNT = 1000.',
+    setup_fr: 'Porte les goggles. Turn percentage = 50% (target = 500). copper_spool SPOOL_AMOUNT = 1000.',
+    steps_en: 'Insert one unfinished_electromagnetic_coil. Watch goggle progress advance live from 0/500 → 500/500 AND watch the copper_spool turns-left drop live from 1000 → 500. Neither should stay frozen.',
+    steps_fr: 'Insère un unfinished_electromagnetic_coil. Observe le progress goggle avancer en direct de 0/500 → 500/500 ET la copper_spool turns-left chuter en direct de 1000 → 500. Aucun ne doit rester figé.',
+    expected_en: 'Same fix applies to all generic-branch resistor/coil recipes, not just constantan.',
+    expected_fr: 'Le même fix s\'applique à toutes les recettes generic-branch resistor/coil, pas seulement constantan.',
+    cmds: [
+      '/give @s tfmg:unfinished_electromagnetic_coil 4',
+      '/give @s tfmg:copper_spool 2'
+    ]
+  },
+  {
+    id: 'WIND-GOGGLE-LAMINATED-ALLOY',
+    sev: 'p0',
+    regression: true,
+    live: true,
+    title_en: 'Goggle progress + spool bar live for laminated_magnetic_alloy_block input',
+    title_fr: 'Progress goggle + jauge spool en direct pour input laminated_magnetic_alloy_block',
+    setup_en: 'Wear goggles. Find the winding recipe whose ingredient is laminated_magnetic_alloy_block (sequenced assembly step). Use whatever spool that recipe requires.',
+    setup_fr: 'Porte les goggles. Trouve la recette winding dont l\'ingrédient est laminated_magnetic_alloy_block (étape sequenced assembly). Utilise la bobine demandée par la recette.',
+    steps_en: 'Insert the laminated_magnetic_alloy_block. Goggle progress MUST advance tick-by-tick during the entire generic phase, and the spool durability MUST drop live. This is the third input that Neymor16 reported as broken.',
+    steps_fr: 'Insère le laminated_magnetic_alloy_block. Le progress goggle DOIT avancer tick par tick pendant toute la phase generic, et la durabilité de la bobine DOIT baisser en direct. C\'est le troisième input que Neymor16 a rapporté cassé.',
+    expected_en: 'Confirms the fix covers all three generic-branch inputs the tester listed.',
+    expected_fr: 'Confirme que le fix couvre les trois inputs generic-branch listés par le testeur.'
+  },
+  {
+    id: 'WIND-GOGGLE-DENOMINATOR-SCALES',
+    sev: 'p0',
+    regression: true,
+    live: true,
+    title_en: 'Goggle denominator follows the scroll-value target (5% → /50, 100% → /1000)',
+    title_fr: 'Le dénominateur goggle suit le scroll-value target (5% → /50, 100% → /1000)',
+    setup_en: 'Wear goggles. Set turn percentage to 5%. Insert one unfinished_resistor. Watch goggle, then immediately scroll up to 100% (without taking the item out).',
+    setup_fr: 'Porte les goggles. Règle turn percentage à 5%. Insère un unfinished_resistor. Regarde le goggle, puis scroll immédiatement à 100% (sans sortir l\'item).',
+    steps_en: '1) At 5% the goggle progress line MUST read X/50 (not X/50 originally was X/50 — verify denominator = 50). 2) Scroll up to 100% mid-recipe. 3) The denominator MUST switch to X/1000 on the next tick. 4) Scroll back to 5% → denominator switches to X/50.',
+    steps_fr: '1) À 5% la ligne de progression goggle DOIT afficher X/50 (dénominateur = 50, vérifier). 2) Scroll up à 100% en cours de recette. 3) Le dénominateur DOIT passer à X/1000 au prochain tick. 4) Scroll back à 5% → dénominateur revient à X/50.',
+    expected_en: 'Denominator is computed every render from the live scroll value via the new currentRequiredDuration() helper. Previously it was hardcoded to recipe.getProcessingDuration() (always 50 for resistor, 100 for coil).',
+    expected_fr: 'Le dénominateur est calculé à chaque rendu depuis le scroll-value live via le nouveau helper currentRequiredDuration(). Avant il était figé à recipe.getProcessingDuration() (toujours 50 pour resistor, 100 pour coil).'
+  },
+  {
+    id: 'WIND-GOGGLE-FINAL-READ',
+    sev: 'p1',
+    regression: true,
+    live: true,
+    title_en: 'At completion the goggle reads target/target (not 50/target)',
+    title_fr: 'À la complétion le goggle affiche target/target (pas 50/target)',
+    setup_en: 'Wear goggles. Turn percentage = 100%. Insert unfinished_resistor. Wait for completion.',
+    setup_fr: 'Porte les goggles. Turn percentage = 100%. Insère unfinished_resistor. Attends la complétion.',
+    steps_en: 'Just before the slot flips to a finished resistor, the goggle MUST read 1000/1000 (or very close — 999/1000, then the recipe finishes and the line disappears because recipe == null). It MUST NOT stop at 50/1000.',
+    steps_fr: 'Juste avant que le slot devienne un resistor fini, le goggle DOIT afficher 1000/1000 (ou très proche — 999/1000, puis la recette finit et la ligne disparait car recipe == null). Il NE DOIT PAS s\'arrêter à 50/1000.',
+    expected_en: 'Confirms numerator and denominator stay in sync all the way to completion.',
+    expected_fr: 'Confirme que numérateur et dénominateur restent synchro jusqu\'à la complétion.'
+  },
+
+  // ============================================================
+  // COLLATERAL — what the sync change could have broken
+  // ============================================================
+  {
+    id: 'WIND-GOGGLE-FINISHED-RESISTOR-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Finished resistor input — dedicated branch, goggle still correct (collateral)',
+    title_fr: 'Input resistor fini — branche dédiée, goggle toujours correct (collatéral)',
+    setup_en: 'Wear goggles. Turn percentage = 100%. constantan_spool 1000. Insert a finished resistor (RESISTANCE = 0) via /give.',
+    setup_fr: 'Porte les goggles. Turn percentage = 100%. constantan_spool 1000. Insère un resistor fini (RESISTANCE = 0) via /give.',
+    steps_en: 'The dedicated branch handles this. Goggle should show spool turns-left ticking down live (1000 → 0). No progress line because recipe == null in this path. This branch already worked before the fix — verify it still works.',
+    steps_fr: 'La branche dédiée gère ce cas. Le goggle doit afficher les turns-left de la bobine baisser en direct (1000 → 0). Pas de ligne de progress car recipe == null sur ce path. Cette branche fonctionnait déjà avant le fix — vérifier qu\'elle marche toujours.',
+    expected_en: 'No regression on the path Neymor16 explicitly said was fine.',
+    expected_fr: 'Pas de régression sur le path que Neymor16 a explicitement confirmé OK.',
+    cmds: [
+      '/give @s tfmg:resistor 4'
+    ]
+  },
+  {
+    id: 'WIND-GOGGLE-FINISHED-COIL-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Finished electromagnetic_coil input — dedicated branch goggle still correct (collateral)',
+    title_fr: 'Input electromagnetic_coil fini — goggle branche dédiée toujours correct (collatéral)',
+    setup_en: 'Wear goggles. Turn percentage = 100%. copper_spool 1000. Insert a finished electromagnetic_coil.',
+    setup_fr: 'Porte les goggles. Turn percentage = 100%. copper_spool 1000. Insère un electromagnetic_coil fini.',
+    steps_en: 'Dedicated coil branch. Spool turns-left ticks down live. No regression.',
+    steps_fr: 'Branche dédiée coil. Turns-left spool baisse en direct. Pas de régression.',
+    expected_en: 'Same as the resistor counterpart — this path already had sendData() per tick.',
+    expected_fr: 'Comme le pendant resistor — ce path avait déjà sendData() par tick.'
+  },
+  {
+    id: 'WIND-GOGGLE-COPPER-COIL-BLOCK-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'copper_coil_block input — third input the tester said was fine — still fine (collateral)',
+    title_fr: 'Input copper_coil_block — troisième input que le testeur a confirmé OK — toujours OK (collatéral)',
+    setup_en: 'Wear goggles. Find / give yourself a copper_coil_block (large_coil block form). Insert it and watch the goggle.',
+    setup_fr: 'Porte les goggles. Trouve / /give un copper_coil_block (forme block du large_coil). Insère-le et regarde le goggle.',
+    steps_en: 'Whichever branch handles this (dedicated isCoil if large_coil is registered as a coil, generic otherwise), the goggle MUST behave correctly — no freeze.',
+    steps_fr: 'Quelle que soit la branche qui le gère (dédiée isCoil si large_coil est registered comme coil, generic sinon), le goggle DOIT se comporter correctement — pas de freeze.',
+    expected_en: 'Third confirmed-good input — verify still good.',
+    expected_fr: 'Troisième input confirmé OK — vérifier toujours OK.'
+  },
+  {
+    id: 'WIND-GOGGLE-NON-RESISTOR-RECIPE-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Non-resistor / non-coil winding recipe goggle uses recipe.getProcessingDuration() (collateral)',
+    title_fr: 'Goggle d\'une recette winding non-resistor / non-coil utilise recipe.getProcessingDuration() (collatéral)',
+    setup_en: 'Wear goggles. Pick any winding recipe whose output is neither resistor nor electromagnetic_coil / large_coil. Run it.',
+    setup_fr: 'Porte les goggles. Choisis une recette winding dont l\'output n\'est ni resistor ni electromagnetic_coil / large_coil. Lance-la.',
+    steps_en: 'Goggle denominator MUST equal recipe.getProcessingDuration() (the JSON value), NOT turnPercentage*10. Numerator advances live. Verify the scroll-value scaling does NOT bleed into non-resistor / non-coil recipes.',
+    steps_fr: 'Le dénominateur goggle DOIT être recipe.getProcessingDuration() (la valeur du JSON), PAS turnPercentage*10. Le numérateur avance en direct. Vérifier que le scaling scroll-value ne fuit PAS sur les recettes non-resistor / non-coil.',
+    expected_en: 'currentRequiredDuration() returns recipe.getProcessingDuration() unchanged when the output is not a resistor/coil. Live sync still applies though — the sendData() in the generic branch fires for every winding recipe.',
+    expected_fr: 'currentRequiredDuration() retourne recipe.getProcessingDuration() inchangé quand l\'output n\'est ni resistor ni coil. La sync live s\'applique quand même — le sendData() de la branche generic s\'active pour toutes les recettes winding.'
+  },
+  {
+    id: 'WIND-GOGGLE-SCALING-PRESERVED-COLLATERAL',
+    sev: 'p0',
+    collateral: true,
+    title_en: 'a66abd58 scaling rule still holds — 5% target still consumes EXACTLY 50 spool (collateral)',
+    title_fr: 'La règle de scaling a66abd58 tient toujours — 5% target consomme toujours EXACTEMENT 50 spool (collatéral)',
+    setup_en: 'Turn percentage = 5%. constantan_spool 1000. Insert one unfinished_resistor.',
+    setup_fr: 'Turn percentage = 5%. constantan_spool 1000. Insère un unfinished_resistor.',
+    steps_en: 'Wait for completion. Spool consumed MUST still be EXACTLY 50. Resistor RESISTANCE = 50. The added sendData() / setChanged() in the drain loop MUST NOT cause double-counting or drift.',
+    steps_fr: 'Attends la complétion. La spool consommée DOIT toujours être EXACTEMENT 50. RESISTANCE = 50. Le sendData() / setChanged() ajouté dans la boucle de drain NE DOIT PAS causer de double-count ou de drift.',
+    expected_en: 'The 12/12 PASS from the a66abd58 retest must still hold. This is the most important collateral — the live-sync fix must NOT regress the scaling fix.',
+    expected_fr: 'Le 12/12 PASS du retest a66abd58 doit toujours tenir. C\'est le collatéral le plus important — le fix live-sync NE DOIT PAS casser le fix de scaling.'
+  },
+  {
+    id: 'WIND-GOGGLE-RELOAD-COLLATERAL',
+    sev: 'p1',
+    collateral: true,
+    title_en: 'Save / reload mid-recipe — goggle resumes live ticking afterwards (collateral)',
+    title_fr: 'Save / reload mid-recipe — le goggle reprend en direct après (collatéral)',
+    setup_en: 'Wear goggles. Turn percentage = 100%. Insert unfinished_resistor. Once ~300 spool drained, save & quit.',
+    setup_fr: 'Porte les goggles. Turn percentage = 100%. Insère unfinished_resistor. Une fois ~300 spool drainée, sauve & quitte.',
+    steps_en: 'Reload. Approach the machine with goggles. Goggle should immediately show ~300/1000 (not 0/1000) and resume ticking live until 1000/1000. Total spool consumed across both sessions = 1000.',
+    steps_fr: 'Recharge. Approche la machine avec les goggles. Le goggle doit immédiatement afficher ~300/1000 (pas 0/1000) et reprendre à ticker en direct jusqu\'à 1000/1000. Spool totale consommée sur les deux sessions = 1000.',
+    expected_en: 'NBT-persisted amountWinded is read back correctly, and the new sendData() resumes propagating updates after reload.',
+    expected_fr: 'L\'amountWinded persisté en NBT est relu correctement, et le nouveau sendData() reprend à propager les updates après reload.'
+  },
+  {
+    id: 'WIND-GOGGLE-MULTIPLE-MACHINES-COLLATERAL',
+    sev: 'p2',
+    collateral: true,
+    title_en: 'No perceptible TPS drop with several winding machines running concurrently (collateral perf)',
+    title_fr: 'Pas de chute de TPS perceptible avec plusieurs winding machines en parallèle (collatéral perf)',
+    setup_en: 'Place 5–10 winding machines side by side, all driven, all loaded with unfinished_resistor + spool. Open F3 to watch TPS.',
+    setup_fr: 'Place 5–10 winding machines côte à côte, toutes entraînées, toutes chargées avec unfinished_resistor + spool. Ouvre F3 pour regarder le TPS.',
+    steps_en: 'Run all recipes concurrently. Mark PASS if TPS stays at ~20 (no perceptible drop from baseline). The added sendData() per drain fires once per machine per tick — well within Create\'s normal sync envelope. Mark FAIL only if TPS visibly drops.',
+    steps_fr: 'Lance toutes les recettes en parallèle. Marque PASS si le TPS reste à ~20 (pas de chute perceptible). Le sendData() ajouté s\'active une fois par machine par tick — bien dans l\'enveloppe de sync normale de Create. Marque FAIL seulement si le TPS chute visiblement.',
+    expected_en: 'Per-tick sendData() is standard for Create-style BEs (kinetic chains do this routinely). No expected perf hit.',
+    expected_fr: 'Un sendData() par tick est standard pour les BE style Create (les chaînes kinetic le font en routine). Pas de perte de perf attendue.'
+  }
+];
+
+let state = {};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state = JSON.parse(raw);
+  } catch (e) { state = {}; }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  flashSaved();
+}
+
+let saveTimer = null;
+function flashSaved() {
+  const el = document.getElementById('save-indicator');
+  if (!el) return;
+  el.classList.add('saved');
+  el.textContent = '● saved';
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    el.classList.remove('saved');
+    el.textContent = '●';
+  }, 1200);
+}
+
+function setLang(lang) {
+  document.body.classList.toggle('fr', lang === 'fr');
+  document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+  document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+  localStorage.setItem(STORAGE_KEY + '-lang', lang);
+}
+
+function resetAll() {
+  if (!confirm('Reset all test results? / Réinitialiser tous les résultats ?')) return;
+  state = {};
+  saveState();
+  renderTests();
+  refreshStats();
+}
+
+function refreshStats() {
+  const total = TESTS.length;
+  let pass = 0, fail = 0, skip = 0;
+  TESTS.forEach(t => {
+    const v = state[t.id]?.verdict;
+    if (v === 'pass') pass++;
+    else if (v === 'fail') fail++;
+    else if (v === 'skip') skip++;
+  });
+  const done = pass + fail + skip;
+  const untested = total - done;
+  document.getElementById('stat-pass').textContent = pass;
+  document.getElementById('stat-fail').textContent = fail;
+  document.getElementById('stat-skip').textContent = skip;
+  document.getElementById('stat-untested').textContent = untested;
+  document.getElementById('progress-text').textContent = `${done} / ${total}`;
+  document.getElementById('progress-bar').style.width = `${total ? (done / total) * 100 : 0}%`;
+}
+
+function setVerdict(testId, verdict) {
+  state[testId] = state[testId] || {};
+  state[testId].verdict = verdict;
+  saveState();
+  renderTests();
+  refreshStats();
+}
+
+function setComment(testId, comment) {
+  state[testId] = state[testId] || {};
+  state[testId].comment = comment;
+  saveState();
+}
+
+function renderTests() {
+  const container = document.getElementById('tests');
+  container.innerHTML = '';
+  TESTS.forEach(t => {
+    const verdict = state[t.id]?.verdict || '';
+    const comment = state[t.id]?.comment || '';
+    const div = document.createElement('div');
+    div.className = 'test';
+    div.innerHTML = `
+      <div class="test-header">
+        <span class="test-id">${t.id}</span>
+        <span class="badge ${t.sev}">${t.sev.toUpperCase()}</span>
+        ${t.live ? '<span class="badge live">LIVE SYNC</span>' : ''}
+        ${t.regression ? '<span class="badge regression">REGRESSION</span>' : ''}
+        ${t.collateral ? '<span class="badge collateral">COLLATERAL</span>' : ''}
+        <span class="test-title">
+          <span class="lang-en">${t.title_en}</span>
+          <span class="lang-fr">${t.title_fr}</span>
+        </span>
+      </div>
+      ${t.setup_en ? `
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Setup</span><span class="lang-fr">Préparation</span></div>
+        <div class="body">
+          <span class="lang-en">${t.setup_en}</span>
+          <span class="lang-fr">${t.setup_fr}</span>
+        </div>
+      </div>` : ''}
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Steps</span><span class="lang-fr">Étapes</span></div>
+        <div class="body">
+          <span class="lang-en">${t.steps_en}</span>
+          <span class="lang-fr">${t.steps_fr}</span>
+        </div>
+      </div>
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Expected</span><span class="lang-fr">Attendu</span></div>
+        <div class="body">
+          <span class="lang-en">${t.expected_en}</span>
+          <span class="lang-fr">${t.expected_fr}</span>
+        </div>
+      </div>
+      ${t.cmds && t.cmds.length ? `
+      <div class="test-section">
+        <div class="label"><span class="lang-en">Setup commands</span><span class="lang-fr">Commandes setup</span></div>
+        <pre>${t.cmds.join('\n')}</pre>
+      </div>` : ''}
+      <div class="verdict">
+        <button class="pass ${verdict==='pass'?'active':''}" onclick="setVerdict('${t.id}','pass')">PASS</button>
+        <button class="fail ${verdict==='fail'?'active':''}" onclick="setVerdict('${t.id}','fail')">FAIL</button>
+        <button class="skip ${verdict==='skip'?'active':''}" onclick="setVerdict('${t.id}','skip')">SKIP</button>
+        <textarea placeholder="Comment / notes" oninput="setComment('${t.id}', this.value)">${comment}</textarea>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function exportJSON() {
+  const tester = document.getElementById('meta-tester').value || 'unknown';
+  const date = document.getElementById('meta-date').value || new Date().toISOString().slice(0,10);
+  const env = document.getElementById('meta-env').value;
+  const commit = document.getElementById('meta-commit').value;
+  const notes = document.getElementById('meta-notes').value;
+
+  const data = {
+    meta: {
+      project: 'TFMG',
+      scope: 'targeted-ea0fc0ad',
+      tester, date, environment: env, commit, notes,
+      exported_at: new Date().toISOString()
+    },
+    summary: {
+      total: TESTS.length,
+      pass: TESTS.filter(t => state[t.id]?.verdict === 'pass').length,
+      fail: TESTS.filter(t => state[t.id]?.verdict === 'fail').length,
+      skip: TESTS.filter(t => state[t.id]?.verdict === 'skip').length
+    },
+    tests: TESTS.map(t => ({
+      id: t.id,
+      sev: t.sev,
+      regression: !!t.regression,
+      collateral: !!t.collateral,
+      live: !!t.live,
+      title: t.title_en,
+      verdict: state[t.id]?.verdict || 'untested',
+      comment: state[t.id]?.comment || ''
+    }))
+  };
+
+  const text = JSON.stringify(data, null, 2);
+  document.getElementById('export-textarea').value = text;
+  document.getElementById('export-modal').classList.add('show');
+}
+
+function downloadJSON() {
+  const text = document.getElementById('export-textarea').value;
+  const tester = document.getElementById('meta-tester').value || 'unknown';
+  const date = document.getElementById('meta-date').value || new Date().toISOString().slice(0,10);
+  const blob = new Blob([text], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tfmg-test-ea0fc0ad-${tester}-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyJSON(e) {
+  const ta = document.getElementById('export-textarea');
+  ta.select();
+  document.execCommand('copy');
+  if (e && e.target) {
+    const orig = e.target.textContent;
+    e.target.textContent = 'Copied!';
+    setTimeout(() => e.target.textContent = orig, 1200);
+  }
+}
+
+function closeModal() {
+  document.getElementById('export-modal').classList.remove('show');
+}
+
+function init() {
+  loadState();
+  const lang = localStorage.getItem(STORAGE_KEY + '-lang') || 'en';
+  setLang(lang);
+  document.getElementById('meta-date').value = new Date().toISOString().slice(0,10);
+  ['meta-tester','meta-date','meta-env','meta-commit','meta-notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const saved = localStorage.getItem(STORAGE_KEY + '-' + id);
+    if (saved) el.value = saved;
+    el.addEventListener('input', () => {
+      localStorage.setItem(STORAGE_KEY + '-' + id, el.value);
+      flashSaved();
+    });
+    el.addEventListener('change', () => {
+      localStorage.setItem(STORAGE_KEY + '-' + id, el.value);
+      flashSaved();
+    });
+  });
+  renderTests();
+  refreshStats();
+}
+init();
+</script>
+</body>
+</html>
