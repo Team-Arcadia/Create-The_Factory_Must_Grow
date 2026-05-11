@@ -139,11 +139,31 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
                     .forGoggles(tooltip);
 
         if (recipe != null)
-            TFMGTexts.progress(amountWinded + "/" + recipe.getProcessingDuration())
+            TFMGTexts.progress(amountWinded + "/" + currentRequiredDuration())
                     .color(spool.getBarColor())
                     .forGoggles(tooltip);
         }
         return true;
+    }
+
+    /**
+     * Effective denominator for a winding recipe. Resistor/coil-producing
+     * recipes scale with the scroll-value target so the goggle progress and
+     * the actual spool drain agree (1 unit = 1 ohm / 1 turn).
+     */
+    private int currentRequiredDuration() {
+        if (recipe == null)
+            return 0;
+        int duration = recipe.getProcessingDuration();
+        if (!recipe.getRollableResults().isEmpty()) {
+            ItemStack template = recipe.getRollableResults().get(0).getStack();
+            if (template.is(TFMGBlocks.RESISTOR.asItem())
+                    || template.is(TFMGItems.ELECTROMAGNETIC_COIL.get())
+                    || template.is(TFMGBlocks.LARGE_COIL.get().asItem())) {
+                duration = turnPercentage.getValue() * 10;
+            }
+        }
+        return duration;
     }
 
     public void destroy() {
@@ -228,24 +248,7 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         if (isResistor || isCoil)
             return;
 
-        // Peek the recipe result template (without consuming randomness) to
-        // see whether this recipe ends in a resistor / coil. If it does,
-        // scale the required duration with the scroll-value target so the
-        // spool drain matches the user's intent: 5% target -> 50 drains,
-        // 100% target -> 1000 drains. Otherwise we still use the recipe's
-        // own processing_time. This is what the testers were expecting
-        // when they reported '+40 leak' and 'only 50 spool consumed at
-        // 100%' — the previous fixes converged the result value to the
-        // target but the SPOOL_AMOUNT consumed did not scale with it.
-        int requiredDuration = recipe.getProcessingDuration();
-        if (!recipe.getRollableResults().isEmpty()) {
-            ItemStack template = recipe.getRollableResults().get(0).getStack();
-            if (template.is(TFMGBlocks.RESISTOR.asItem())
-                    || template.is(TFMGItems.ELECTROMAGNETIC_COIL.get())
-                    || template.is(TFMGBlocks.LARGE_COIL.get().asItem())) {
-                requiredDuration = target;
-            }
-        }
+        int requiredDuration = currentRequiredDuration();
 
         if (amountWinded >= requiredDuration) {
             // Stamp the freshly-crafted output with the scroll-value target
@@ -275,6 +278,13 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
                 spool.set(TFMGDataComponents.SPOOL_AMOUNT, spoolAmount - 1);
                 amountWinded++;
                 convertEmptyIfDrained();
+                // Without this the client never receives the per-tick
+                // SPOOL_AMOUNT / amountWinded updates, so the goggle tooltip
+                // and the spool durability bar stay frozen until the recipe
+                // finishes. The dedicated resistor/coil branches already
+                // send data per drain — the generic branch was the outlier.
+                setChanged();
+                sendData();
             }
         } else {
             inventory.setStackInSlot(0, recipe.rollResults(level.random).get(0));
