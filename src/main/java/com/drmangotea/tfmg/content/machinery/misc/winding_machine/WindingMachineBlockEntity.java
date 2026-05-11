@@ -228,15 +228,32 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         if (isResistor || isCoil)
             return;
 
-        if (amountWinded >= recipe.getProcessingDuration()) {
+        // Peek the recipe result template (without consuming randomness) to
+        // see whether this recipe ends in a resistor / coil. If it does,
+        // scale the required duration with the scroll-value target so the
+        // spool drain matches the user's intent: 5% target -> 50 drains,
+        // 100% target -> 1000 drains. Otherwise we still use the recipe's
+        // own processing_time. This is what the testers were expecting
+        // when they reported '+40 leak' and 'only 50 spool consumed at
+        // 100%' — the previous fixes converged the result value to the
+        // target but the SPOOL_AMOUNT consumed did not scale with it.
+        int requiredDuration = recipe.getProcessingDuration();
+        if (!recipe.getRollableResults().isEmpty()) {
+            ItemStack template = recipe.getRollableResults().get(0).getStack();
+            if (template.is(TFMGBlocks.RESISTOR.asItem())
+                    || template.is(TFMGItems.ELECTROMAGNETIC_COIL.get())
+                    || template.is(TFMGBlocks.LARGE_COIL.get().asItem())) {
+                requiredDuration = target;
+            }
+        }
+
+        if (amountWinded >= requiredDuration) {
             // Stamp the freshly-crafted output with the scroll-value target
             // if it's a resistor / coil. Otherwise the recipe's static
             // default (RESISTANCE = 10, COIL_TURNS = 100) would be applied
-            // and the dedicated branch above would then drain 40 extra spool
-            // units climbing back up to the player's target — that was the
-            // mysterious '+40 leak'. Bake the target into the result so the
-            // dedicated branch sees RESISTANCE == target immediately and
-            // exits without further drains.
+            // and the dedicated branch above would then drain extra spool
+            // climbing back up to the player's target — the '+40 leak' the
+            // testers reported. Bake the target into the result.
             ItemStack result = recipe.rollResults(level.random).get(0);
             if (result.is(TFMGBlocks.RESISTOR.asItem()))
                 result.set(TFMGDataComponents.RESISTANCE, target);
