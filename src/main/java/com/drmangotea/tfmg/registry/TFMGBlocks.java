@@ -148,6 +148,7 @@ import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.functions.ApplyBonusCount;
 import net.neoforged.neoforge.common.Tags;
@@ -429,6 +430,13 @@ public class TFMGBlocks {
             .properties(p -> p.strength(69696969))
             .properties(BlockBehaviour.Properties::requiresCorrectToolForDrops)
             .transform(pickaxeOnly())
+            // Empty loot table: the block must never drop as an item, no
+            // matter how it is removed (Ars Nouveau Break spell, TNT,
+            // creative pick, /setblock, etc.). The vanilla strength +
+            // requiresCorrectToolForDrops guard is not enough — modded
+            // break sources call destroyBlock(...) with dropBlock=true and
+            // bypass the player tool checks, then the loot table runs.
+            .loot((lt, b) -> lt.add(b, LootTable.lootTable()))
             .tag(TFMGBlockTags.SURFACE_SCANNER_FINDABLE.tag)
             .tag(BlockTags.WITHER_IMMUNE)
             .tag(BlockTags.DRAGON_IMMUNE)
