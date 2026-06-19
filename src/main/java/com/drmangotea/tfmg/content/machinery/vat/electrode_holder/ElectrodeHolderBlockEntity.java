@@ -167,7 +167,10 @@ public class ElectrodeHolderBlockEntity extends ElectricBlockEntity implements I
 
     @Override
     public int getWorkPercentage() {
-        return (getPowerUsage() / 5000) * 100;
+        // Float division + clamp: the old integer (getPowerUsage()/5000)*100
+        // collapsed to 0 below 5000 W and jumped in steps of 100 above it,
+        // never a real 0-100 percentage.
+        return (int) Math.min(100f, Math.max(0f, (getPowerUsage() / 5000f) * 100f));
     }
 
     @Override

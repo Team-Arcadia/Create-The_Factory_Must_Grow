@@ -37,7 +37,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
@@ -54,13 +53,11 @@ import net.neoforged.neoforge.fluids.IFluidTank;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
-import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 import net.neoforged.neoforge.items.wrapper.CombinedInvWrapper;
 
 import javax.annotation.Nullable;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Math.abs;
 
@@ -363,8 +360,13 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 continue;
             }
 
-            IFluidHandler fluidHandler = fluidCapability;
-            IItemHandler itemHandler = itemCapability;
+            // Scan ONLY the input segments for fluid ingredients (input tank
+            // capability = 4 input segments, output excluded). Using the
+            // combined input+output capability let an ingredient fluid sitting
+            // in the OUTPUT tank satisfy a match that handleRecipe never drains
+            // (it only drains the input segments) — the fluid analogue of the
+            // already-fixed coal_coke_dust item dupe.
+            IFluidHandler fluidHandler = inputTank.getCapability();
 
             //checks if vat contains needed fluids
             Map<Integer, Integer> isFluidFound = new HashMap<>();
@@ -423,52 +425,16 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             //////////////////////////////////////////
             if (doesntMatch)
                 continue;
-            //checks if there's enough space for a recipe to happen
-            Map<net.minecraft.world.level.material.Fluid, Integer> fluids = new HashMap<>();
-
-            List<FluidStack> totalFluidStacks = new ArrayList<>();
-
-            for (int i = 0; i < outputTank.getPrimaryHandler().getTanks(); i++) {
-                totalFluidStacks.add(outputTank.getPrimaryHandler().getFluidInTank(i));
-            }
-            totalFluidStacks.addAll(testedRecipe.getFluidResults());
-
-            for (FluidStack stack : totalFluidStacks) {
-                if (stack.isEmpty())
-                    continue;
-                if (fluids.containsKey(stack.getFluid())) {
-                    fluids.replace(stack.getFluid(), fluids.get(stack.getFluid()) + stack.getAmount());
-                } else fluids.put(stack.getFluid(), stack.getAmount());
-
-            }
-            AtomicBoolean cantOutput = new AtomicBoolean(false);
-            fluids.forEach((f, a) -> {
-                if (a > 4000)
-                    cantOutput.set(true);
-            });
-            //
-            Map<Item, Integer> items = new HashMap<>();
-
-            List<ItemStack> totalItemStacks = new ArrayList<>();
-
-            for (int i = 0; i < outputInventory.getSlots(); i++) {
-                totalItemStacks.add(outputInventory.getStackInSlot(i));
-            }
-            totalItemStacks.addAll(testedRecipe.getRollableResultsAsItemStacks());
-
-            for (ItemStack stack : totalItemStacks) {
-                if (stack.isEmpty())
-                    continue;
-                if (items.containsKey(stack.getItem())) {
-                    items.replace(stack.getItem(), items.get(stack.getItem()) + stack.getCount());
-                } else items.put(stack.getItem(), stack.getCount());
-//
-            }
-            items.forEach((f, a) -> {
-                if (a > 64)
-                    cantOutput.set(true);
-            });
-            if (cantOutput.get())
+            // Checks if there's enough space to store this recipe's outputs.
+            // Delegate to the authoritative per-segment simulation that
+            // handleRecipe also runs before consuming inputs, instead of the
+            // old inline check that read only output segment 0 and compared
+            // against a hardcoded 4000 mB / 64-item cap. That cap was ~18x
+            // smaller than the real per-segment tank capacity, so accumulated
+            // molten output wedged the recipe far below a full tank — the arc
+            // furnace "cooks once then gets stuck" bug, and it made large
+            // fluid recipes (e.g. concrete) impossible to ever run.
+            if (!canFitAllOutputs(testedRecipe))
                 continue;
             ///////////////////////////////////////
 

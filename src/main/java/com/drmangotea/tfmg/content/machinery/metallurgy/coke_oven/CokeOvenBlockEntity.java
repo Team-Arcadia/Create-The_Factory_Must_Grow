@@ -159,9 +159,15 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
             onContentsChanged();
         }
 
-        if(timer >0&&primaryTank.getSpace() !=0&&secondaryTank.getSpace() !=0){
-           primaryTank.fill(recipe.getPrimaryResult(), IFluidHandler.FluidAction.EXECUTE);
-           secondaryTank.fill(recipe.getSecondaryResult(), IFluidHandler.FluidAction.EXECUTE);
+        // The solid coke product is emitted at timer == 0 and has no real
+        // dependency on the gas tanks. Keep the timer advancing (and fill each
+        // gas tank only when it has room) instead of freezing the whole recipe
+        // — and holding the input item forever — when a byproduct tank fills.
+        if(timer > 0){
+            if(primaryTank.getSpace() != 0)
+                primaryTank.fill(recipe.getPrimaryResult(), IFluidHandler.FluidAction.EXECUTE);
+            if(secondaryTank.getSpace() != 0)
+                secondaryTank.fill(recipe.getSecondaryResult(), IFluidHandler.FluidAction.EXECUTE);
             timer--;
         }
     }

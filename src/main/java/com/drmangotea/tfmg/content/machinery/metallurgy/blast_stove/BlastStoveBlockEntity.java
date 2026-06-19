@@ -108,7 +108,13 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
             HotBlastRecipe recipe = getMatchingRecipes();
             if (recipe != null) {
                 if (timer >= getSpeedModifier() / (getTotalTankSize() * 0.3f)) {
-                    if ((primaryOutputInventory.isEmpty() || primaryOutputInventory.getFluid().isFluidEqual(recipe.getPrimaryResult())) && (secondaryOutputInventory.isEmpty() || secondaryOutputInventory.getFluid().isFluidEqual(recipe.getSecondaryResult()))) {
+                    if ((primaryOutputInventory.isEmpty() || primaryOutputInventory.getFluid().isFluidEqual(recipe.getPrimaryResult())) && (secondaryOutputInventory.isEmpty() || secondaryOutputInventory.getFluid().isFluidEqual(recipe.getSecondaryResult()))
+                            // Require room for the FULL result before writing:
+                            // setFluid() does not clamp to capacity, so a near-
+                            // full tank (getSpace() != 0 but < result amount)
+                            // would be pushed past 8000 mB.
+                            && primaryOutputInventory.getSpace() >= recipe.getPrimaryResult().getAmount()
+                            && secondaryOutputInventory.getSpace() >= recipe.getSecondaryResult().getAmount()) {
 
 
                         primaryInputInventory.setFluid(new FluidStack(primaryInputInventory.getFluid().copy().getFluidHolder(), primaryInputInventory.getFluidAmount() - recipe.getPrimaryIngredient().amount()));

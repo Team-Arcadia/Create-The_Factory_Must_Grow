@@ -247,7 +247,10 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
                     tuyereBE.tank.drain(recipe.hotAirUsage, IFluidHandler.FluidAction.EXECUTE);
                 }
                 if (!recipe.getGasByproduct().isEmpty()) {
-                    if (level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(FACING).getOpposite()).above(getSize())) instanceof BlastFurnaceHatchBlockEntity be) {
+                    // Use cachedSize (refreshed each lazyTick, guaranteed >= 3
+                    // here) instead of the expensive, side-effecting getSize()
+                    // rescan on the per-tick hot path.
+                    if (level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(FACING).getOpposite()).above(cachedSize)) instanceof BlastFurnaceHatchBlockEntity be) {
                         be.tank.fill(recipe.getGasByproduct(), IFluidHandler.FluidAction.EXECUTE);
                     }
                 }

@@ -137,12 +137,15 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
                 TFMGTexts.turnsLeft(spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0))
                     .color(spool.getBarColor())
                     .forGoggles(tooltip);
+        }
 
+        // Render progress whenever a recipe is active, even if the spool slot
+        // is momentarily empty (it was previously nested in the spool guard, so
+        // the progress line vanished while a generic recipe was matched).
         if (recipe != null)
             TFMGTexts.progress(amountWinded + "/" + currentRequiredDuration())
-                    .color(spool.getBarColor())
+                    .color(spool.isEmpty() ? ChatFormatting.GRAY.getColor() : spool.getBarColor())
                     .forGoggles(tooltip);
-        }
         return true;
     }
 
