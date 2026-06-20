@@ -13,6 +13,7 @@ import mezz.jei.api.recipe.RecipeIngredientRole;
 import net.createmod.catnip.data.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -96,7 +97,10 @@ public class ChemicalVatCategory extends CreateRecipeCategory<VatMachineRecipe> 
 
         drawSprites(machines, graphics);
 
-
+        // Text hint for required machines that have no sprite above (freezer,
+        // compressor). Without it the LPG / cooling-fluid recipes showed no
+        // machine at all, so players assumed "just add the fluids".
+        drawMachineHints(recipe, graphics);
 
 
         if(recipe.heatLevel!=0) {
@@ -167,6 +171,36 @@ public class ChemicalVatCategory extends CreateRecipeCategory<VatMachineRecipe> 
             TFMGGuiTextures.GRAPHITE_ELECTRODE.render(graphics, 55 - 4 - 32, 32);
             TFMGGuiTextures.GRAPHITE_ELECTRODE.render(graphics, 55 - 4 + 32, 32);
             TFMGGuiTextures.GRAPHITE_ELECTRODE.render(graphics, 55 - 4, 32);
+        }
+    }
+
+    // Machines that drawSprites() already renders as a picture — skip them in
+    // the text hint so we don't duplicate the info.
+    private static final List<String> SPRITED_MACHINES = List.of(
+            "tfmg:mixing", "tfmg:centrifuge", "tfmg:electrode", "tfmg:graphite_electrode");
+
+    /**
+     * Draws a small text list of the machines a recipe needs that have no
+     * sprite (the freezer and the compressor), plus the pressure requirement.
+     * This is the fix for recipes like compressed_lpg / cooling_fluid that
+     * otherwise showed no machine and read as "just add the fluids".
+     */
+    private void drawMachineHints(VatMachineRecipe recipe, GuiGraphics graphics) {
+        int y = 2;
+        java.util.Set<String> shown = new java.util.HashSet<>();
+        for (String machine : recipe.machines) {
+            if (SPRITED_MACHINES.contains(machine))
+                continue;
+            if (!shown.add(machine))
+                continue;
+            String name = Component.translatable("tfmg.goggles.vat." + machine.replace(":", ".")).getString().trim();
+            graphics.drawString(Minecraft.getInstance().font, name, 2, y, 0xFF404040, false);
+            y += 10;
+        }
+        if (recipe.pressure != 0) {
+            graphics.drawString(Minecraft.getInstance().font,
+                    Component.translatable("tfmg.jei.vat.pressure", recipe.pressure).getString(),
+                    2, y, 0xFF1C3C64, false);
         }
     }
 

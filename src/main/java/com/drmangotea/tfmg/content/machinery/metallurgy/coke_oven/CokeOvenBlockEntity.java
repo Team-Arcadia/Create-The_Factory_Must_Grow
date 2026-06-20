@@ -159,15 +159,20 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
             onContentsChanged();
         }
 
-        // The solid coke product is emitted at timer == 0 and has no real
-        // dependency on the gas tanks. Keep the timer advancing (and fill each
-        // gas tank only when it has room) instead of freezing the whole recipe
-        // — and holding the input item forever — when a byproduct tank fills.
+        // Soft-lock when a byproduct gas tank is full: pause the whole recipe
+        // (timer frozen, input item kept, no gas voided) until the tanks are
+        // drained. This forces players to store the creosote / coal gas rather
+        // than letting the oven silently waste it. tickRecipe runs every tick
+        // while the timer is active, so draining a tank resumes the recipe on
+        // its own — no notification needed.
         if(timer > 0){
-            if(primaryTank.getSpace() != 0)
-                primaryTank.fill(recipe.getPrimaryResult(), IFluidHandler.FluidAction.EXECUTE);
-            if(secondaryTank.getSpace() != 0)
-                secondaryTank.fill(recipe.getSecondaryResult(), IFluidHandler.FluidAction.EXECUTE);
+            FluidStack primaryResult = recipe.getPrimaryResult();
+            FluidStack secondaryResult = recipe.getSecondaryResult();
+            if(primaryTank.fill(primaryResult, IFluidHandler.FluidAction.SIMULATE) < primaryResult.getAmount()
+                    || secondaryTank.fill(secondaryResult, IFluidHandler.FluidAction.SIMULATE) < secondaryResult.getAmount())
+                return;
+            primaryTank.fill(primaryResult, IFluidHandler.FluidAction.EXECUTE);
+            secondaryTank.fill(secondaryResult, IFluidHandler.FluidAction.EXECUTE);
             timer--;
         }
     }

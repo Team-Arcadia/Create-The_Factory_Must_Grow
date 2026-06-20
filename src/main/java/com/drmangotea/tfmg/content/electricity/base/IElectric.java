@@ -107,8 +107,18 @@ public interface IElectric {
                     be.updateNextTick();
                 }
         }
-        if (getData().electricalNetworkId != getPos())
-            getOrCreateElectricNetwork().getMembers().remove(this);
+        if (getData().electricalNetworkId != getPos()) {
+            ElectricalNetwork network = getOrCreateElectricNetwork();
+            network.getMembers().remove(this);
+            // Recompute the surviving network now that this consumer is gone.
+            // Phase I of updateNetwork clears notEnoughPower on EVERY remaining
+            // member, then Phase IV re-checks supply with the reduced draw.
+            // Without this, only the destroyed block's direct neighbours were
+            // refreshed and the rest of the grid stayed latched on the stale
+            // "not enough power" state set while this (possibly high-draw) block
+            // was still attached.
+            network.updateNetwork();
+        }
 //
         if (getData().electricalNetworkId == getPos() && map != null)
             map.remove(getData().getId());
