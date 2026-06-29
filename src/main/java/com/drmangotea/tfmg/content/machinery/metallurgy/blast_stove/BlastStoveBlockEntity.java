@@ -446,17 +446,20 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
                 Capabilities.FluidHandler.BLOCK,
                 TFMGBlockEntities.BLAST_STOVE.get(),
                 (be, context) -> {
-                    if (be.fluidCapability == null)
-                        be.refreshCapability();
-                    if (be.secondaryCapability == null)
+                    if (be.primaryCapability == null || be.secondaryCapability == null)
                         be.refreshCapability();
 
-
-                    if (context.getAxis() == Direction.Axis.Y) {
+                    // A null context means "no particular side" — e.g.
+                    // ComputerCraft's peripheral scan queries the block
+                    // capability without a direction. Dereferencing it
+                    // (context.getAxis()) instantly crashed the server the
+                    // moment a Computer was placed next to the blast stove.
+                    // Treat null as the top/Y face and fall back to the
+                    // primary handler.
+                    if (context == null || context.getAxis() == Direction.Axis.Y)
                         return be.primaryCapability;
-                    } else if (be.getController().getY() == be.getBlockPos().getY()) {
+                    if (be.getController().getY() == be.getBlockPos().getY())
                         return be.secondaryCapability;
-                    }
 
                     return null;
                 }
