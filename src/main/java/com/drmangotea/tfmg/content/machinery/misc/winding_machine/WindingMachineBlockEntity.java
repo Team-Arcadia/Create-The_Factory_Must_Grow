@@ -43,6 +43,7 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
     LerpedFloat spoolSpeed = LerpedFloat.linear();
     float angle;
     public SmartInventory inventory;
+    public WindingMachineItemHandler itemHandler;
     public ItemStack spool = ItemStack.EMPTY;
     public WindingRecipe recipe;
     public int amountWinded = 0;
@@ -56,7 +57,16 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         inventory = new SmartInventory(1, this)
                 .withMaxStackSize(1)
                 .whenContentsChanged(i -> this.onContentsChanged());
+        itemHandler = new WindingMachineItemHandler(this);
 
+    }
+
+    /** Mark the spool field dirty and sync it to the client. */
+    public void onSpoolChanged() {
+        if (level != null && !level.isClientSide) {
+            setChanged();
+            sendData();
+        }
     }
 
 
@@ -64,7 +74,7 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 TFMGBlockEntities.WINDING_MACHINE.get(),
-                (be, context) -> be.inventory
+                (be, context) -> be.itemHandler
         );
     }
 

@@ -14,6 +14,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -102,15 +103,37 @@ public class SpoolItem extends Item {
         ItemStack stack = context.getItemInHand();
 
         if (level.getBlockEntity(pos) instanceof WindingMachineBlockEntity be) {
-            ItemStack oldSpool = ItemStack.EMPTY;
-            if (!be.spool.isEmpty()) {
-                oldSpool = be.spool;
+            // Only real spools may be slotted; ignore anything else so a
+            // deployer / dispenser can't shove an arbitrary item into the
+            // spool field.
+            if (!(stack.getItem() instanceof SpoolItem))
+                return InteractionResult.PASS;
+            // The swap mutates authoritative state — server only.
+            if (level.isClientSide)
+                return InteractionResult.SUCCESS;
+
+            ItemStack oldSpool = be.spool.isEmpty() ? ItemStack.EMPTY : be.spool;
+            // Store a COPY (count 1), never the live stack held by the player or
+            // the deployer: performRecipe mutates be.spool every tick, and
+            // aliasing the deployer's own stack corrupted its state and could
+            // hang the interaction.
+            be.spool = stack.copyWithCount(1);
+            stack.shrink(1);
+
+            // Hand the previously held spool back. context.getPlayer() is null
+            // for some automation (e.g. dispensers), so guard it instead of
+            // NPEing — drop the old spool in the world when there is no player
+            // to receive it.
+            if (!oldSpool.isEmpty()) {
+                if (player == null)
+                    Containers.dropItemStack(level, pos.getX(), pos.getY(), pos.getZ(), oldSpool);
+                else if (stack.isEmpty())
+                    player.setItemInHand(context.getHand(), oldSpool);
+                else if (!player.getInventory().add(oldSpool))
+                    player.drop(oldSpool, false);
             }
-            be.spool = context.getItemInHand();
-            context.getPlayer().setItemInHand(context.getHand(), oldSpool);
-            be.sendData();
-            be.setChanged();
-//
+
+            be.onSpoolChanged();
             return InteractionResult.SUCCESS;
         }
 
