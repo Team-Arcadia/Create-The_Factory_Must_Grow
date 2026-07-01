@@ -1,7 +1,0 @@
-{
-	"parent": "block/block",
-	"textures": {
-		"0": "tfmg:block/lead_glass",
-		"particle": "tfmg:block/lead_glass"
-	}
-}
