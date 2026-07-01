@@ -146,6 +146,7 @@ import net.minecraft.util.ColorRGBA;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.storage.loot.LootTable;
@@ -1693,14 +1694,14 @@ public class TFMGBlocks {
 
     //------------------DOOR------------------//
     public static final BlockEntry<TFMGSlidingDoorBlock> HEAVY_CASING_DOOR =
-            REGISTRATE.block("heavy_casing_door", p -> new TFMGSlidingDoorBlock(p, SlidingDoorBlock.GLASS_SET_TYPE.get(), false))
+            REGISTRATE.block("heavy_casing_door", p -> new TFMGSlidingDoorBlock(p, BlockSetType.COPPER, false))
                     .transform(TFMGBuilderTransformers.slidingDoor("heavy_casing"))
                     .properties(p -> p
                             .sound(SoundType.COPPER)
                             .noOcclusion())
                     .register();
     public static final BlockEntry<TFMGSlidingDoorBlock> STEEL_CASING_DOOR =
-            REGISTRATE.block("steel_door", p -> new TFMGSlidingDoorBlock(p, SlidingDoorBlock.GLASS_SET_TYPE.get(), true))
+            REGISTRATE.block("steel_door", p -> new TFMGSlidingDoorBlock(p, BlockSetType.COPPER, true))
                     .transform(TFMGBuilderTransformers.slidingDoor("steel"))
                     .properties(p -> p
                             .sound(SoundType.COPPER)
@@ -1708,14 +1709,14 @@ public class TFMGBlocks {
                     .register();
 
     public static final BlockEntry<TFMGSlidingDoorBlock> ALUMINUM_DOOR =
-            REGISTRATE.block("aluminum_door", p -> new TFMGSlidingDoorBlock(p, SlidingDoorBlock.GLASS_SET_TYPE.get(), false))
+            REGISTRATE.block("aluminum_door", p -> new TFMGSlidingDoorBlock(p, BlockSetType.COPPER, false))
                     .transform(TFMGBuilderTransformers.slidingDoor("aluminum"))
                     .properties(p -> p
                             .sound(SoundType.COPPER)
                             .noOcclusion())
                     .register();
     public static final BlockEntry<TFMGSlidingDoorBlock> HEAVY_PLATED_DOOR =
-            REGISTRATE.block("heavy_plated_door", p -> new TFMGSlidingDoorBlock(p, SlidingDoorBlock.GLASS_SET_TYPE.get(), false))
+            REGISTRATE.block("heavy_plated_door", p -> new TFMGSlidingDoorBlock(p, BlockSetType.COPPER, false))
                     .transform(TFMGBuilderTransformers.slidingDoor("heavy_plated"))
                     .properties(p -> p
                             .sound(SoundType.COPPER)

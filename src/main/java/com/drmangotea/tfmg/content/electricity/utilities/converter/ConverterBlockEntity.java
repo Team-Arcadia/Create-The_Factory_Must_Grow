@@ -51,6 +51,12 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
         return new TFMGForgeEnergyStorage(500000, 10000) {
             @Override
             public void onEnergyChanged(int amount, int a) {
+                // Re-run the electrical network whenever the FE tank changes so
+                // FE->TFMG conversion actually publishes a voltage on the blue
+                // (TFMG) side. Without this, updateNetwork() never fires on
+                // incoming FE and the heavy cable / downstream machines stay at
+                // 0V (mirrors AccumulatorBlockEntity.onEnergyChanged).
+                updateNextTick();
                 sendStuff();
             }
         };
@@ -157,6 +163,12 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
                 energy.receiveEnergy((int) (getChargingRate() / TFMGConfigs.common().machines.FEtoWattTickConversionRate.get()), false);
 
             }
+            // TFMG->FE: actively PUSH stored FE into adjacent energy consumers.
+            // The converter only EXPOSES an IEnergyStorage capability, so a
+            // passive energy cube (input mode) never received anything - only a
+            // cable in PULL mode did. Push out of every face except the TFMG
+            // (blue) slot so orange-side neighbours are filled without a puller.
+            pushForgeEnergy();
         } else {
             // OUTPUT mode: expose the configured voltage on this BE so
             // neighbours that gate on getData().getVoltage() != 0 actually
@@ -235,6 +247,29 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound,registries , clientPacket);
         energy.setEnergy(compound.getInt("ForgeEnergy"));
+    }
+
+    private void pushForgeEnergy() {
+        if (level == null || energy.getEnergyStored() <= 0)
+            return;
+        Direction tfmgSide = getBlockState().getValue(FACING).getClockWise();
+        for (Direction d : Direction.values()) {
+            if (d == tfmgSide)
+                continue; // never push out of the TFMG (blue) electricity slot
+            if (energy.getEnergyStored() <= 0)
+                break;
+            IEnergyStorage neighbour = level.getCapability(
+                    Capabilities.EnergyStorage.BLOCK,
+                    worldPosition.relative(d), d.getOpposite());
+            if (neighbour == null || !neighbour.canReceive())
+                continue;
+            int simulated = neighbour.receiveEnergy(energy.getEnergyStored(), true);
+            if (simulated <= 0)
+                continue;
+            int extracted = energy.extractEnergy(simulated, false);
+            if (extracted > 0)
+                neighbour.receiveEnergy(extracted, false);
+        }
     }
 
     @Override

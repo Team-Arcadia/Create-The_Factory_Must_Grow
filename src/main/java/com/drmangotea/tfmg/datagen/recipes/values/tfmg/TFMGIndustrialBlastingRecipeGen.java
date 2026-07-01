@@ -26,6 +26,7 @@ public class TFMGIndustrialBlastingRecipeGen extends IndustrialBlastingRecipeGen
             .require(Items.QUARTZ)
             .output(TFMGFluids.LIQUID_SILICON.get(),40)
             .duration(5)
+            .hotAirUsage(20)
     ),
 
     STEEL = create("steel", b -> ((IndustrialBlastingRecipe.Builder<IndustrialBlastingRecipe>)b)

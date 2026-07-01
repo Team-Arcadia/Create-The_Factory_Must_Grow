@@ -1,6 +1,8 @@
 package com.drmangotea.tfmg.content.decoration.tanks.steel;
 
 
+import com.drmangotea.tfmg.content.machinery.vat.base.VatBlock;
+import com.drmangotea.tfmg.content.machinery.vat.base.VatBlockEntity;
 import com.drmangotea.tfmg.mixin.accessor.FluidTankBlockEntityAccessor;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
 import com.simibubi.create.api.connectivity.ConnectivityHandler;
@@ -82,27 +84,54 @@ public class SteelTankItem extends BlockItem {
         BlockPos placedOnPos = pos.relative(face.getOpposite());
         BlockState placedOnState = world.getBlockState(placedOnPos);
 
-        if (!SteelTankBlock.isTank(placedOnState))
-            return;
+        // Chemical vats reuse this same multi-placing item but their controller
+        // is a VatBlockEntity (NOT a FluidTankBlockEntity), so the steel-tank
+        // types and the FluidTankBlockEntityAccessor mixin don't apply. Branch
+        // on the item's block and read the layer geometry from the vat's own
+        // public API. Without this, tryMultiPlace bailed at the isTank() guard
+        // and vats could only be placed one block at a time.
+        boolean vat = getBlock() instanceof VatBlock;
 
-        SteelTankBlockEntity tankAt = ConnectivityHandler.partAt(
-                TFMGBlockEntities.STEEL_FLUID_TANK.get(), world, placedOnPos
-        );
-        if (tankAt == null)
-            return;
-        SteelTankBlockEntity controllerTE = (SteelTankBlockEntity) tankAt.getControllerBE();
-        if (controllerTE == null)
-            return;
+        int width;
+        int height;
+        BlockPos controllerPos;
 
-        int width = ((FluidTankBlockEntityAccessor)controllerTE).tfmg$getWidth();
+        if (vat) {
+            if (!VatBlock.isVat(placedOnState))
+                return;
+            VatBlockEntity vatAt = ConnectivityHandler.partAt(
+                    TFMGBlockEntities.CHEMICAL_VAT.get(), world, placedOnPos
+            );
+            if (vatAt == null)
+                return;
+            VatBlockEntity controllerTE = vatAt.getControllerBE();
+            if (controllerTE == null)
+                return;
+            width = controllerTE.getWidth();
+            height = controllerTE.getHeight();
+            controllerPos = controllerTE.getBlockPos();
+        } else {
+            if (!SteelTankBlock.isTank(placedOnState))
+                return;
+            SteelTankBlockEntity tankAt = ConnectivityHandler.partAt(
+                    TFMGBlockEntities.STEEL_FLUID_TANK.get(), world, placedOnPos
+            );
+            if (tankAt == null)
+                return;
+            SteelTankBlockEntity controllerTE = (SteelTankBlockEntity) tankAt.getControllerBE();
+            if (controllerTE == null)
+                return;
+            width = ((FluidTankBlockEntityAccessor) controllerTE).tfmg$getWidth();
+            height = ((FluidTankBlockEntityAccessor) controllerTE).tfmg$getHeight();
+            controllerPos = controllerTE.getBlockPos();
+        }
+
         if (width == 1)
             return;
 
         int tanksToPlace = 0;
-        BlockPos startPos = face == Direction.DOWN ? controllerTE.getBlockPos()
-                .below()
-                : controllerTE.getBlockPos()
-                .above(((FluidTankBlockEntityAccessor)controllerTE).tfmg$getHeight());
+        BlockPos startPos = face == Direction.DOWN ? controllerPos.below()
+                : controllerPos.above(height);
 
         if (startPos.getY() != pos.getY())
             return;
@@ -111,7 +140,7 @@ public class SteelTankItem extends BlockItem {
             for (int zOffset = 0; zOffset < width; zOffset++) {
                 BlockPos offsetPos = startPos.offset(xOffset, 0, zOffset);
                 BlockState blockState = world.getBlockState(offsetPos);
-                if (SteelTankBlock.isTank(blockState))
+                if (vat ? VatBlock.isVat(blockState) : SteelTankBlock.isTank(blockState))
                     continue;
                 if (!blockState.canBeReplaced())
                     return;
@@ -126,7 +155,7 @@ public class SteelTankItem extends BlockItem {
             for (int zOffset = 0; zOffset < width; zOffset++) {
                 BlockPos offsetPos = startPos.offset(xOffset, 0, zOffset);
                 BlockState blockState = world.getBlockState(offsetPos);
-                if (SteelTankBlock.isTank(blockState))
+                if (vat ? VatBlock.isVat(blockState) : SteelTankBlock.isTank(blockState))
                     continue;
                 BlockPlaceContext context = BlockPlaceContext.at(ctx, offsetPos, face);
                 player.getPersistentData()

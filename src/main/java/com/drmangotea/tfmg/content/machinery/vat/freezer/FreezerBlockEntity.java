@@ -53,7 +53,13 @@ public class FreezerBlockEntity extends ElectricBlockEntity implements IVatMachi
 
     @Override
     public PositionRequirement getPositionRequirement() {
-        return PositionRequirement.TOP;
+        // ANY: a freezer counts whether it sits under the vat (where players
+        // naturally place it, like a heat source) or on top. updateTemperature()
+        // reads its heat delta from the position-validated machineMap, so either
+        // placement cools the vat AND satisfies the recipe's machine list. The
+        // old TOP requirement meant a freezer placed below cooled the vat but
+        // was never counted as a machine, so freeze recipes never matched.
+        return PositionRequirement.ANY;
     }
 
 

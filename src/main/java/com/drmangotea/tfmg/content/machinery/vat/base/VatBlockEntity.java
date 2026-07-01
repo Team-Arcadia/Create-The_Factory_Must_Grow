@@ -298,6 +298,9 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         BlockPos pos1 = controller == null ? getBlockPos() : controller;
         VatBlockEntity be = getControllerBE() == null ? this : getControllerBE();
 
+        // Bottom heaters (BlazeBurner etc.) live directly under the vat and are
+        // plain blocks, not IVatMachines, so scan the controller.Y-1 layer for
+        // them. This is where heated recipes get their heat.
         for (int xOffset = 0; xOffset < be.width; xOffset++) {
             for (int zOffset = 0; zOffset < be.width; zOffset++) {
                 BlockPos pos = pos1.offset(xOffset, -1, zOffset);
@@ -307,15 +310,27 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 if (heat > 0) {
                     heatLevel += (int) heat;
                 }
-                if (level.getBlockEntity(pos) instanceof FreezerBlockEntity freezer && freezer.isOperational()) {
-                    heatLevel--;
-                }
-                if (level.getBlockEntity(pos) instanceof CompressorBlockEntity compressor && compressor.getState() != CompressorBlockEntity.CompressorState.NON_OPERATIONAL) {
-                    if (compressor.getState() == CompressorBlockEntity.CompressorState.PRESSURIZING)
-                        pressure++;
-                    if (compressor.getState() == CompressorBlockEntity.CompressorState.DEPRESSURIZING)
-                        pressure--;
-                }
+            }
+        }
+
+        // Compressors and freezers are IVatMachines and may sit under OR on top
+        // of the vat. Read their pressure/heat deltas from the position-validated
+        // machineMap (revalidateMachines() just refreshed operationalMachinesMap)
+        // instead of hard-scanning only the Y-1 layer, so their stats apply at
+        // whatever valid position they occupy — matching where evaluate() counts
+        // them for the recipe's machine list.
+        for (BlockPos machinePos : machineMap.keySet()) {
+            if (!operationalMachinesMap.getOrDefault(machinePos, true))
+                continue;
+            BlockEntity machineBe = level.getBlockEntity(machinePos);
+            if (machineBe instanceof FreezerBlockEntity freezer && freezer.isOperational()) {
+                heatLevel--;
+            }
+            if (machineBe instanceof CompressorBlockEntity compressor && compressor.getState() != CompressorBlockEntity.CompressorState.NON_OPERATIONAL) {
+                if (compressor.getState() == CompressorBlockEntity.CompressorState.PRESSURIZING)
+                    pressure++;
+                if (compressor.getState() == CompressorBlockEntity.CompressorState.DEPRESSURIZING)
+                    pressure--;
             }
         }
         if (heatLevel >= 2) {
@@ -340,12 +355,22 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 continue;
             boolean doesntMatch = false;
 
-            // Compare as multisets — HashMap.values() ordering is not stable.
-            java.util.List<String> required = new java.util.ArrayList<>(testedRecipe.machines);
+            // Multiset CONTAINMENT: the vat must hold AT LEAST the machines the
+            // recipe lists; extra machines of the same or another kind are fine.
+            // Players naturally fill every bottom slot with compressors/freezers,
+            // and pressure/heat act as thresholds rather than exact counts, so an
+            // EXACT-count match (the old behaviour) made a vat with 8 compressors
+            // never satisfy a recipe that lists 1. Order-independent by removing
+            // one occurrence of each required id from a copy of what we have.
             java.util.List<String> have = new java.util.ArrayList<>(machineMap.values());
-            java.util.Collections.sort(required);
-            java.util.Collections.sort(have);
-            if (!required.equals(have)) {
+            boolean machinesOk = true;
+            for (String req : testedRecipe.machines) {
+                if (!have.remove(req)) {
+                    machinesOk = false;
+                    break;
+                }
+            }
+            if (!machinesOk) {
                 continue;
             }
 
@@ -517,7 +542,12 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             return;
         if (!isController())
             return;
-        if (heatLevel < recipe.heatLevel)
+        // Only enforce a heat MINIMUM when the recipe actually requires heat
+        // (recipe.heatLevel > 0). A freeze recipe leaves heatLevel unset (0) and
+        // relies on its "tfmg:freezing" machine; the freezer drives the vat's
+        // heatLevel below 0, so the old unconditional 'heatLevel < recipe.heatLevel'
+        // (negative < 0) permanently blocked every freeze recipe.
+        if (recipe.heatLevel > 0 && heatLevel < recipe.heatLevel)
             return;
         if (recipe.getRequiredHeat() == HeatCondition.HEATED && heatCondition == HeatCondition.NONE)
             return;

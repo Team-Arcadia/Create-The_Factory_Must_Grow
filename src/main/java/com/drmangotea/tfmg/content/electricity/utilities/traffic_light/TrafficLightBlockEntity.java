@@ -76,7 +76,11 @@ public class TrafficLightBlockEntity extends ElectricBlockEntity {
         int halfTimer = timerLength.getValue()/2;
 
 
-        if(timer<halfTimer-30&&timer>60) {
+        // Cycle (timer counts down from timerLength to 0, then resets):
+        //   red (light 2) -> orange (light 1) -> green (light 0) -> reset to red.
+        // Green now runs all the way down to 0 so it flips straight back to red
+        // instead of showing a second orange between green and red.
+        if(timer<halfTimer-30) {
             light = 0;
         }else
 

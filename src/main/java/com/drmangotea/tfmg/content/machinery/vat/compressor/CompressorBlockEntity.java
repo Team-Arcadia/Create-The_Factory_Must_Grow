@@ -49,7 +49,14 @@ public class CompressorBlockEntity extends KineticBlockEntity implements IVatMac
 
     @Override
     public PositionRequirement getPositionRequirement() {
-        return PositionRequirement.TOP;
+        // ANY: a compressor counts whether it sits under the vat (mirroring a
+        // blaze-burner heat source, which is where players naturally place it)
+        // or on top. updateTemperature() reads its pressure delta from the
+        // position-validated machineMap, so either placement pressurises the
+        // vat AND satisfies the recipe's machine list. The old TOP requirement
+        // meant a compressor placed below raised pressure but was never counted
+        // as a machine, so pressure recipes (LPG, liquid air) never matched.
+        return PositionRequirement.ANY;
     }
 
 
