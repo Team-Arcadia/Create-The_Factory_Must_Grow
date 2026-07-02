@@ -1,0 +1,23 @@
+# Error Log
+
+Session-discovered errors, root causes, and prevention rules for TFMG (Arcadia fork).
+
+---
+
+## [2026-07-01 12:00] — Stale datagen output silently overriding 1.2.3 fixes
+
+**Context:** Session start audit of the working tree (3355 modified files).
+**Error:** `src/generated/resources` contained an uncommitted `runData` output dated 2026-05-23 (pre-1.2.3 code). It deleted the hand-authored compressor/freezer crafting recipes, the zh_cn lang file and hundreds of `mineable/pickaxe` tag entries, and left stale *untracked* copies of the four vat recipes (`compressed_lpg`, `cooling_fluid`, `liquid_air`, `liquid_asphalt`) that the 1.2.3 commit had moved to `src/main/resources`. Since both resource roots are merged into the jar, the stale copies could override the fixed recipes at runtime.
+**Root cause:** Hand-authored files were placed inside `src/generated/resources`, which is owned by datagen and fully rewritten by every `runData` run; plus a datagen run from an old code state was left half-applied in the working tree.
+**Fix:** Restored `src/generated` to HEAD, deleted stale untracked datagen leftovers, moved hand-authored files (compressor/freezer recipes + advancements) to `src/main/resources`, merged the duplicated zh_cn.json (1172-key legacy + 436-key port → single 1298-key file in `src/main/resources`).
+**Prevention:** NEVER hand-edit or hand-add files under `src/generated/resources` — put manual resources in `src/main/resources`. After changing datagen-relevant code, run `gradlew runData` and commit its full output in the same commit. Before committing datagen output, `git diff --stat src/generated` and investigate any *deletion*.
+
+---
+
+## [2026-07-01 12:05] — Build artifacts (`bin/`) tracked in git
+
+**Context:** Same audit.
+**Error:** 6033 compiled `.class`/resource files under `bin/` (Eclipse/VSCode compiler output) were tracked in git despite `/bin/` being in `.gitignore` (ignored only applies to untracked files).
+**Root cause:** `bin/` was committed before the `.gitignore` entry was added; git keeps tracking already-tracked files.
+**Fix:** `git rm -r --cached bin` (commit d3611d09).
+**Prevention:** After adding a path to `.gitignore`, always check `git ls-files <path>` and untrack leftovers.
