@@ -43,7 +43,11 @@ public class PumpjackCrankBlockEntity extends KineticBlockEntity {
 
     private void setAngle() {
         if (level.getBlockEntity(getBlockPos().below()) instanceof MachineInputBlockEntity) {
-            float speed_amogus = Math.min(getMachineInputSpeed() / 6, (float) 10);
+            // Cap the MAGNITUDE: Math.min alone only capped positive speeds,
+            // so reversed rotation (negative speed) spun the crank unbounded
+            // and the pump ran faster than intended.
+            float rawSpeed = getMachineInputSpeed() / 6;
+            float speed_amogus = Math.signum(rawSpeed) * Math.min(Math.abs(rawSpeed), (float) 10);
             if (level.isClientSide) {
                 float time = AnimationTickHolder.getRenderTime(getLevel());
                 if (speed_amogus != 0) {

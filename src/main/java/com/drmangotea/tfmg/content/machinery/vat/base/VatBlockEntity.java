@@ -520,6 +520,21 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                 continue;
             BlockEntity blockEntity = level.getBlockEntity(machinePos);
             if (blockEntity instanceof IVatMachine vatMachine) {
+                // Keep the stored operation id in sync (a compressor can flip
+                // between pressurising and depressurising without a rescan);
+                // an id gone empty means the machine no longer identifies as
+                // one (e.g. mixer mode item removed).
+                String operationId = vatMachine.getOperationId();
+                if (operationId.isEmpty()) {
+                    iter.remove();
+                    operationalMachinesMap.remove(machinePos);
+                    continue;
+                }
+                if (!operationId.equals(machineMap.get(machinePos))) {
+                    machineMap.put(machinePos, operationId);
+                    recipe = null;
+                    notifyUpdate();
+                }
                 operationalMachinesMap.put(machinePos, vatMachine.canOperate(this));
             } else {
                 iter.remove();

@@ -204,7 +204,12 @@ public class TFMGItems {
 
     public static final ItemEntry<ElectromagneticCoilItem> ELECTROMAGNETIC_COIL =
             REGISTRATE.item("electromagnetic_coil", ElectromagneticCoilItem::new)
-                    .properties(p -> p.stacksTo(1))
+                    // Default 100 turns: creative/JEI coils had no COIL_TURNS
+                    // component at all, which silently forced the transformer
+                    // ratio to 0 (winding-machine coils override this with
+                    // their scroll-set target).
+                    .properties(p -> p.stacksTo(1)
+                            .component(com.drmangotea.tfmg.registry.TFMGDataComponents.COIL_TURNS, 100))
                     .register();
     //public static final ItemEntry<FuseItem> FUSE = REGISTRATE.item("fuse", FuseItem::new)
     //        .properties(p -> p.stacksTo(1))

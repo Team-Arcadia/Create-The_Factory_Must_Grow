@@ -1,7 +1,9 @@
 package com.drmangotea.tfmg.content.electricity.network.transformer.small;
 
 import com.drmangotea.tfmg.base.TFMGUtils;
+import com.drmangotea.tfmg.base.lang.TFMGLang;
 import com.drmangotea.tfmg.base.lang.TFMGTexts;
+import net.minecraft.ChatFormatting;
 import com.drmangotea.tfmg.content.electricity.base.IElectric;
 import com.drmangotea.tfmg.content.electricity.base.VoltageAlteringBlockEntity;
 
@@ -131,9 +133,14 @@ public class TransformerBlockEntity extends VoltageAlteringBlockEntity {
     public boolean makeMultimeterTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
         super.makeMultimeterTooltip(tooltip, isPlayerSneaking);
 
+        TFMGTexts.Multimeter.separator().forGoggles(tooltip);
         if(coilRatio!=0) {
-            TFMGTexts.Multimeter.separator().forGoggles(tooltip);
             TFMGTexts.Multimeter.transformerRatio(coilRatio).forGoggles(tooltip, 1);
+        } else {
+            // A dead transformer used to show NOTHING — surface why.
+            TFMGLang.text("Needs two coils with at least 50 turns each")
+                    .style(ChatFormatting.RED)
+                    .forGoggles(tooltip, 1);
         }
         return true;
     }

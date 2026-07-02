@@ -32,14 +32,13 @@ public class CompressorBlockEntity extends KineticBlockEntity implements IVatMac
 
     @Override
     public String getOperationId() {
-        switch (getState()) {
-            case PRESSURIZING:
-                return "tfmg:pressurising";
-            case DEPRESSURIZING:
-                return "tfmg:depressurising";
-            default:
-                return "";
-        }
+        // Identity, not health: report the direction (pressurising when
+        // stopped) even below operating speed — canOperate() gates actual
+        // operation. Returning "" for a momentarily stopped compressor made
+        // evaluate() drop it from the machine list entirely.
+        if (getSpeed() < 0)
+            return "tfmg:depressurising";
+        return "tfmg:pressurising";
     }
 
     @Override

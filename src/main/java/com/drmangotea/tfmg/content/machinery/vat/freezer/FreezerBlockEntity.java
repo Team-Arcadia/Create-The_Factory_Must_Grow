@@ -43,7 +43,13 @@ public class FreezerBlockEntity extends ElectricBlockEntity implements IVatMachi
 
     @Override
     public String getOperationId() {
-        return isOperational() ? "tfmg:freezing" : "";
+        // Identity, not health: an unpowered freezer must still be listed in
+        // the vat's attachments and satisfy the recipe's machine list —
+        // canOperate() below is what gates actual operation. Returning ""
+        // here made evaluate() skip the freezer entirely whenever it was
+        // momentarily under-powered at scan time, so it never appeared in
+        // the attachments and freeze recipes never matched.
+        return "tfmg:freezing";
     }
 
     @Override

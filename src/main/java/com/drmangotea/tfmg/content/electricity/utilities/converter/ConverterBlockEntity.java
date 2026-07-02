@@ -89,6 +89,10 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
     protected void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(compound,registries , clientPacket);
         compound.putInt("ForgeEnergy", energy.getEnergyStored());
+        // Synced + persisted: the client mirror sim reads timer in
+        // voltageGeneration(), and the recharge cooldown must survive
+        // chunk reloads.
+        compound.putInt("Timer", timer);
     }
 
 
@@ -149,6 +153,12 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
     public void tick() {
         super.tick();
 
+        // FE transfer and the cooldown timer are server logic; the client
+        // used to run them on its local copies, drifting the displayed FE
+        // amount away from reality (energy itself syncs via write/read).
+        if (level == null || level.isClientSide)
+            return;
+
         if(timer>0){
 
             if(timer == 1)
@@ -201,6 +211,17 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
     public boolean makeMultimeterTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
         super.makeMultimeterTooltip(tooltip, isPlayerSneaking);
 
+        // Surface the wrench-toggled mode — with no feedback, a converter
+        // left in the wrong mode simply looked broken.
+        TFMGLang.text(isInput() ? "Mode: TFMG → FE (charges from the blue side)"
+                        : "Mode: FE → TFMG (generates on the blue side)")
+                .style(net.minecraft.ChatFormatting.AQUA)
+                .forGoggles(tooltip, 1);
+        if (!isInput() && timer > 0)
+            TFMGLang.text("Depleted — recharge cooldown: " + timer + "t")
+                    .style(net.minecraft.ChatFormatting.RED)
+                    .forGoggles(tooltip, 1);
+
         TFMGTexts.electricalCapacity(energy.getEnergyStored()).forGoggles(tooltip, 1);
         TFMGTexts.chargingRate(getChargingRate()).forGoggles(tooltip, 1);
         TFMGTexts.electricalMaxCapacity(getMaxCapacity()).forGoggles(tooltip, 1);
@@ -247,6 +268,7 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound,registries , clientPacket);
         energy.setEnergy(compound.getInt("ForgeEnergy"));
+        timer = compound.getInt("Timer");
     }
 
     private void pushForgeEnergy() {
