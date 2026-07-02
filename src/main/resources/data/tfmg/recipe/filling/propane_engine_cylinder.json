@@ -1,0 +1,27 @@
+{
+  "type": "create:filling",
+  "ingredients": [
+    {
+      "item": "tfmg:engine_cylinder"
+    },
+    {
+      "type": "neoforge:single",
+      "amount": 250,
+      "fluid": "tfmg:propane"
+    }
+  ],
+  "results": [
+    {
+      "count": 1,
+      "id": "tfmg:engine_cylinder",
+      "components": {
+        "tfmg:fuel_tags": {
+          "propane": "c:propane"
+        },
+        "tfmg:fuels": {
+          "propane": "Propane"
+        }
+      }
+    }
+  ]
+}

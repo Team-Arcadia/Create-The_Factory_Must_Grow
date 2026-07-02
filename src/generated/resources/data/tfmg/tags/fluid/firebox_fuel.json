@@ -6,6 +6,8 @@
     "tfmg:butane",
     "tfmg:flowing_propane",
     "tfmg:propane",
+    "tfmg:flowing_hydrogen",
+    "tfmg:hydrogen",
     "tfmg:flowing_diesel",
     "tfmg:diesel",
     "tfmg:flowing_naphtha",

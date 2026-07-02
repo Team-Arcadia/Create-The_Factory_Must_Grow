@@ -55,11 +55,27 @@ public class BaseFuelTypes {
             .stress(0.5f)
             .registerAndAssign(TFMGTags.TFMGFluidTags.CREOSOTE.tag),
 
-    //HYDROGEN = create("hydrogen")
-    //        .speed(0)
-    //        .efficiency(0)
-    //        .stress(0)
-    //        .registerAndAssign(TFMGTags.TFMGFluidTags.GAS.tag),
+    // Specialized variants of LPG (1.2 / 0.7 / 0.7): butane trades
+    // efficiency for speed, propane trades speed for efficiency, and
+    // hydrogen (vat electrolysis of water) is the fastest, cleanest and
+    // weakest of the gas fuels.
+    BUTANE = create("butane")
+            .speed(1.3f)
+            .efficiency(0.6f)
+            .stress(0.6f)
+            .registerAndAssign(TFMGTags.TFMGFluidTags.BUTANE.tag),
+
+    PROPANE = create("propane")
+            .speed(1.1f)
+            .efficiency(0.9f)
+            .stress(0.8f)
+            .registerAndAssign(TFMGTags.TFMGFluidTags.PROPANE.tag),
+
+    HYDROGEN = create("hydrogen")
+            .speed(1.4f)
+            .efficiency(0.5f)
+            .stress(0.6f)
+            .registerAndAssign(TFMGTags.TFMGFluidTags.HYDROGEN.tag),
 
 
     FURNACE_GAS = create("furnace_gas")

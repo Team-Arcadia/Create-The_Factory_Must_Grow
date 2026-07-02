@@ -7,25 +7,21 @@
   "ingredients": [
     {
       "type": "neoforge:single",
-      "amount": 500,
-      "fluid": "tfmg:butane"
-    },
-    {
-      "type": "neoforge:single",
-      "amount": 500,
-      "fluid": "tfmg:propane"
+      "amount": 1000,
+      "fluid": "tfmg:air"
     }
   ],
   "machines": [
+    "tfmg:freezing",
     "tfmg:pressurising"
   ],
   "min_size": 1,
   "pressure": 1,
-  "processing_time": 60,
+  "processing_time": 120,
   "results": [
     {
-      "amount": 1000,
-      "id": "tfmg:lpg"
+      "amount": 250,
+      "id": "tfmg:cooling_fluid"
     }
   ]
 }

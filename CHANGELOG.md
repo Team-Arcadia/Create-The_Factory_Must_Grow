@@ -6,6 +6,17 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ## [Unreleased] - 2026-07-02
 
+### Added
+
+- **Hydrogen is now part of the game** — It was registered but had no source and no use. Produce it by **electrolysing water** in a chemical vat (2 electrode holders, any vat tier), then burn it in the **firebox** or in gas engines as the fastest, cleanest and weakest engine fuel (speed 1.4 / efficiency 0.5 / stress 0.6). The mod authors had left a commented-out hydrogen fuel type — it is now finished.
+- **Butane and Propane are now obtainable** — Both existed only as creative buckets: nothing produced them, so the existing "butane + propane → LPG" pressure recipe was dead content. A **freezer vat recipe now separates LPG (1000 mB) into butane (500 mB) + propane (500 mB)**, making the loop functional in both directions. As engine fuels they specialize LPG (1.2/0.7/0.7): **butane** trades efficiency for speed (1.3/0.6/0.6), **propane** trades speed for efficiency (1.1/0.9/0.8).
+- **Gas engine cylinders by spout-filling** — Fill a plain engine cylinder with 250 mB of hydrogen, butane or propane on a Create spout to get the matching pre-configured cylinder (JEI-visible); the three variants also appear in the creative tab next to the LPG one.
+- **TFMG tools are enchantable** — Steel/aluminum/lead tools now carry the vanilla `minecraft:enchantable/*`, `pickaxes`, `axes`, `swords`, `hoes`, `shovels` item tags (they were missing from the shipped data).
+
+### Changed
+
+- **NeoForge minimum raised to 21.1.219** — Create 6.0.10 requires it; the project still targeted 21.1.213, which broke datagen and any launch on older NeoForge builds.
+
 ### Fixed
 
 - **Machines survive chunk unload/reload** — The #1 reported bug. Nothing electrical was ever saved: large switches reopened (closed/angle now persisted), electric switches lost their signal, engines lost rpm/torque and stayed dead until a redstone change (now persisted + signal re-derived on load), vats lost recipe progress/heat/pressure, blast stoves and coke ovens lost their timers/size, accumulators forgot their chain controller, and pumpjack/blast-furnace/engine-controller/piping-upgrade cached block-entity references went stale after reload (all now validated with `isRemoved()`).
@@ -28,6 +39,17 @@ All notable changes to Create: The Factory Must Grow are documented here.
 - **Cable networks** — One graph walk with a visited set instead of O(k²) walks and packets per connector; network current computed once per update instead of per cable; allocation-free membership checks.
 - **Idle machines stop spamming** — Machine-less vats no longer rescan + sync every 10 ticks forever; large engines send one packet on change instead of 20/s; coke ovens cache their recipe; pumpjack scans throttled; duplicated redstone scans and loop-checks removed.
 - **Dead code removed** — Unused mixins (`UtilMixin`, `TFMGMixinPlugin`, two recipe accessors), the never-fired generator tick branch, lithium block random ticking, dead NBT keys, duplicate `ControllerPos` writes; client-only mixins are now declared in the client array with `compatibilityLevel` JAVA_21; 6033 tracked build artifacts (`bin/`) untracked from git.
+
+### Ajouts
+
+- **L'hydrogène fait enfin partie du jeu** — Il était enregistré mais sans source ni usage. Produisez-le par **électrolyse de l'eau** en cuve chimique (2 porte-électrodes, tout palier de cuve), puis brûlez-le dans le **firebox** ou dans les moteurs à gaz comme le carburant le plus rapide, le plus propre et le plus faible (vitesse 1.4 / efficacité 0.5 / stress 0.6). Les auteurs du mod avaient laissé un type de carburant hydrogène en commentaire — il est désormais terminé.
+- **Le butane et le propane sont désormais obtenables** — Ils n'existaient qu'en seaux créatifs : rien ne les produisait, la recette « butane + propane → LPG » était du contenu mort. Une **recette de congélateur sépare le LPG (1000 mB) en butane (500 mB) + propane (500 mB)**, rendant la boucle fonctionnelle dans les deux sens. Comme carburants moteurs ils spécialisent le LPG (1.2/0.7/0.7) : le **butane** échange l'efficacité contre la vitesse (1.3/0.6/0.6), le **propane** la vitesse contre l'efficacité (1.1/0.9/0.8).
+- **Cylindres à gaz par remplissage au bec verseur** — Remplissez un cylindre de moteur avec 250 mB d'hydrogène, de butane ou de propane sur un bec Create pour obtenir le cylindre préconfiguré correspondant (visible dans JEI) ; les trois variantes apparaissent aussi dans l'onglet créatif à côté de celle au LPG.
+- **Les outils TFMG sont enchantables** — Les outils en acier/aluminium/plomb portent désormais les tags d'items vanilla `minecraft:enchantable/*`, `pickaxes`, `axes`, `swords`, `hoes`, `shovels` (absents des données livrées).
+
+### Modifications
+
+- **Minimum NeoForge relevé à 21.1.219** — Create 6.0.10 l'exige ; le projet ciblait encore 21.1.213, ce qui cassait le datagen et tout lancement sur un NeoForge plus ancien.
 
 ### Correctifs
 

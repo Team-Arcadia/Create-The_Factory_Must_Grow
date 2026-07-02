@@ -121,6 +121,9 @@ public class TFMGTags {
         FURNACE_GAS(COMMON),
 
         LPG(COMMON),
+        BUTANE(COMMON),
+        PROPANE(COMMON),
+        HYDROGEN(COMMON),
         HEAVY_OIL(COMMON),
         LUBRICATION_OIL(COMMON),
         NAPHTHA(COMMON),

@@ -12,9 +12,6 @@
   ],
   "results": [
     {
-      "components": {
-        "tfmg:amount": 500
-      },
       "id": "tfmg:fire_extinguisher"
     }
   ]

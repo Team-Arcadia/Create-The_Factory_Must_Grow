@@ -155,6 +155,36 @@ public class TFMGCreativeTabs {
         lpg.set(TFMGDataComponents.FUELS, lpgTagName);
         lpg.set(TFMGDataComponents.FUEL_TAGS, lpgTag);
         list.add(lpg);
+
+        // Gas cylinder variants for the LPG separation products and for
+        // electrolysis hydrogen (survival path: spout-fill an engine
+        // cylinder with the matching gas).
+        CompoundTag butaneTag = new CompoundTag();
+        butaneTag.putString("butane", "c:butane");
+        CompoundTag butaneTagName = new CompoundTag();
+        butaneTagName.putString("butane", "fluid.tfmg.butane");
+        ItemStack butane = TFMGItems.ENGINE_CYLINDER.asStack();
+        butane.set(TFMGDataComponents.FUELS, butaneTagName);
+        butane.set(TFMGDataComponents.FUEL_TAGS, butaneTag);
+        list.add(butane);
+
+        CompoundTag propaneTag = new CompoundTag();
+        propaneTag.putString("propane", "c:propane");
+        CompoundTag propaneTagName = new CompoundTag();
+        propaneTagName.putString("propane", "fluid.tfmg.propane");
+        ItemStack propane = TFMGItems.ENGINE_CYLINDER.asStack();
+        propane.set(TFMGDataComponents.FUELS, propaneTagName);
+        propane.set(TFMGDataComponents.FUEL_TAGS, propaneTag);
+        list.add(propane);
+
+        CompoundTag hydrogenTag = new CompoundTag();
+        hydrogenTag.putString("hydrogen", "c:hydrogen");
+        CompoundTag hydrogenTagName = new CompoundTag();
+        hydrogenTagName.putString("hydrogen", "fluid.tfmg.hydrogen");
+        ItemStack hydrogen = TFMGItems.ENGINE_CYLINDER.asStack();
+        hydrogen.set(TFMGDataComponents.FUELS, hydrogenTagName);
+        hydrogen.set(TFMGDataComponents.FUEL_TAGS, hydrogenTag);
+        list.add(hydrogen);
         ItemStack creosote = TFMGItems.SIMPLE_ENGINE_CYLINDER.asStack();
         creosote.set(TFMGDataComponents.FUELS, creosoteTagName);
         creosote.set(TFMGDataComponents.FUEL_TAGS, creosoteTag);

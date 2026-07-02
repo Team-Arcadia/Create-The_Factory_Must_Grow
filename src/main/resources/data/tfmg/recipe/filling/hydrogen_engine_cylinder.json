@@ -1,0 +1,27 @@
+{
+  "type": "create:filling",
+  "ingredients": [
+    {
+      "item": "tfmg:engine_cylinder"
+    },
+    {
+      "type": "neoforge:single",
+      "amount": 250,
+      "fluid": "tfmg:hydrogen"
+    }
+  ],
+  "results": [
+    {
+      "count": 1,
+      "id": "tfmg:engine_cylinder",
+      "components": {
+        "tfmg:fuel_tags": {
+          "hydrogen": "c:hydrogen"
+        },
+        "tfmg:fuels": {
+          "hydrogen": "Hydrogen"
+        }
+      }
+    }
+  ]
+}
