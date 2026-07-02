@@ -6,6 +6,8 @@ import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour
 import net.createmod.catnip.animation.AnimationTickHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -41,17 +43,32 @@ public class PumpjackCrankBlockEntity extends KineticBlockEntity {
 
     private void setAngle() {
         if (level.getBlockEntity(getBlockPos().below()) instanceof MachineInputBlockEntity) {
-            float time;
-            if (level.isClientSide) {
-                time = AnimationTickHolder.getRenderTime(getLevel());
-            } else time = level.getBlockTicks().hashCode();
             float speed_amogus = Math.min(getMachineInputSpeed() / 6, (float) 10);
+            if (level.isClientSide) {
+                float time = AnimationTickHolder.getRenderTime(getLevel());
+                if (speed_amogus != 0) {
+                    angle = (time * speed_amogus * 3 / 10f) % 360;
+                } else angle = 180;
+                return;
+            }
             if (speed_amogus != 0) {
-                angle = (time * speed_amogus * 3 / 10f) % 360;
-                angle = angle / 180f * (float) Math.PI;
-                angle = (float) Math.toDegrees(angle);
+                angle = (angle + speed_amogus * 3 / 10f) % 360;
+                setChanged();
             } else angle = 180;
         }
+    }
+
+    @Override
+    public void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(compound, registries, clientPacket);
+        compound.putFloat("CrankAngle", angle);
+    }
+
+    @Override
+    protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(compound, registries, clientPacket);
+        if (!clientPacket && compound.contains("CrankAngle"))
+            angle = compound.getFloat("CrankAngle");
     }
 
     @Override

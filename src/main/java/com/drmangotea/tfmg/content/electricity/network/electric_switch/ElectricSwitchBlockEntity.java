@@ -3,6 +3,8 @@ package com.drmangotea.tfmg.content.electricity.network.electric_switch;
 import com.drmangotea.tfmg.content.electricity.base.VoltageAlteringBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -15,6 +17,18 @@ public class ElectricSwitchBlockEntity extends VoltageAlteringBlockEntity {
 
     public ElectricSwitchBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
+    }
+
+    @Override
+    protected void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(compound, registries, clientPacket);
+        compound.putInt("Signal", signal);
+    }
+
+    @Override
+    protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(compound, registries, clientPacket);
+        signal = compound.getInt("Signal");
     }
 
     @Override

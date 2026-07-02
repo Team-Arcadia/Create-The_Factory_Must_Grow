@@ -28,7 +28,6 @@ import joptsimple.internal.Strings;
 import net.createmod.catnip.animation.LerpedFloat;
 import net.createmod.catnip.data.Couple;
 import net.createmod.catnip.lang.LangBuilder;
-import net.createmod.ponder.api.level.PonderLevel;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -273,7 +272,7 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
         revalidateMachines();
         updateTemperature();
-        if (level.isClientSide && !(level instanceof PonderLevel)) {
+        if (level.isClientSide && !isVirtual()) {
             int tankNumber = 0;
             for (int i = 0; i < 8; i++) {
                 IFluidHandler fluidHandler = fluidCapability;
@@ -483,7 +482,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         }
         if (evaluateNextTick) {
             evaluate();
-            sendData();
             evaluateNextTick = false;
         }
 
@@ -514,6 +512,12 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         Iterator<BlockPos> iter = machineMap.keySet().iterator();
         while (iter.hasNext()) {
             BlockPos machinePos = iter.next();
+            // Skip positions whose chunk isn't currently available:
+            // getBlockEntity would return null and permanently drop a machine
+            // that still exists (client-side chunk borders), and on the
+            // server Level#getBlockEntity may synchronously load the chunk.
+            if (!level.isLoaded(machinePos))
+                continue;
             BlockEntity blockEntity = level.getBlockEntity(machinePos);
             if (blockEntity instanceof IVatMachine vatMachine) {
                 operationalMachinesMap.put(machinePos, vatMachine.canOperate(this));
@@ -538,6 +542,13 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
      */
     public void handleRecipe() {
 
+        // Recipe processing is server logic. Without this guard the client
+        // ran the whole transaction too (client-side lazyTick also assigns
+        // 'recipe'), consuming inputs and writing outputs into its local
+        // tanks and inventories until the next server sync overwrote them —
+        // ghost fluids/items. Ponder scenes (isVirtual) still simulate.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
         if (recipe == null)
             return;
         if (!isController())
@@ -971,7 +982,13 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         if (!oldOps.equals(newOps))
             recipe = null;
 
-        notifyUpdate();
+        // Only broadcast when the machine set actually changed. lazyTick
+        // re-queues an evaluation every 10 ticks while machineMap is empty
+        // (machine discovery fallback), so an unconditional notifyUpdate
+        // here meant every machine-less vat spammed setChanged + a sync
+        // packet forever.
+        if (!oldMachineMap.equals(machineMap))
+            notifyUpdate();
     }
 
     public int getTotalCapacity() {
@@ -1029,6 +1046,16 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
     }
 
     public void applyVatSize(int blocks) {
+        // Create's ConnectivityHandler splits multiblocks through the
+        // single-tank IMultiBlockEntityContainer.Fluid contract (getTank(0)),
+        // which cannot express the vat's 8 independent segments — getTank()
+        // hands it a throwaway dummy, so Create's own redistribution is a
+        // no-op. When the vat is shrinking (multiblock split), move each
+        // segment's overflow into the matching segment of the other parts
+        // BEFORE capacity shrinks, otherwise the overflow drain below
+        // deletes every drop above the new capacity.
+        if (blocks < getTotalTankSize())
+            redistributeOverflow(blocks);
         inputTank.forEach(s -> {
             SmartFluidTank tank = ((TankSegmentAccessor) s).tfmg$tank();
             tank.setCapacity(blocks * getCapacityMultiplier());
@@ -1047,6 +1074,76 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         forceFluidLevelUpdate = true;
 
         evaluateNextTick = true;
+    }
+
+    /**
+     * Moves fluid that no longer fits into this controller's segments into
+     * the corresponding segments of the other blocks of the dissolving
+     * multiblock. Runs while width/height still describe the old structure
+     * and the parts still point at this controller (ConnectivityHandler
+     * calls setTankSize(0, 1) before detaching the parts).
+     */
+    private void redistributeOverflow(int blocks) {
+        if (level == null || level.isClientSide)
+            return;
+        if (!isController())
+            return;
+        List<VatBlockEntity> parts = new ArrayList<>();
+        for (int yOffset = 0; yOffset < height; yOffset++) {
+            for (int xOffset = 0; xOffset < width; xOffset++) {
+                for (int zOffset = 0; zOffset < width; zOffset++) {
+                    if (xOffset == 0 && yOffset == 0 && zOffset == 0)
+                        continue;
+                    BlockPos partPos = worldPosition.offset(xOffset, yOffset, zOffset);
+                    VatBlockEntity part = ConnectivityHandler.partAt(getType(), level, partPos);
+                    if (part == null || part == this)
+                        continue;
+                    if (!worldPosition.equals(part.getController()))
+                        continue;
+                    parts.add(part);
+                }
+            }
+        }
+        if (parts.isEmpty())
+            return;
+        int targetCapacity = blocks * getCapacityMultiplier();
+        redistributeSegments(inputTank.getTanks(), parts, true, targetCapacity);
+        redistributeSegments(outputTank.getTanks(), parts, false, targetCapacity);
+        for (VatBlockEntity part : parts) {
+            part.setChanged();
+            part.sendData();
+        }
+    }
+
+    private void redistributeSegments(SmartFluidTankBehaviour.TankSegment[] segments, List<VatBlockEntity> parts,
+                                      boolean input, int targetCapacity) {
+        for (int i = 0; i < segments.length; i++) {
+            SmartFluidTank tank = ((TankSegmentAccessor) segments[i]).tfmg$tank();
+            int overflow = tank.getFluidAmount() - targetCapacity;
+            if (overflow <= 0)
+                continue;
+            for (VatBlockEntity part : parts) {
+                if (overflow <= 0)
+                    break;
+                SmartFluidTankBehaviour partBehaviour = input ? part.inputTank : part.outputTank;
+                if (partBehaviour == null)
+                    continue;
+                SmartFluidTank partTank = ((TankSegmentAccessor) partBehaviour.getTanks()[i]).tfmg$tank();
+                // Standalone vat blocks end up with a one-block capacity
+                // after the split (see read()), so size the receiving
+                // segment accordingly before filling it.
+                if (partTank.getCapacity() < getCapacityMultiplier())
+                    partTank.setCapacity(getCapacityMultiplier());
+                FluidStack fluidInTank = tank.getFluid();
+                if (fluidInTank.isEmpty())
+                    break;
+                int filled = partTank.fill(new FluidStack(fluidInTank.getFluidHolder(), overflow), IFluidHandler.FluidAction.EXECUTE);
+                if (filled <= 0)
+                    continue;
+                tank.drain(new FluidStack(fluidInTank.getFluidHolder(), filled), IFluidHandler.FluidAction.EXECUTE);
+                overflow -= filled;
+            }
+        }
     }
 
     public void removeController(boolean keepFluids) {
@@ -1333,6 +1430,11 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             });
             inputInventory.deserializeNBT(registries, compound.getCompound("InputItems"));
             outputInventory.deserializeNBT(registries, compound.getCompound("OutputItems"));
+            // Recipe progress survives chunk reloads; the recipe object
+            // itself is re-resolved by lazyTick / evaluate after load.
+            timer = compound.getInt("Timer");
+            heatLevel = compound.getInt("HeatLevel");
+            pressure = compound.getInt("Pressure");
         }
 
 
@@ -1382,18 +1484,13 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             compound.putInt("Height", height);
             compound.put("InputItems", inputInventory.serializeNBT(registries));
             compound.put("OutputItems", outputInventory.serializeNBT(registries));
+            compound.putInt("Timer", timer);
+            compound.putInt("HeatLevel", heatLevel);
+            compound.putInt("Pressure", pressure);
 
         }
         compound.putInt("Luminosity", luminosity);
         super.write(compound, registries, clientPacket);
-
-        if (!clientPacket)
-            return;
-        if (forceFluidLevelUpdate)
-            compound.putBoolean("ForceFluidLevel", true);
-        if (queuedSync)
-            compound.putBoolean("LazySync", true);
-        forceFluidLevelUpdate = false;
     }
 
     public int getTotalTankSize() {
@@ -1517,7 +1614,12 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
     @Override
     public FluidStack getFluid(int tank) {
-        return inputTank.getPrimaryHandler().getFluid();
+        // Must be a copy: ConnectivityHandler.splitMultiAndInvalidate calls
+        // shrink() on the returned stack; handing out the live tank stack
+        // let Create mutate the vat's contents directly. getTank(int) stays
+        // a dummy on purpose — a real tank would trip ConnectivityHandler's
+        // fluid-compatibility check and break vat formation.
+        return inputTank.getPrimaryHandler().getFluid().copy();
     }
 
 }

@@ -40,7 +40,8 @@ public class DistillationControllerBlock extends TFMGHorizontalDirectionalBlock 
 
     @Override
     public boolean canSurvive(BlockState pState, LevelReader pLevel, BlockPos pPos) {
-        if(!SteelTankBlock.updateTowerState((Level) pLevel, pPos.relative(getFacing(pState).getOpposite()),true,true))
+        if (pLevel instanceof Level level
+                && !SteelTankBlock.updateTowerState(level, pPos.relative(getFacing(pState).getOpposite()), true, true))
             return false;
 
 

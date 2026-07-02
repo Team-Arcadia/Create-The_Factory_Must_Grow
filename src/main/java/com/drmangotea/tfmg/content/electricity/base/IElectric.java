@@ -17,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,14 +50,46 @@ public interface IElectric {
      * @return block's network if valid, newly created network for this block otherwise
      */
     default ElectricalNetwork getOrCreateElectricNetwork() {
-        if (getLevelAccessor().getBlockEntity(BlockPos.of(getData().electricalNetworkId)) instanceof IElectric) {
-            return TFMG.NETWORK_MANAGER.getOrCreateNetworkFor((IElectric) getLevelAccessor().getBlockEntity(BlockPos.of(getData().electricalNetworkId)));
-        } else {
-            java.util.Map<Long, ElectricalNetwork> map = ElectricNetworkManager.networks.get(getLevelAccessor());
-            if (map != null)
-                map.remove(getData().electricalNetworkId);
-            return TFMG.NETWORK_MANAGER.getOrCreateNetworkFor(this);
+        LevelAccessor level = getLevelAccessor();
+        long networkId = getData().electricalNetworkId;
+        BlockPos ownerPos = BlockPos.of(networkId);
+        boolean ownerChunkLoaded = level != null && level.hasChunkAt(ownerPos);
+
+        if (ownerChunkLoaded && level.getBlockEntity(ownerPos) instanceof IElectric owner)
+            return TFMG.NETWORK_MANAGER.getOrCreateNetworkFor(owner);
+
+        java.util.Map<Long, ElectricalNetwork> map = ElectricNetworkManager.networks.get(level);
+        ElectricalNetwork existing = map == null ? null : map.get(networkId);
+        if (existing != null) {
+            // Owner chunk is unloaded: keep the shared network alive instead
+            // of deleting it, and never force-load the chunk just to check.
+            if (!ownerChunkLoaded)
+                return existing;
+            // Owner chunk is loaded but the owner block entity is gone:
+            // re-key the surviving network to this loaded member instead of
+            // deleting it and rebuilding it one member at a time.
+            map.remove(networkId);
+            existing.members.removeIf(ElectricNetworkManager::isStale);
+            if (!existing.members.contains(this))
+                existing.members.add(this);
+            long newId = getPos();
+            existing.id = newId;
+            for (IElectric member : existing.members)
+                member.getData().electricalNetworkId = newId;
+            map.put(newId, existing);
+            return existing;
         }
+        return TFMG.NETWORK_MANAGER.getOrCreateNetworkFor(this);
+    }
+
+    /**
+     * block entity lookup that never force-loads unloaded chunks
+     */
+    default BlockEntity getBlockEntitySafe(BlockPos pos) {
+        LevelAccessor level = getLevelAccessor();
+        if (level == null || !level.hasChunkAt(pos))
+            return null;
+        return level.getBlockEntity(pos);
     }
 
     /**
@@ -71,8 +104,6 @@ public interface IElectric {
      */
     default void onPlaced() {
 
-        if (getLevelAccessor() instanceof ServerLevel serverLevel)
-            CatnipServices.NETWORK.sendToClientsTrackingChunk(serverLevel, new ChunkPos(BlockPos.of(getPos())), new ConnectNeightborsPacket(BlockPos.of(getPos())));
         ElectricalNetwork network = TFMG.NETWORK_MANAGER.getOrCreateNetworkFor(this);
         setNetwork(getPos());
         getData().electricalNetworkId = getPos();
@@ -80,7 +111,6 @@ public interface IElectric {
 
 
         getData().checkForLoopsNextTick = true;
-        getOrCreateElectricNetwork().checkForLoops(BlockPos.of(getPos()));
         /// ////
 
 
@@ -176,12 +206,15 @@ public interface IElectric {
         if (getPowerUsage() > getData().networkPowerGeneration && !getData().notEnoughPower)
             getData().connectNextTick = true;
 
-        if (!getLevelAccessor().isClientSide()) {
-            java.util.Map<Long, ElectricalNetwork> map = ElectricNetworkManager.networks.get(getLevelAccessor());
-            ElectricalNetwork myNetwork = map == null ? null : map.get(getData().getId());
-            if (myNetwork == null || !myNetwork.getMembers().contains(this))
-                getData().connectNextTick = true;
-        }
+        // Destructive checks below are server-only; the client is mirrored
+        // through ElectricalBlockFailPacket.
+        if (getLevelAccessor().isClientSide())
+            return;
+
+        java.util.Map<Long, ElectricalNetwork> map = ElectricNetworkManager.networks.get(getLevelAccessor());
+        ElectricalNetwork myNetwork = map == null ? null : map.get(getData().getId());
+        if (myNetwork == null || !myNetwork.getMembers().contains(this))
+            getData().connectNextTick = true;
 
         if (getData().failTimer >= 4) {
 
@@ -214,7 +247,7 @@ public interface IElectric {
         BlockPos pos = BlockPos.of(getPos());
         for (Direction d : Direction.values()) {
             if (hasElectricitySlot(d))
-                if (getLevelAccessor().getBlockEntity(pos.relative(d)) instanceof IElectric be) {
+                if (getBlockEntitySafe(pos.relative(d)) instanceof IElectric be) {
                     if (be.hasElectricitySlot(d.getOpposite())) {
                         if (!be.destroyed()) {
                             getOrCreateElectricNetwork().add(be);
@@ -251,7 +284,7 @@ public interface IElectric {
         if (this instanceof CableConnectorBlockEntity connectorBE) {
             for (CableConnection connection : connectorBE.connections) {
 
-                if (getLevelAccessor().getBlockEntity(connection.blockPos1) instanceof CableConnectorBlockEntity be2 && !alreadyChecked.contains(BlockPos.of(be2.getPos()))
+                if (getBlockEntitySafe(connection.blockPos1) instanceof CableConnectorBlockEntity be2 && !alreadyChecked.contains(BlockPos.of(be2.getPos()))
                 ) {
                     be2.updateUnpowered(alreadyChecked);
                 }
@@ -259,7 +292,7 @@ public interface IElectric {
         }
 
         for (Direction direction : Direction.values()) {
-            if (getLevelAccessor().getBlockEntity(BlockPos.of(getPos()).relative(direction)) instanceof IElectric be && !alreadyChecked.contains(BlockPos.of(be.getPos()))) {
+            if (getBlockEntitySafe(BlockPos.of(getPos()).relative(direction)) instanceof IElectric be && !alreadyChecked.contains(BlockPos.of(be.getPos()))) {
                 be.updateUnpowered(alreadyChecked);
             }
         }
@@ -409,7 +442,7 @@ public interface IElectric {
         for (Direction direction : Direction.values()) {
             if (hasElectricitySlot(direction)) {
 
-                if (getLevelAccessor().getBlockEntity(getBlockPos().relative(direction)) instanceof VoltageAlteringBlockEntity be)
+                if (getBlockEntitySafe(getBlockPos().relative(direction)) instanceof VoltageAlteringBlockEntity be)
                     if (be.getData().getId() != getData().getId())
                         if (be.getData().getVoltage() != 0)
                             if (be.hasElectricitySlot(direction)) {
@@ -420,7 +453,7 @@ public interface IElectric {
                 // without forcing them to extend VoltageAlteringBlockEntity,
                 // which would re-introduce the StackOverflow in
                 // VoltageAlteringBlockEntity.getPowerUsage.
-                if (getLevelAccessor().getBlockEntity(getBlockPos().relative(direction)) instanceof IVoltageSource src
+                if (getBlockEntitySafe(getBlockPos().relative(direction)) instanceof IVoltageSource src
                         && !(src instanceof VoltageAlteringBlockEntity)) {
                     if (src.getData().getId() != getData().getId())
                         if (src.getOutputVoltage() != 0)
@@ -449,7 +482,7 @@ public interface IElectric {
         for (Direction direction : Direction.values()) {
             if (hasElectricitySlot(direction)) {
 
-                if (getLevelAccessor().getBlockEntity(getBlockPos().relative(direction)) instanceof VoltageAlteringBlockEntity be && be.canWork()) {
+                if (getBlockEntitySafe(getBlockPos().relative(direction)) instanceof VoltageAlteringBlockEntity be && be.canWork()) {
 
                     if (be.getData().getId() != getData().getId())
                         if (be.getData().getVoltage() != 0)
@@ -461,7 +494,7 @@ public interface IElectric {
                             }
                 }
                 // Same direct-source path for IVoltageSource neighbours.
-                if (getLevelAccessor().getBlockEntity(getBlockPos().relative(direction)) instanceof IVoltageSource src
+                if (getBlockEntitySafe(getBlockPos().relative(direction)) instanceof IVoltageSource src
                         && !(src instanceof VoltageAlteringBlockEntity)
                         && src.canWork()) {
                     if (src.getData().getId() != getData().getId())

@@ -62,7 +62,7 @@ public class DistillationRecipe extends StandardProcessingRecipe<RecipeInput> {
 
     public boolean matches(FluidTank inv, int outputs) {
 
-        int neededOutputs = fluidIngredients.size();
+        int neededOutputs = fluidResults.size();
 
         if(outputs !=neededOutputs)
             return false;

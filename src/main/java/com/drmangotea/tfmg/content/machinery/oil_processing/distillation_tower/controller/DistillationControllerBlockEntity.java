@@ -95,6 +95,8 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         // Clear it so manageRecipe exits early instead of trying to fill
         // the wrong outputs with the wrong fluid.
         DistillationRecipe found = getMatchingRecipes();
+        if (found == this.recipe)
+            return;
         this.recipe = found;
         sendData();
     }

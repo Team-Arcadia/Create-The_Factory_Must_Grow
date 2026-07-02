@@ -55,6 +55,7 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
     public int crankConnectorDistance = 0;
     public int headBaseDistance = 0;
     private int findScanCooldown = 0;
+    private int refScanCooldown = 0;
 
     public PumpjackBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -119,16 +120,22 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
             super.read(compound,registries , clientPacket);
             return;
         }
-        connectorPosition = new BlockPos(
-                compound.getInt("connectorX"),
-                compound.getInt("connectorY"),
-                compound.getInt("connectorZ")
-        );
-        headPosition = new BlockPos(
-                compound.getInt("headX"),
-                compound.getInt("headY"),
-                compound.getInt("headZ")
-        );
+        if (compound.contains("connectorX")) {
+            connectorPosition = new BlockPos(
+                    compound.getInt("connectorX"),
+                    compound.getInt("connectorY"),
+                    compound.getInt("connectorZ")
+            );
+        } else
+            connectorPosition = null;
+        if (compound.contains("headX")) {
+            headPosition = new BlockPos(
+                    compound.getInt("headX"),
+                    compound.getInt("headY"),
+                    compound.getInt("headZ")
+            );
+        } else
+            headPosition = null;
         connectorAtFront = compound.getBoolean("connectorAtFront");
         headAtFront = compound.getBoolean("headAtFront");
         float angleBefore = angle;
@@ -396,17 +403,21 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
                 headBaseDistance = Math.abs(base.getBlockPos().getY() - headPosition.getY());
             }
         }
-        if (connectorPosition != null)
-            crank = findCrank();
         if (crank != null && level.isLoaded(crank.getBlockPos()))
             if (!(level.getBlockEntity(crank.getBlockPos()) instanceof PumpjackCrankBlockEntity))
                 crank = null;
-        if (headPosition != null) {
-            base = findBase();
-        }
         if (base != null && level.isLoaded(base.getBlockPos()))
             if (!(level.getBlockEntity(base.getBlockPos()) instanceof PumpjackBaseBlockEntity))
                 base = null;
+        boolean rescan = refScanCooldown <= 0;
+        if (rescan)
+            refScanCooldown = 10;
+        else
+            refScanCooldown--;
+        if (connectorPosition != null && (crank == null || rescan))
+            crank = findCrank();
+        if (headPosition != null && (base == null || rescan))
+            base = findBase();
         prevAngle = angle;
         if (level.isClientSide)
             clientAngleDiff /= 2;
@@ -437,6 +448,8 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
 
     public void setHolderSize() {
         if (isRunning())
+            return;
+        if (level.isClientSide)
             return;
 
 

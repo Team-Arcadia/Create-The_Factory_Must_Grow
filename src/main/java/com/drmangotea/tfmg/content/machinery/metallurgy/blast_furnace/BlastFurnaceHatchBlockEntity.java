@@ -84,6 +84,9 @@ public class BlastFurnaceHatchBlockEntity extends SmartBlockEntity implements IH
 
     public void dropItems(){
 
+        // Entity spawning must stay server-side; lazyTick runs on both sides.
+        if (level.isClientSide)
+            return;
         if(level.getBlockState(getBlockPos().below()).isAir()){
             if (inventory.getItem(0).getItem() == Items.AIR){
                 return;

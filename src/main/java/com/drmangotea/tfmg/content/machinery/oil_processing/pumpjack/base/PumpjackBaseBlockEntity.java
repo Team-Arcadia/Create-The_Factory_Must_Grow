@@ -60,15 +60,12 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
         super.tick();
 
 
-        if (controllerHammer != null && level.isLoaded(controllerHammer.getBlockPos()))
-            if (!(level.getBlockEntity(controllerHammer.getBlockPos()) instanceof PumpjackBlockEntity))
-                controllerHammer = null;
-        if (controllerHammer != null && level.isLoaded(controllerHammer.getBlockPos()))
-            if (controllerHammer.base == null)
-                controllerHammer = null;
-
-        if (controllerHammer != null && level.isLoaded(controllerHammer.getBlockPos()))
-            if (!controllerHammer.isRunning())
+        if (controllerHammer != null && !level.isLoaded(controllerHammer.getBlockPos()))
+            return;
+        if (controllerHammer != null)
+            if (level.getBlockEntity(controllerHammer.getBlockPos()) != controllerHammer
+                    || controllerHammer.base == null
+                    || !controllerHammer.isRunning())
                 controllerHammer = null;
 
         if (controllerHammer == null)

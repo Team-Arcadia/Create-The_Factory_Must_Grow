@@ -34,7 +34,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static com.drmangotea.tfmg.base.blocks.WallMountBlock.FACING;
 import static com.drmangotea.tfmg.content.electricity.connection.cables.CableConnectorBlock.EXTENSION;
@@ -140,42 +142,60 @@ public class CableConnectorBlockEntity extends ElectricBlockEntity implements IH
     public void onConnected() {
         super.onConnected();
 
-        for (CableConnectorBlockEntity be : getConnectedWires()) {
+        List<CableConnectorBlockEntity> connected = getConnectedWires();
 
+        // Pass 1: move every reachable connector onto this network first,
+        // so nothing below can recurse back into the cable graph.
+        List<CableConnectorBlockEntity> newlyJoined = new ArrayList<>();
+        for (CableConnectorBlockEntity be : connected) {
             if (be.getData().getId() != getData().getId()) {
                 be.setNetwork(getData().getId());
-                be.onConnected();
+                newlyJoined.add(be);
             }
-
-            be.sendStuff();
         }
-        sendStuff();
 
+        // Pass 2: newly joined connectors attach their direct block
+        // neighbours. Previously this was a recursive be.onConnected(),
+        // which re-walked the entire cable graph once per connector.
+        for (CableConnectorBlockEntity be : newlyJoined)
+            be.connectBlockNeighbors();
+
+        // Single sync per connector instead of one per connector per walk.
+        // 'connected' always contains this connector as its first entry.
+        for (CableConnectorBlockEntity be : connected)
+            be.sendStuff();
+
+    }
+
+    /**
+     * Runs the plain block-neighbour connection pass from IElectric,
+     * without the cable graph walk of {@link #onConnected()}.
+     */
+    private void connectBlockNeighbors() {
+        super.onConnected();
     }
 
     public List<CableConnectorBlockEntity> getConnectedWires() {
         List<CableConnectorBlockEntity> list = new ArrayList<>();
-        collectConnectedWires(list);
-        for (CableConnectorBlockEntity wire : list)
-            wire.sendStuff();
+        collectConnectedWires(list, new HashSet<>());
         return list;
     }
 
     public List<CableConnectorBlockEntity> getConnectedWires(List<CableConnectorBlockEntity> foundList) {
-        collectConnectedWires(foundList);
+        collectConnectedWires(foundList, new HashSet<>(foundList));
         return foundList;
     }
 
-    private void collectConnectedWires(List<CableConnectorBlockEntity> foundList) {
-        if (foundList.contains(this))
+    private void collectConnectedWires(List<CableConnectorBlockEntity> foundList, Set<CableConnectorBlockEntity> visited) {
+        if (!visited.add(this))
             return;
         foundList.add(this);
         for (CableConnection connection : connections) {
             BlockPos pos = connection.blockPos1;
             if (pos.equals(getBlockPos()))
                 continue;
-            if (level.getBlockEntity(pos) instanceof CableConnectorBlockEntity be && !foundList.contains(be)) {
-                be.collectConnectedWires(foundList);
+            if (level.getBlockEntity(pos) instanceof CableConnectorBlockEntity be && !visited.contains(be)) {
+                be.collectConnectedWires(foundList, visited);
             }
         }
     }

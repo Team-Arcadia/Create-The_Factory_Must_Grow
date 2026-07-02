@@ -32,11 +32,10 @@ public class ElectricalNetwork {
 
     //adds a new block to the network if it is not in it already
     public void add(IElectric be) {
-        List<Long> posList = new ArrayList<>();
-
-        members.forEach(member -> posList.add(member.getData().getId()));
-        if (posList.contains(be.getData().getId()))
-            return;
+        long id = be.getData().getId();
+        for (IElectric member : members)
+            if (member.getData().getId() == id)
+                return;
         members.add(be);
     }
 
@@ -102,11 +101,15 @@ public class ElectricalNetwork {
          * 1) sets the current of wires
          * 2) informs subnetworks
          */
+        float networkCurrent = 0;
+        for (IElectric member : members)
+            networkCurrent += member.getCurrent();
+
         for (IElectric member : members) {
 
             if (member.resistance() == 0) {
 
-                member.getData().highestCurrent = getCableCurrent(member);
+                member.getData().highestCurrent = networkCurrent;
             }
             if (member instanceof VoltageAlteringBlockEntity be) {
                 be.updateInFront();
@@ -172,7 +175,7 @@ public class ElectricalNetwork {
     public void checkForLoops(List<ElectricalNetwork> network, BlockPos pos) {
 
         if (network.contains(this)) {
-            if (!members.isEmpty())
+            if (!members.isEmpty() && !members.get(0).getLevelAccessor().isClientSide())
                 members.get(0).getLevelAccessor().destroyBlock(pos, false);
             return;
         }

@@ -57,6 +57,7 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
     protected IFluidHandler secondaryFluidCapability;
     public IItemHandlerModifiable itemCapability;
     int timer = -1;
+    private RecipeHolder<CokingRecipe> cachedRecipe;
     public LerpedFloat doorAngle = LerpedFloat.angular();
     public boolean createNextTick;
     public BlockPos controller = getBlockPos();
@@ -86,7 +87,7 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
 
     public void executeRecipe(){
 
-        Optional<RecipeHolder<CokingRecipe>> optional = TFMGRecipeTypes.COKING.find(new RecipeWrapper(inventory), level);
+        Optional<RecipeHolder<CokingRecipe>> optional = findRecipe();
         if(optional.isEmpty())
             return;
 
@@ -94,6 +95,16 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
 
         if(recipe.getIngredients().get(0).test(inventory.getItem(0)))
             timer = (int) (recipe.getProcessingDuration() / Math.max(size / 2f, 1f));
+    }
+
+    // Reuses the last matched recipe until the input no longer matches it,
+    // instead of scanning the recipe manager every tick.
+    private Optional<RecipeHolder<CokingRecipe>> findRecipe(){
+        if(cachedRecipe != null && cachedRecipe.value().getIngredients().get(0).test(inventory.getItem(0)))
+            return Optional.of(cachedRecipe);
+        Optional<RecipeHolder<CokingRecipe>> optional = TFMGRecipeTypes.COKING.find(new RecipeWrapper(inventory), level);
+        cachedRecipe = optional.orElse(null);
+        return optional;
     }
 
     private void onFluidChanged(FluidStack stack) {
@@ -127,10 +138,15 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
     }
 
     public void tickRecipe(){
+        // Recipe progress is server logic: the client used to decrement the
+        // timer, fill tanks, shrink the input and spawn a ghost ItemEntity.
+        // Timer reaches the client through SmartBlockEntity data sync.
+        if(level == null || (level.isClientSide && !isVirtual()))
+            return;
         if(inventory.isEmpty()||timer == -1)
             return;
 
-        Optional<RecipeHolder<CokingRecipe>> optional = TFMGRecipeTypes.COKING.find(new RecipeWrapper(inventory), level);
+        Optional<RecipeHolder<CokingRecipe>> optional = findRecipe();
 
         if(optional.isEmpty()) {
             timer = -1;
@@ -255,7 +271,11 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
     }
     public void createMultiblock(){
 
-        if(level == null)
+        // Assembly mutates blockstates and controller links; server only.
+        // Clients used to re-run this on chunk load with a partially loaded
+        // view and locally rewrote CONTROLLER_TYPE to CASUAL, visually
+        // breaking the oven until the chunk was reloaded.
+        if(level == null || (level.isClientSide && !isVirtual()))
             return;
         int maxSize = TFMGConfigs.common().machines.cokeOvenMaxSize.get();
         Direction facing = getBlockState().getValue(FACING);
@@ -280,8 +300,11 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         for(BlockPos pos : BlockPos.betweenClosed(getBlockPos(),getBlockPos().above(size-1).relative(facing.getOpposite(),size-1))) {
             if(level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be&&(!level.getBlockState(getBlockPos().relative(facing)).is(TFMGBlocks.COKE_OVEN.get())&&!level.getBlockState(getBlockPos().below()).is(TFMGBlocks.COKE_OVEN.get()))){
 
+                boolean controllerChanged = !getBlockPos().equals(be.controller);
                 be.controller = getBlockPos();
                 be.refreshCapability();
+                if(controllerChanged)
+                    be.notifyUpdate();
             }
         }
         if(!level.getBlockState(getBlockPos().relative(facing)).is(TFMGBlocks.COKE_OVEN.get())&&!level.getBlockState(getBlockPos().below()).is(TFMGBlocks.COKE_OVEN.get()))
@@ -294,11 +317,15 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
                         be.refreshCapability();
                         be.forceOpen = false;
                         be.doorAngle.setValue(0);
+                        be.notifyUpdate();
                         level.setBlock(be.getBlockPos(), getBlockState().setValue(CokeOvenBlock.CONTROLLER_TYPE ,CokeOvenBlock.ControllerType.CASUAL), 2);
                     }
             }
         }
-        this.size = size;
+        if(this.size != size){
+            this.size = size;
+            notifyUpdate();
+        }
     }
     public void setBlockStates(int size){
 
@@ -397,6 +424,7 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         compound.put("PrimaryTankContent", primaryTank.writeToNBT(registries,new CompoundTag()));
         compound.put("SecondaryTankContent", secondaryTank.writeToNBT(registries,new CompoundTag()));
         compound.putLong("Controller", controller.asLong());
+        compound.putInt("Size", size);
     }
     @Override
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
@@ -406,5 +434,7 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         primaryTank.readFromNBT(registries,compound.getCompound("PrimaryTankContent"));
         secondaryTank.readFromNBT(registries,compound.getCompound("SecondaryTankContent"));
         controller = BlockPos.of(compound.getLong("Controller"));
+        if (compound.contains("Size"))
+            size = Math.max(1, compound.getInt("Size"));
     }
 }

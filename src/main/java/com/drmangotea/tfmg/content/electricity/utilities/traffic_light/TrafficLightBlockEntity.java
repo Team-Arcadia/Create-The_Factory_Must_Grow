@@ -63,42 +63,38 @@ public class TrafficLightBlockEntity extends ElectricBlockEntity {
     public void tick() {
         super.tick();
 
-        if(!level.isClientSide)
+        if (level.isClientSide) {
+            glow.chase(200f, 0.4, LerpedFloat.Chaser.EXP);
             return;
-        if(timer>0) {
+        }
+
+        if (timer > 0) {
             timer--;
         }
 
-
-        glow.chase(200f,0.4, LerpedFloat.Chaser.EXP);
-
-
-        int halfTimer = timerLength.getValue()/2;
-
+        int halfTimer = timerLength.getValue() / 2;
 
         // Cycle (timer counts down from timerLength to 0, then resets):
         //   red (light 2) -> orange (light 1) -> green (light 0) -> reset to red.
         // Green now runs all the way down to 0 so it flips straight back to red
         // instead of showing a second orange between green and red.
-        if(timer<halfTimer-30) {
-            light = 0;
-        }else
-
-        if(timer>halfTimer+30) {
-            light = 2;
-        }else{ light = 1;
+        int newLight;
+        if (timer < halfTimer - 30) {
+            newLight = 0;
+        } else if (timer > halfTimer + 30) {
+            newLight = 2;
+        } else {
+            newLight = 1;
         }
 
-        if(timer == 0){
+        if (newLight != light) {
+            light = newLight;
+            sendData();
+        }
 
-
-
-            glow.setValue(0);
-
+        if (timer == 0) {
             timer = timerLength.getValue();
         }
-
-
     }
 
     @Override
@@ -107,6 +103,11 @@ public class TrafficLightBlockEntity extends ElectricBlockEntity {
 
         timer = compound.getInt("Timer");
 
+        int newLight = compound.getInt("Light");
+        if (clientPacket && newLight != light)
+            glow.setValue(0);
+        light = newLight;
+
     }
 
     @Override
@@ -114,5 +115,6 @@ public class TrafficLightBlockEntity extends ElectricBlockEntity {
         super.write(compound,registries , clientPacket);
 
         compound.putInt("Timer", timer);
+        compound.putInt("Light", light);
     }
 }

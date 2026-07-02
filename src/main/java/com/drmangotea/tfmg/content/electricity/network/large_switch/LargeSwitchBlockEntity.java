@@ -8,6 +8,8 @@ import net.createmod.catnip.animation.LerpedFloat;
 import net.createmod.catnip.platform.CatnipServices;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -35,6 +37,21 @@ public class LargeSwitchBlockEntity extends KineticElectricBlockEntity {
         super(type, pos, state);
         isMainPart = state.getValue(IS_MAIN_PART);
         visualAngle.setValue(90);
+    }
+
+    @Override
+    protected void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.write(compound, registries, clientPacket);
+        compound.putBoolean("Closed", closed);
+        compound.putFloat("Angle", angle);
+    }
+
+    @Override
+    protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
+        super.read(compound, registries, clientPacket);
+        closed = compound.getBoolean("Closed");
+        if (compound.contains("Angle"))
+            angle = compound.getFloat("Angle");
     }
 
 
@@ -76,8 +93,10 @@ public class LargeSwitchBlockEntity extends KineticElectricBlockEntity {
         if (level.isClientSide || getBlockState().getValue(IS_MAIN_PART))
             return;
         if (level.getBlockEntity(getBlockPos().relative(getBlockState().getValue(HORIZONTAL_FACING).getOpposite())) instanceof LargeSwitchBlockEntity be) {
-            if (data.notEnoughPower || be.getData().getId() == getData().getId())
+            if (be.getData().getId() == getData().getId())
                 be.onPlaced();
+            else if (data.notEnoughPower)
+                be.updateNextTick();
         }
     }
 

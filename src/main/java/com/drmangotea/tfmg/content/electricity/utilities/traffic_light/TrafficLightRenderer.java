@@ -8,8 +8,10 @@ import com.simibubi.create.foundation.blockEntity.renderer.SafeBlockEntityRender
 import dev.engine_room.flywheel.lib.transform.TransformStack;
 import net.createmod.catnip.render.CachedBuffers;
 import com.simibubi.create.foundation.render.RenderTypes;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -35,7 +37,7 @@ public class TrafficLightRenderer extends SafeBlockEntityRenderer<TrafficLightBl
 
         if(be.getData().getVoltage()>0&&be.getPowerUsage()>0)
                 CachedBuffers.partialFacing(TFMGPartialModels.TRAFFIC_LIGHT, blockState, blockState.getValue(HorizontalDirectionalBlock.FACING).getOpposite())
-                        .light((int) glow * 3 + 80)
+                        .light(LightTexture.pack(Mth.clamp(((int) glow * 3 + 80) >> 4, 0, 15), 0))
                         .color(be.light == 0 ? 0x4CFF00 : be.light == 1 ? 0xF78000 : 0xE22B16)
                         .disableDiffuse()
                         .translateY(be.light == 0 ? 0 : (float) (be.light == 1 ? 0.3125 : 0.625))

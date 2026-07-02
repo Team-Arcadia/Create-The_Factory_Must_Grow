@@ -50,13 +50,14 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
     public FluidTank secondaryOutputInventory;
     public FluidTank primaryInputInventory;
     public FluidTank secondaryInputInventory;
-    protected BlockPos controller;
-    protected BlockPos lastKnownPos;
-    public boolean updateConnectivity;
+    // controller / lastKnownPos / updateConnectivity / syncCooldown /
+    // queuedSync are inherited (protected) from FluidTankBlockEntity.
+    // Re-declaring them here shadowed the parent copies: super.read()
+    // populated the parent fields from the same NBT keys and super.tick()
+    // ran the parent connectivity state machine on that ghost state,
+    // triggering formMulti/refreshCapability every tick after reload.
     private static final Object HotBlastRecipesKey = new Object();
     private static final int SYNC_RATE = 8;
-    protected int syncCooldown;
-    protected boolean queuedSync;
     public int timer = 0;
 
     public BlastStoveBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -101,6 +102,10 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
     @Override
     @SuppressWarnings("removal")
     public void tick() {
+        // Sync cooldown, lastKnownPos tracking and the updateConnectivity
+        // check are handled by super.tick() now that the parent fields are
+        // no longer shadowed. Running them here as well would process the
+        // same state twice per tick.
         super.tick();
 
 
@@ -131,23 +136,6 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
 
             }
         }
-
-
-        if (syncCooldown > 0) {
-            syncCooldown--;
-            if (syncCooldown == 0 && queuedSync)
-                sendData();
-        }
-
-        if (lastKnownPos == null)
-            lastKnownPos = getBlockPos();
-        else if (!lastKnownPos.equals(worldPosition) && worldPosition != null) {
-            onPositionChanged();
-            return;
-        }
-
-        if (updateConnectivity)
-            updateConnectivity();
 
     }
 
@@ -335,6 +323,9 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
                 primaryOutputInventory.drain(-primaryOutputInventory.getSpace(), IFluidHandler.FluidAction.EXECUTE);
         }
 
+        // Missing key reads as 0, matching the previous behavior of old saves.
+        timer = compound.getInt("Timer");
+
 
         if (!clientPacket)
             return;
@@ -431,6 +422,7 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
             compound.putInt("Size", width);
             compound.putInt("Height", height);
         }
+        compound.putInt("Timer", timer);
 
         forEachBehaviour(tb -> tb.write(compound, registries, clientPacket));
 
@@ -488,10 +480,13 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
 
     @Override
     public void notifyMultiUpdated() {
+        // Do NOT re-set updateConnectivity here: ConnectivityHandler calls
+        // preventConnectivityUpdate() right before notifyMultiUpdated(), and
+        // re-arming the flag forced a redundant formMulti on the next tick
+        // and leaked "Uninitialized" into every post-formation sync packet.
         onFluidStackChanged(primaryOutputInventory.getFluid());
         updateBoilerState();
         setChanged();
-        updateConnectivity = true;
 
         sendData();
         setChanged();

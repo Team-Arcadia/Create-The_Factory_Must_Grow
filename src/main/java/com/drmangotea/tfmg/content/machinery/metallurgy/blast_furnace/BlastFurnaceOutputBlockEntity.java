@@ -236,6 +236,11 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
                     tuyereBE = null;
                     return;
                 }
+                // Invalidate the cached hatch if it was removed (chunk reload,
+                // break-and-replace) or if the structure scan moved tuyerePos
+                // to a different hatch; otherwise we drain a ghost tank.
+                if (tuyereBE != null && (tuyereBE.isRemoved() || !tuyereBE.getBlockPos().equals(tuyerePos)))
+                    tuyereBE = null;
                 if (tuyereBE == null && tuyerePos != null) {
                     if (level.getBlockEntity(tuyerePos) instanceof BlastFurnaceHatchBlockEntity hatch)
                         tuyereBE = hatch;

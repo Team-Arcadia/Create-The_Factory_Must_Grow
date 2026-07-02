@@ -45,8 +45,10 @@ public class VoltageObserverBlockEntity extends ElectricBlockEntity {
     public void tick() {
         super.tick();
         if(update){
-            level.setBlock(getBlockPos(),getBlockState().setValue(POWERED,getData().getVoltage() != 0),2);
-            level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
+            if (!level.isClientSide) {
+                level.setBlock(getBlockPos(),getBlockState().setValue(POWERED,getData().getVoltage() != 0),2);
+                level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
+            }
             update = false;
         }
         if (observedElectricBehaviour != null) {
