@@ -39,3 +39,13 @@ Session-discovered errors, root causes, and prevention rules for TFMG (Arcadia f
 **Root cause:** `EnergyStorage.capacity` is fixed at construction; `getMaxCapacity()` is dynamic (config × length). The NBT read order (length before storage rebuild) was invisible in the finding itself.
 **Fix:** `read()` now rebuilds the storage at the persisted length before `setEnergy`, then the clamp is safe.
 **Prevention:** Before clamping any restore path, trace WHEN the receiving container gets its final size — clamps applied to half-initialized state destroy data.
+
+---
+
+## [2026-07-02 15:15] — Upstream datagen drift: block tags regress on every runData
+
+**Context:** Re-running `gradlew runData` for the new fluid tags (hydrogen/butane/propane).
+**Error:** A fresh datagen from CURRENT code deletes entries that are committed and needed at runtime: `c:ores` (lead/nickel/lithium), `c:storage_blocks/*`, `minecraft:doors`/`climbable`/`beacon_base_blocks`/`needs_iron_tool`, `create:casing`/`fan_transparent`, plus heavy churn in `mineable/pickaxe`. Identical deletions appeared in the stale 2026-05-23 run — the committed tag data comes from an older code state (pre-Create-6/1.21-port) that the current builder transforms no longer reproduce.
+**Root cause:** Tagging code was lost upstream during the 1.21/Create 6 migration; the shipped jar only stayed correct because nobody re-ran datagen and committed blindly.
+**Fix:** Selective accept: staged only the additive outputs (new c: fluid tags, firebox_fuel, vanilla tool/enchantable item tags, extinguisher filling default-component change, regenerated compressed_lpg) and `git checkout`-restored every drifted file.
+**Prevention:** NEVER commit a full runData output on this repo without reviewing `git diff --stat src/generated` — deletions in tag files are regressions until the lost tagging transforms are restored in code (tracked as future work). Also: `runData` requires NeoForge ≥ 21.1.219 since Create 6.0.10.
