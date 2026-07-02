@@ -10,6 +10,12 @@
 
 <br>
 
+## Arcadia Fork
+
+This repository is the **Team-Arcadia maintenance fork** (branch `Arcadia-fix`, jar classifier `arcadia-fix`). On top of upstream TFMG 1.2.x for Minecraft 1.21.1 / NeoForge, it focuses on stability: machines surviving chunk unload/reload, full client/server separation (dedicated-server friendly), multiplayer hardening, crash fixes and performance work on the electrical network. See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
+*Version française : ce dépôt est le fork de maintenance Team-Arcadia (branche `Arcadia-fix`). Il se concentre sur la stabilité : machines qui survivent au déchargement de chunk, séparation client/serveur complète (compatible serveur dédié), durcissement multijoueur, correction de crashs et optimisation du réseau électrique. Voir le [CHANGELOG.md](CHANGELOG.md).*
+
 ## Info
 
 Create is by default a steam/clockpunk mod and most addons aim to expand this part of Create and do that pretty well,

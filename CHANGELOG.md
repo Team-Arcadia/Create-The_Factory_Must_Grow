@@ -4,6 +4,56 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ---
 
+## [Unreleased] - 2026-07-02
+
+### Fixed
+
+- **Machines survive chunk unload/reload** — The #1 reported bug. Nothing electrical was ever saved: large switches reopened (closed/angle now persisted), electric switches lost their signal, engines lost rpm/torque and stayed dead until a redstone change (now persisted + signal re-derived on load), vats lost recipe progress/heat/pressure, blast stoves and coke ovens lost their timers/size, accumulators forgot their chain controller, and pumpjack/blast-furnace/engine-controller/piping-upgrade cached block-entity references went stale after reload (all now validated with `isRemoved()`).
+- **Electrical networks no longer thrash chunks** — Network lookups force-loaded unloaded chunks (permanent load/unload flip-flop at chunk borders) and deleted the whole network when its key block was in an unloaded chunk, rebuilding it one member at a time. Lookups are now chunk-safe and networks survive partial loading, re-keying to a loaded member when their owner block is really gone.
+- **Client/server desyncs eliminated** — Vats, coke ovens, casting basins, fireboxes, blast-furnace hatches, flamethrowers, fire extinguishers, screwdrivers and cannons ran server logic on the client too (ghost items/fluids, double sounds, diverging fuel counts, client-side block destruction on overload). All destructive/recipe paths are now server-authoritative; the coke oven no longer visually breaks after a reload because the client re-scanned it from a half-loaded chunk.
+- **Server crashes fixed** — Lit lithium blade crashed the server when a mob held it; unknown saved engine upgrades corrupted chunk loading; `EntityType.create` results and the TFMG pump's scheduled tick were not null-checked; distillation `canSurvive` blind-cast worldgen level readers.
+- **Multiplayer hardening** — Disconnecting while driving an engine controller locked the player out of every controller forever (cleanup ran client-side only); engine-controller packets accepted any position from any client (now range- and load-validated).
+- **Pumpjack actually pumps** — The server crank angle came from an identity hashCode (constant per session), so the pump rate was random per server run and could be ~0. The angle now advances per tick and persists.
+- **Vat fluid no longer deleted on deform** — Breaking a vat block voided everything above one segment's capacity; the overflow is now redistributed to the surviving blocks.
+- **Distillation recipe cache repaired** — `matches` compared the output count against the ingredient count (always 1), forcing a full recipe rescan plus a sync packet every tick on every heated tower.
+- **Quad Potato Cannon spread** — Operator-precedence bug made all 4 potatoes fly the same vector; ammo is also no longer consumed on aborted shots (advanced cannon) and stacked buckets survive concrete interactions.
+- **Traffic light runs on the server** — The whole phase machine was client-local (desynced between players, reset on relog); the server now drives it and syncs phase changes only.
+- **Oil deposits stay in bounds** — Worldgen wandered up to ~120 blocks outside the writable region (dropped blocks); the mixin that silenced the vanilla far-chunk warning game-wide is removed.
+- **Packets moved to the `tfmg:` namespace** — They were registered under `create:`, risking collisions with future Create versions.
+- **Flywheel declared as required dependency** — A dedicated server without the Flywheel jar crashed at mod construction.
+- **Stale datagen resources purged** — Hand-authored files (compressor/freezer recipes, Chinese translation) moved out of `src/generated` where any datagen run deleted them; the two conflicting `zh_cn.json` files merged into one (1298 keys); leftover stale copies of the 1.2.3 vat recipes removed from the jar.
+
+### Performance
+
+- **Cable networks** — One graph walk with a visited set instead of O(k²) walks and packets per connector; network current computed once per update instead of per cable; allocation-free membership checks.
+- **Idle machines stop spamming** — Machine-less vats no longer rescan + sync every 10 ticks forever; large engines send one packet on change instead of 20/s; coke ovens cache their recipe; pumpjack scans throttled; duplicated redstone scans and loop-checks removed.
+- **Dead code removed** — Unused mixins (`UtilMixin`, `TFMGMixinPlugin`, two recipe accessors), the never-fired generator tick branch, lithium block random ticking, dead NBT keys, duplicate `ControllerPos` writes; client-only mixins are now declared in the client array with `compatibilityLevel` JAVA_21; 6033 tracked build artifacts (`bin/`) untracked from git.
+
+### Correctifs
+
+- **Les machines survivent au déchargement de chunk** — Le bug n°1 signalé. Rien d'électrique n'était sauvegardé : les gros interrupteurs se rouvraient (closed/angle désormais persistés), les interrupteurs électriques perdaient leur signal, les moteurs perdaient rpm/couple et restaient morts jusqu'à un changement de redstone (persistés + signal re-dérivé au chargement), les cuves perdaient progrès/chaleur/pression, blast stoves et fours à coke perdaient timer/taille, les accumulateurs oubliaient leur contrôleur de chaîne, et les références de block entities en cache (pumpjack, haut fourneau, contrôleur de moteur, upgrade de tuyauterie) devenaient obsolètes après rechargement (toutes validées via `isRemoved()`).
+- **Les réseaux électriques ne martyrisent plus les chunks** — Les recherches de réseau forçaient le chargement de chunks déchargés (va-et-vient permanent aux frontières) et supprimaient le réseau entier quand son bloc-clé était déchargé, le reconstruisant membre par membre. Les recherches sont désormais sûres et les réseaux survivent au chargement partiel.
+- **Désynchronisations client/serveur éliminées** — Cuves, fours à coke, bassins de coulée, fireboxes, trappes de haut fourneau, lance-flammes, extincteurs, tournevis et canons exécutaient la logique serveur aussi côté client (items/fluides fantômes, sons doublés, compteurs de carburant divergents, destruction de blocs côté client en surcharge). Tous les chemins destructifs/recettes sont désormais autoritatifs côté serveur ; le four à coke ne « casse » plus visuellement après rechargement.
+- **Crashs serveur corrigés** — La lame de lithium allumée crashait le serveur tenue par un mob ; un upgrade de moteur inconnu corrompait le chargement de chunk ; `EntityType.create` et le tick programmé de la pompe TFMG sans null-check ; `canSurvive` de la distillation castait aveuglément.
+- **Durcissement multijoueur** — Se déconnecter en conduisant bannissait le joueur de tous les contrôleurs de moteur pour toujours (nettoyage côté client uniquement) ; les paquets du contrôleur acceptaient n'importe quelle position de n'importe quel client (désormais validés portée + chargement).
+- **Le pumpjack pompe vraiment** — L'angle serveur venait d'un hashCode d'identité (constant par session) : débit aléatoire par serveur, parfois ~0. L'angle avance désormais par tick et persiste.
+- **Le fluide des cuves n'est plus supprimé à la déformation** — Casser un bloc de cuve videait tout au-delà de la capacité d'un segment ; le surplus est désormais redistribué aux blocs survivants.
+- **Cache de recette de distillation réparé** — `matches` comparait le nombre de sorties au nombre d'ingrédients (toujours 1) : re-scan complet + paquet de sync à chaque tick sur toute tour chauffée.
+- **Dispersion du Quad Potato Cannon** — Bug de précédence d'opérateurs : les 4 patates partaient sur le même vecteur ; les munitions ne sont plus consommées sur les tirs annulés (canon avancé) et les piles de seaux survivent aux interactions béton.
+- **Le feu de circulation tourne côté serveur** — Toute la machine à états était locale au client (désynchronisée entre joueurs, reset au relog) ; le serveur la pilote désormais et ne synchronise qu'aux changements de phase.
+- **Les dépôts de pétrole restent dans les limites** — Le worldgen s'éloignait jusqu'à ~120 blocs hors de la zone inscriptible (blocs perdus) ; le mixin qui masquait l'avertissement vanilla pour tout le jeu est supprimé.
+- **Paquets déplacés vers le namespace `tfmg:`** — Ils étaient enregistrés sous `create:`, risque de collision avec les futures versions de Create.
+- **Flywheel déclaré en dépendance requise** — Un serveur dédié sans le jar Flywheel crashait au démarrage.
+- **Ressources datagen périmées purgées** — Les fichiers écrits à la main (recettes compresseur/congélateur, traduction chinoise) sont déplacés hors de `src/generated` où tout datagen les effaçait ; les deux `zh_cn.json` concurrents fusionnés en un seul (1298 clés) ; les copies périmées des recettes de cuve 1.2.3 retirées du jar.
+
+### Performance
+
+- **Réseaux de câbles** — Une seule marche de graphe avec ensemble de visités au lieu de O(k²) marches et paquets par connecteur ; courant réseau calculé une fois par mise à jour ; vérifications d'appartenance sans allocation.
+- **Les machines inactives arrêtent de spammer** — Les cuves sans machines ne re-scannent plus toutes les 10 ticks pour toujours ; les gros moteurs envoient un paquet au changement au lieu de 20/s ; les fours à coke mettent leur recette en cache ; scans du pumpjack throttlés ; scans redstone et checks de boucle dupliqués supprimés.
+- **Code mort supprimé** — Mixins inutilisés (`UtilMixin`, `TFMGMixinPlugin`, deux accesseurs de recettes), branche de tick du générateur jamais atteinte, random tick du bloc de lithium, clés NBT mortes, double écriture `ControllerPos` ; les mixins client sont déclarés dans le tableau client avec `compatibilityLevel` JAVA_21 ; 6033 artefacts de build (`bin/`) désindexés de git.
+
+---
+
 ## [1.2.3] - 2026-07-01
 
 ### Fixed

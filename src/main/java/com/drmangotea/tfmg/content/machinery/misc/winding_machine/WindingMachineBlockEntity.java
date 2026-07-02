@@ -123,6 +123,9 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         super.lazyTick();
         onContentsChanged();
 
+        // Blockstate writes are server-side; flag-2 setBlock syncs them.
+        if (level == null || level.isClientSide)
+            return;
         if (spool.is(TFMGItems.EMPTY_SPOOL.get()) && !getBlockState().getValue(POWERED)) {
             level.setBlock(getBlockPos(), getBlockState().setValue(POWERED, true), 2);
             update = true;

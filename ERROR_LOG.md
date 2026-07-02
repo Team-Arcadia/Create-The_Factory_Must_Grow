@@ -21,3 +21,21 @@ Session-discovered errors, root causes, and prevention rules for TFMG (Arcadia f
 **Root cause:** `bin/` was committed before the `.gitignore` entry was added; git keeps tracking already-tracked files.
 **Fix:** `git rm -r --cached bin` (commit d3611d09).
 **Prevention:** After adding a path to `.gitignore`, always check `git ls-files <path>` and untrack leftovers.
+
+---
+
+## [2026-07-02 05:30] — Session-limit interruption of the verification workflow
+
+**Context:** 17-agent adversarial verification workflow over the 121 mapped findings.
+**Error:** All agents failed twice with "You've hit your session limit"; failed agents have no checkpoint and restart from scratch on resume (only COMPLETED agents replay from cache).
+**Root cause:** Subagent fan-out burned the API quota; a killed agent's partial work is lost except for files it already wrote to disk.
+**Fix:** Reused the 10 patch-plan files the finished agents had written to the scratchpad; verified and fixed the remaining 7 groups inline (single-context reads) instead of re-running agents.
+**Prevention:** Have verification agents WRITE their outputs to disk incrementally (patch files survive the agent's death). When quota is tight, prefer inline verification over agent re-runs — resuming a workflow only saves tokens for agents that fully completed.
+
+## [2026-07-02 06:30] — Accumulator energy nearly truncated by a "safety" clamp
+
+**Context:** Adding a capacity clamp to `TFMGForgeEnergyStorage.setEnergy` (verified finding AC2).
+**Error:** The clamp alone would have deleted energy: `AccumulatorBlockEntity.read` restores `ForgeEnergy` into the storage built by the field initializer (capacity = length 1) BEFORE the chain rebuild resizes it — a full 5-block chain would have been clamped to 1 block's capacity on every load.
+**Root cause:** `EnergyStorage.capacity` is fixed at construction; `getMaxCapacity()` is dynamic (config × length). The NBT read order (length before storage rebuild) was invisible in the finding itself.
+**Fix:** `read()` now rebuilds the storage at the persisted length before `setEnergy`, then the clamp is safe.
+**Prevention:** Before clamping any restore path, trace WHEN the receiving container gets its final size — clamps applied to half-initialized state destroy data.

@@ -31,16 +31,9 @@ public class GeneratorBlockEntity extends KineticElectricBlockEntity  {
 
     @Override
     public void tick() {
+        // super.tick() -> tickElectricity() already consumes updateNextTick;
+        // the old re-check below it could never fire.
         super.tick();
-        if(data.updateNextTick){
-            updateNetwork();
-            data.updateNextTick = false;
-        }
-    }
-
-    @Override
-    public void updateNetwork() {
-        super.updateNetwork();
     }
 
 

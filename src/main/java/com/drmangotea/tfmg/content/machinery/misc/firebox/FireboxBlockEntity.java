@@ -92,6 +92,11 @@ public class FireboxBlockEntity extends SmartBlockEntity implements IHaveGoggleI
     public void lazyTick() {
         super.lazyTick();
 
+        // Fuel burn, exhaust fill and HEAT_LEVEL writes are server logic;
+        // the client used to drain its own tank copy between syncs.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
+
         boolean wasRunning = running;
 
 

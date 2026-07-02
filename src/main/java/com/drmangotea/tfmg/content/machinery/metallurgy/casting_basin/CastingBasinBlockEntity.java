@@ -66,6 +66,10 @@ public class CastingBasinBlockEntity extends SmartBlockEntity implements IHaveGo
     @Override
     public void tick() {
         super.tick();
+        // Casting is server logic; the client used to run the whole recipe
+        // on its local copy (drain + setStackInSlot), flickering results.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
         // Old code gated the recipe on tank.getSpace() == 0 (tank full at
         // capacity 144 mB), which meant the only way to start a 144 mB
         // recipe was to fill the basin to its hard cap exactly. Pipes
