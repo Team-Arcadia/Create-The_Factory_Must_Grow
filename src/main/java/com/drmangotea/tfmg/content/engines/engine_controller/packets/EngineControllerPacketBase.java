@@ -28,6 +28,12 @@ public abstract class EngineControllerPacketBase implements ServerboundPacketPay
     @Override
     public void handle(ServerPlayer player) {
         if (this.controllerPos != null) {
+            // The position comes straight from the client: without these
+            // checks any client could drive arbitrary loaded controllers
+            // (or force-load chunks) anywhere in the world.
+            if (!player.level().isLoaded(controllerPos)
+                    || !player.canInteractWithBlock(controllerPos, 16))
+                return;
             BlockEntity be = player.level().getBlockEntity(controllerPos);
             if (!(be instanceof EngineControllerBlockEntity))
                 return;

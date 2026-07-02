@@ -18,7 +18,11 @@ public class TFMGPumpBlock extends PumpBlock {
     @Override
     public void tick(BlockState state, ServerLevel world, BlockPos pos, RandomSource r) {
         super.tick(state, world, pos, r);
-        this.getBlockEntity(world, pos).updatePressureChange();
+        // The BE can be gone by the time the scheduled tick fires
+        // (block replaced in the same tick).
+        PumpBlockEntity pump = this.getBlockEntity(world, pos);
+        if (pump != null)
+            pump.updatePressureChange();
 
     }
 

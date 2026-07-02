@@ -261,7 +261,10 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
                             continue;
 
                         CompoundTag tagInside = be.pistonInventory.getItem(y).get(TFMGDataComponents.FUELS);
-                        if (!tagInside.toString().equals(tag.toString()))
+                        // Either stack can lack the FUELS component entirely.
+                        if (!java.util.Objects.equals(
+                                tagInside == null ? null : tagInside.toString(),
+                                tag == null ? null : tag.toString()))
                             return false;
 
                     }

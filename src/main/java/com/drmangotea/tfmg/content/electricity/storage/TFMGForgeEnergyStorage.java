@@ -33,10 +33,13 @@ public abstract class TFMGForgeEnergyStorage extends EnergyStorage {
 
     public int setEnergy(int energy) {
         int oldAmount = this.energy;
-        this.energy = energy;
+        // Clamp to [0, capacity]: NBT reads happen before the multiblock
+        // rebuild resizes the storage, so an unclamped set could leave a
+        // block holding more energy than it can store.
+        this.energy = Math.max(0, Math.min(energy, getMaxEnergyStored()));
 
-        if (energy != oldAmount)
-            onEnergyChanged(energy, oldAmount);
+        if (this.energy != oldAmount)
+            onEnergyChanged(this.energy, oldAmount);
 
         return 0;
     }

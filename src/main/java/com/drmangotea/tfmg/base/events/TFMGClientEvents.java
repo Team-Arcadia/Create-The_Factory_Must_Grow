@@ -51,13 +51,10 @@ public class TFMGClientEvents {
 		TransformerBlockEntity.tickOutliner();
 		CableConnectorBlockEntity.tickOutliner();
 	}
-	@SubscribeEvent
-	public static void PlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
-		Player player = event.getEntity();
-
-		if (player != null)
-			player.getPersistentData().remove("IsUsingEngineController");
-	}
+	// The IsUsingEngineController logout cleanup lives in TFMGCommonEvents:
+	// registered here (Dist.CLIENT) it never ran on dedicated servers, so a
+	// player disconnecting while driving kept the persistent flag and was
+	// rejected by every engine controller forever.
 
 	//@SubscribeEvent
 	public static void registerGuiOverlays(RegisterGuiLayersEvent event) {

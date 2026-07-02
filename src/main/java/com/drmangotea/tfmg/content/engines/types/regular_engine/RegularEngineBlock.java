@@ -1,6 +1,5 @@
 package com.drmangotea.tfmg.content.engines.types.regular_engine;
 
-import com.drmangotea.tfmg.content.electricity.base.IElectric;
 import com.drmangotea.tfmg.content.engines.base.EngineBlock;
 import com.drmangotea.tfmg.content.engines.types.AbstractSmallEngineBlockEntity;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
@@ -74,7 +73,11 @@ public class RegularEngineBlock extends EngineBlock implements IBE<RegularEngine
     }
     @Override
     public void onPlace(BlockState pState, Level level, BlockPos pos, BlockState pOldState, boolean pIsMoving) {
-        withBlockEntityDo(level, pos, IElectric::onPlaced);
+        // KineticBlock.onPlace handles rotation propagation bookkeeping; the
+        // electric network hookup runs via the constructor's connectNextTick
+        // flag on the first tick, so no manual IElectric::onPlaced here (it
+        // ran the full reconnect twice, on both sides).
+        super.onPlace(pState, level, pos, pOldState, pIsMoving);
     }
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {

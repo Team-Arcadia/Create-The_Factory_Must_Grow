@@ -12,11 +12,8 @@ public class LeadAxeItem extends AxeItem {
         super(pTier,pProperties);
     }
     public boolean hurtEnemy(ItemStack pStack, LivingEntity pTarget, LivingEntity pAttacker) {
-        pStack.hurtAndBreak(2, pAttacker, LivingEntity.getSlotForHand(pTarget.getUsedItemHand()));
+        pStack.hurtAndBreak(2, pAttacker, LivingEntity.getSlotForHand(pAttacker.getUsedItemHand()));
         MobEffectInstance poison = pTarget.getEffect(MobEffects.POISON);
-
-        ;
-
 
         if(poison!=null) {
             pTarget.addEffect(new MobEffectInstance(MobEffects.POISON, 160 + poison.getDuration()));

@@ -59,18 +59,18 @@ public class LitLithiumBladeItem extends SwordItem {
         level.playSound(player, player.getX(), player.getY(), player.getZ(), SoundEvents.FIRECHARGE_USE, SoundSource.NEUTRAL, 0.5F, 0.4F);
 
 
-        for (int i = 0; i < 10; i++) {
+        if (!level.isClientSide) {
+            for (int i = 0; i < 10; i++) {
 
+                LithiumSpark spark = TFMGEntityTypes.LITHIUM_SPARK.create(level);
+                if (spark == null)
+                    break;
 
-            LithiumSpark spark = TFMGEntityTypes.LITHIUM_SPARK.create(level);
+                spark.setPos(player.getX(), player.getY() + 1.3, player.getZ());
 
-
-
-            spark.setPos(player.getX(), player.getY() + 1.3, player.getZ());
-
-
-            spark.burst(player.getLookAngle().x, player.getLookAngle().y, player.getLookAngle().z, 1, 30);
-            level.addFreshEntity(spark);
+                spark.burst(player.getLookAngle().x, player.getLookAngle().y, player.getLookAngle().z, 1, 30);
+                level.addFreshEntity(spark);
+            }
         }
 
         player.getCooldowns().addCooldown(TFMGItems.LIT_LITHIUM_BLADE.get(), 60);
@@ -101,7 +101,10 @@ public class LitLithiumBladeItem extends SwordItem {
     public void inventoryTick(ItemStack stack, Level pLevel, Entity entity, int pSlotId, boolean pIsSelected) {
         super.inventoryTick(stack, pLevel, entity, pSlotId, pIsSelected);
 
-        Player player = (Player) entity;
+        // Any entity can hold the blade (mob pickup, item frame) — the
+        // burn-down and the revert-to-unlit swap only apply to players.
+        if (!(entity instanceof Player player))
+            return;
         if (stack.get(TFMGDataComponents.LITHIUM_BLADE_TIMER) != null)
             if (stack.get(TFMGDataComponents.LITHIUM_BLADE_TIMER) > 0) {
                 stack.set(TFMGDataComponents.LITHIUM_BLADE_TIMER, stack.get(TFMGDataComponents.LITHIUM_BLADE_TIMER) - 1);
@@ -116,23 +119,7 @@ public class LitLithiumBladeItem extends SwordItem {
                     stack1.enchant(enchantments.keySet().stream().toList().get(i), enchantments.getLevel(enchantments.keySet().stream().toList().get(i)));
                 }
 
-
-                int slot = -1;
-
-                if (entity instanceof Player)
-                    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-
-                        if (player.getInventory().getItem(i).is(TFMGItems.LITHIUM_CHARGE.get())) {
-                            slot = i;
-                            break;
-
-                        }
-
-
-                    }
-
-
-                ((Player) entity).getInventory().setItem(pSlotId, stack1);
+                player.getInventory().setItem(pSlotId, stack1);
             }
 
     }

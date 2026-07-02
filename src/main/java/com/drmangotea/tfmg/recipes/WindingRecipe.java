@@ -46,7 +46,8 @@ public class WindingRecipe extends StandardProcessingRecipe<RecipeWrapper> imple
 		return getIngredients().get(0);
 	}
 	public Ingredient getSpool(){
-		return getIngredients().get(1);
+		// Datapack recipes may omit the spool ingredient.
+		return getIngredients().size() < 2 ? Ingredient.EMPTY : getIngredients().get(1);
 	}
 	@Override
 	public boolean matches(RecipeWrapper inv, Level worldIn) {
@@ -68,7 +69,8 @@ public class WindingRecipe extends StandardProcessingRecipe<RecipeWrapper> imple
 
 	@Override
 	public void addAssemblyIngredients(List<Ingredient> list) {
-		list.add(ingredients.get(1));
+		if (ingredients.size() >= 2)
+			list.add(ingredients.get(1));
 	}
 
 	@Override

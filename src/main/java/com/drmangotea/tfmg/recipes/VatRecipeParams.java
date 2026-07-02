@@ -9,19 +9,15 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 public class VatRecipeParams extends ProcessingRecipeParams {
 
-    public static List<String> types = new ArrayList<>();
-
-    static {
-        types.add("tfmg:steel_vat");
-        types.add("tfmg:cast_iron_vat");
-        types.add("tfmg:firebrick_lined_vat");
-    }
+    public static final List<String> types = List.of(
+            "tfmg:steel_vat",
+            "tfmg:cast_iron_vat",
+            "tfmg:firebrick_lined_vat");
 
     public static MapCodec<VatRecipeParams> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             codec(VatRecipeParams::new).forGetter(Function.identity()),
@@ -31,7 +27,10 @@ public class VatRecipeParams extends ProcessingRecipeParams {
                     .forGetter(VatRecipeParams::getHeatLevel),
             Codec.INT.optionalFieldOf("pressure", 0)
                     .forGetter(VatRecipeParams::getPressure),
-            Codec.STRING.listOf().optionalFieldOf("machines", new ArrayList<>()).forGetter(VatRecipeParams::getMachines),
+            // List.of() defaults are immutable, so the single instance shared
+            // by every recipe decoded without the key cannot be corrupted by
+            // accidental mutation (the old shared ArrayList could).
+            Codec.STRING.listOf().optionalFieldOf("machines", List.of()).forGetter(VatRecipeParams::getMachines),
             Codec.STRING.listOf().optionalFieldOf("allowed_vat_types", types).forGetter(VatRecipeParams::getAllowedVatTypes)
     ).apply(instance, (params, min_size, heat_level,pressure, machines, allowed_vat_types) -> {
         params.machines = machines;

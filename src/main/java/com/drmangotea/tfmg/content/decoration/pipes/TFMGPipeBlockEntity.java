@@ -32,8 +32,14 @@ public class TFMGPipeBlockEntity extends FluidPipeBlockEntity {
         level.playSound(player, getBlockPos(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4f, 0.5f);
 
         locked = !locked;
-        if (locked)
+        if (locked) {
+            // Persist and sync the new lock state: without this a freshly
+            // locked pipe lost its lock on chunk unload and other clients
+            // never saw the rim overlay (the unlock branch persists through
+            // the setBlock below).
+            notifyUpdate();
             return;
+        }
 
         BlockState newState;
         Level world = level;

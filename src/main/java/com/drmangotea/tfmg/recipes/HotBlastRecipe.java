@@ -5,6 +5,7 @@ import com.simibubi.create.content.processing.recipe.ProcessingRecipeParams;
 import com.simibubi.create.content.processing.recipe.StandardProcessingRecipe;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.crafting.FluidIngredient;
 import net.neoforged.neoforge.fluids.crafting.SizedFluidIngredient;
 import net.neoforged.neoforge.items.wrapper.RecipeWrapper;
 
@@ -40,14 +41,18 @@ public class HotBlastRecipe extends StandardProcessingRecipe<RecipeWrapper> {
         return getFluidResults().get(0);
     }
     public FluidStack getSecondaryResult(){
-        return getFluidResults().get(1);
+        // Datapack recipes may declare a single fluid output.
+        return getFluidResults().size() < 2 ? FluidStack.EMPTY : getFluidResults().get(1);
     }
 
     public SizedFluidIngredient getPrimaryIngredient(){
         return getFluidIngredients().get(0);
     }
     public SizedFluidIngredient getSecondaryIngredient(){
-        return getFluidIngredients().get(1);
+        // Datapack recipes may declare a single fluid ingredient.
+        return getFluidIngredients().size() < 2
+                ? new SizedFluidIngredient(FluidIngredient.empty(), 1)
+                : getFluidIngredients().get(1);
     }
 
 

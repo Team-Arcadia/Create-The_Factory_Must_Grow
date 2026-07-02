@@ -25,6 +25,9 @@ public class ThermiteGrenadeItem extends Item {
         p_43143_.getCooldowns().addCooldown(this, 60);
         p_43142_.playSound((Player)null, p_43143_.getX(), p_43143_.getY(), p_43143_.getZ(), SoundEvents.EGG_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (p_43142_.getRandom().nextFloat() * 0.4F + 0.8F));
 
+        // The entity is spawned server-side only; the client gets it through
+        // normal entity sync (same pattern as PipeBombItem).
+        if (!p_43142_.isClientSide()) {
             ThermiteGrenade grenade;
             if(flameColor== ThermiteGrenade.ChemicalColor.GREEN) {
                 grenade = new ThermiteGrenade(p_43142_, p_43143_, flameColor, TFMGEntityTypes.ZINC_GRENADE.get());
@@ -36,6 +39,7 @@ public class ThermiteGrenadeItem extends Item {
             grenade.setItem(itemstack);
             grenade.shootFromRotation(p_43143_, p_43143_.getXRot(), p_43143_.getYRot(), 0.0F, 0.5F, 1.0F);
             p_43142_.addFreshEntity(grenade);
+        }
 
 
         p_43143_.awardStat(Stats.ITEM_USED.get(this));

@@ -36,7 +36,8 @@ public class CokingRecipe extends StandardProcessingRecipe<RecipeInput> {
 		return getFluidResults().get(0);
 	}
 	public FluidStack getSecondaryResult(){
-		return getFluidResults().get(1);
+		// Datapack recipes may declare a single fluid output.
+		return getFluidResults().size() < 2 ? FluidStack.EMPTY : getFluidResults().get(1);
 	}
 	@Override
 	public boolean matches(RecipeInput inv, Level worldIn) {

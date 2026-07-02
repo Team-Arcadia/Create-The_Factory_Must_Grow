@@ -83,3 +83,12 @@ modId = "create"
 type = "required"
 versionRange = "[6.0.6,)"
 side = "BOTH"
+# TFMG references Flywheel classes (PartialModel fields on common blocks)
+# during registration on BOTH sides; Create only requires flywheel on the
+# client, so without this a dedicated server missing the flywheel jar would
+# crash with NoClassDefFoundError at mod construction.
+[[dependencies."${mod_id}"]]
+modId = "flywheel"
+type = "required"
+versionRange = "[1.0.0,)"
+side = "BOTH"

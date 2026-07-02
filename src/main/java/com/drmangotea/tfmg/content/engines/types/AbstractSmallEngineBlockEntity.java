@@ -187,9 +187,6 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
     protected void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         compound.putLong("Controller", controller.asLong());
         compound.putString("Shift", shift.name());
-        if (controller != null) {
-            compound.putLong("ControllerPos", controller.asLong());
-        } else compound.remove("ControllerPos");
 
         if (upgrade.isPresent())
             compound.put("UpgradeItem", upgrade.get().getItem().getDefaultInstance().saveOptional(registries));
@@ -203,8 +200,10 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         if (compound.contains("UpgradeItem") && ItemStack.parse(registries, compound.getCompound("UpgradeItem")).isPresent()) {
             ItemStack stack = ItemStack.parse(registries, compound.getCompound("UpgradeItem")).get();
-            //.ifPresent(i -> upgrade = Optional.of(EngineUpgrade.getUpgrades().get(i)));
-            upgrade = Optional.of(EngineUpgrade.getUpgrades().get(stack.getItem()));
+            // ofNullable: an unknown saved upgrade item (removed mod content,
+            // datapack change) must degrade to "no upgrade", not NPE while
+            // deserializing the block entity and corrupt the chunk load.
+            upgrade = Optional.ofNullable(EngineUpgrade.getUpgrades().get(stack.getItem()));
 
         }
         if (!compound.getString("Shift").isEmpty())

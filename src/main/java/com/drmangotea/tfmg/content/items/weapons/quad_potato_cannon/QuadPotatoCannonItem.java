@@ -126,12 +126,14 @@ public class QuadPotatoCannonItem extends ProjectileWeaponItem implements Custom
 
         boolean spray = projectileType.split()*4 > 1;
         Vec3 sprayBase = VecHelper.rotate(new Vec3(0, 0.1, 0), 360 * level.getRandom().nextFloat(), Axis.Z);
-        float sprayChange = 360f / projectileType.split()*4;
+        float sprayChange = 360f / (projectileType.split() * 4);
 
         ItemStack ammoStackCopy = ammoStack.copy();
 
         for (int i = 0; i < projectileType.split()*4; i++) {
             PotatoProjectileEntity projectile = AllEntityTypes.POTATO_PROJECTILE.create(level);
+            if (projectile == null)
+                break;
             projectile.setItem(ammoStackCopy);
             projectile.setEnchantmentEffectsFromCannon(heldStack);
 

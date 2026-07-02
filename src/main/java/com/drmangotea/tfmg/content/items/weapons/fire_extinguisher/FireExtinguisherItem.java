@@ -32,7 +32,10 @@ public class FireExtinguisherItem extends Item implements CustomArmPoseItem {
 
     public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int time) {
 
-
+        // Server-only: the client used to spawn its own flakes and decrement
+        // its own copy of the AMOUNT component every tick.
+        if (level.isClientSide)
+            return;
 
         int fillLevel = stack.getOrDefault(AMOUNT,0);
         if(fillLevel == 0) return;
@@ -55,11 +58,16 @@ public class FireExtinguisherItem extends Item implements CustomArmPoseItem {
     @Override
     public void onCraftedBy(ItemStack stack, Level level, Player player) {
         super.onCraftedBy(stack, level, player);
-        stack.set(AMOUNT,500);
+        stack.set(AMOUNT, DRY_ICE_CAPACITY);
     }
 
-    public int getUseDuration(ItemStack stack) {
-        return 696969;
+    @Override
+    public ItemStack getDefaultInstance() {
+        // Creative menu / JEI / commands hand out a FULL extinguisher instead
+        // of an empty one with a permanently visible empty bar.
+        ItemStack stack = super.getDefaultInstance();
+        stack.set(AMOUNT, DRY_ICE_CAPACITY);
+        return stack;
     }
 
     @Override

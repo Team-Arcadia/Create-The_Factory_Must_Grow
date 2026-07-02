@@ -69,6 +69,12 @@ public class FlamethrowerItem extends Item implements CustomArmPoseItem {
     }
 
     public void onUseTick(Level level, LivingEntity entity, ItemStack stack, int time) {
+        // Server-only: the client used to spawn ghost sparks and decrement
+        // fuel with an INDEPENDENT random roll, desyncing the component from
+        // the server copy every tick of use. Sparks and the stack component
+        // reach the client through normal entity/stack sync.
+        if (level.isClientSide)
+            return;
         if (stack.getOrDefault(TFMGDataComponents.FLAMETHROWER, FlamethrowerFuel.EMPTY) == FlamethrowerFuel.EMPTY)
             return;
 
@@ -128,17 +134,13 @@ public class FlamethrowerItem extends Item implements CustomArmPoseItem {
 
     @Override
     public int getBarColor(ItemStack stack) {
-        if(!stack.has(TFMGDataComponents.FLAMETHROWER))
-            stack.set(TFMGDataComponents.FLAMETHROWER, FlamethrowerFuel.EMPTY);
-
+        // Render-path getters must not mutate the stack (client-side
+        // component writes desync it from the server copy).
         return stack.getOrDefault(TFMGDataComponents.FLAMETHROWER, FlamethrowerFuel.EMPTY).color();
     }
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        if(!stack.has(TFMGDataComponents.FLAMETHROWER))
-            stack.set(TFMGDataComponents.FLAMETHROWER, FlamethrowerFuel.EMPTY);
-
         return Math.round( 13* ((float)stack.getOrDefault(TFMGDataComponents.FLAMETHROWER, FlamethrowerFuel.EMPTY).amount()/(float)FUEL_CAPACITY));
     }
 
@@ -168,6 +170,11 @@ public class FlamethrowerItem extends Item implements CustomArmPoseItem {
         BlockPos pos = context.getClickedPos();
         ItemStack stack = context.getItemInHand();
 
+        // Refilling drains a real tank — server only (the client performed a
+        // ghost drain on its BE copy until the next sync).
+        if (level.isClientSide)
+            return InteractionResult.PASS;
+
         BlockEntity blockEntity = level.getBlockEntity(pos);
 
         if (!stack.has(TFMGDataComponents.FLAMETHROWER)) stack.set(TFMGDataComponents.FLAMETHROWER, FlamethrowerFuel.EMPTY);
@@ -194,13 +201,16 @@ public class FlamethrowerItem extends Item implements CustomArmPoseItem {
                             if (fuelType.equals(fuel.fuelType())) {
                                 stack.set(TFMGDataComponents.FLAMETHROWER, existingFuel.increment(toDrain, FUEL_CAPACITY));
                                 capability.drain(stackToDrain, IFluidHandler.FluidAction.EXECUTE);
-                                context.getPlayer().getCooldowns().addCooldown(stack.getItem(), 20);
+                                // getPlayer() is @Nullable (dispenser/automation use).
+                                if (context.getPlayer() != null)
+                                    context.getPlayer().getCooldowns().addCooldown(stack.getItem(), 20);
                                 foundFluid = true;
                             }
                         } else {
                             stack.set(TFMGDataComponents.FLAMETHROWER, fuel);
                             capability.drain(stackToDrain, IFluidHandler.FluidAction.EXECUTE);
-                            context.getPlayer().getCooldowns().addCooldown(stack.getItem(), 20);
+                            if (context.getPlayer() != null)
+                                context.getPlayer().getCooldowns().addCooldown(stack.getItem(), 20);
                             foundFluid = true;
                         }
                     }

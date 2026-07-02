@@ -41,7 +41,15 @@ public class EnginePipingUpgrade extends EngineUpgrade {
     @Override
     public void lazyTickUpgrade(AbstractSmallEngineBlockEntity engine) {
 
-     
+        // Fluid transfer is server logic; the client copy desynced its tanks.
+        if (engine.getLevel() == null || engine.getLevel().isClientSide)
+            return;
+
+        // Drop the cached tank when its block entity was removed or replaced
+        // (chunk reload, break) — draining the orphaned instance voided or
+        // duplicated fuel.
+        if (tank.isPresent() && tank.get().isRemoved())
+            tank = Optional.empty();
 
         if (tank.isPresent()) {
 

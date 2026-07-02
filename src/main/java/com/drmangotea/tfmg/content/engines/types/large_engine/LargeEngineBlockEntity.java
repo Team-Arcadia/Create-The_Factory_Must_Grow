@@ -107,23 +107,8 @@ public class LargeEngineBlockEntity extends AbstractEngineBlockEntity {
 
         PoweredShaftBlockEntity shaft = getShaft();
 
-        if (shaft == null) {
-            if (!level.isClientSide()) {
-
-                if (shaft == null)
-                    return;
-                if (!shaft.getBlockPos()
-                        .subtract(worldPosition)
-                        .equals(shaft.enginePos))
-                    return;
-                if (shaft.engineEfficiency == 0)
-                    return;
-                Direction facing = LargeEngineBlock.getFacing(getBlockState());
-                if (level.isLoaded(worldPosition.relative(facing.getOpposite())))
-                    shaft.update(worldPosition, 0, 0);
-                return;
-            }
-        }
+        if (shaft == null && !level.isClientSide())
+            return;
 
         BlockState blockState = getBlockState();
         if (!TFMGBlocks.LARGE_ENGINE.has(blockState) && !TFMGBlocks.SIMPLE_LARGE_ENGINE.has(blockState))
@@ -208,12 +193,15 @@ public class LargeEngineBlockEntity extends AbstractEngineBlockEntity {
         return super.canWork();
     }
 
+    private float lastShaftStress = Float.NaN;
+
     private void engineProcess() {
         PoweredShaftBlockEntity shaft = getShaft();
 
 
         if (!canWork()) {
             shaft.update(worldPosition, 0, 0);
+            lastShaftStress = 0;
             return;
         }
 
@@ -224,9 +212,15 @@ public class LargeEngineBlockEntity extends AbstractEngineBlockEntity {
         }
 
 
-        shaft.update(worldPosition, 2, 15 * getFuelType().getStress()*(isFuelValid?1:0));
-        sendData();
-        setChanged();
+        float stress = 15 * getFuelType().getStress() * (isFuelValid ? 1 : 0);
+        shaft.update(worldPosition, 2, stress);
+        // Only broadcast when the applied stress changed — this used to fire
+        // a full BE sync packet and mark the chunk dirty 20x/s per engine.
+        if (stress != lastShaftStress) {
+            lastShaftStress = stress;
+            sendData();
+            setChanged();
+        }
     }
 
     @Override

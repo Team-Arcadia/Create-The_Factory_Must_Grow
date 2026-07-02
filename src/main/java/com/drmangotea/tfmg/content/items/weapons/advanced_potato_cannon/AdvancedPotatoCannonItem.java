@@ -115,14 +115,15 @@ public class AdvancedPotatoCannonItem extends ProjectileWeaponItem implements Cu
 
 
 				NapalmPotato projectile = TFMGEntityTypes.NAPALM_POTATO.create(world);
-
+				if (projectile == null)
+					return InteractionResultHolder.fail(stack);
 
 				projectile.setPos(barrelPos.x, barrelPos.y, barrelPos.z);
 				projectile.setDeltaMovement(motion);
 				projectile.setOwner(player);
 				world.addFreshEntity(projectile);
 
-
+			ItemStack ammoDisplay = itemStack.copyWithCount(1);
 			if (!player.isCreative()) {
 				itemStack.shrink(1);
 				if (itemStack.isEmpty())
@@ -139,7 +140,7 @@ public class AdvancedPotatoCannonItem extends ProjectileWeaponItem implements Cu
 
 			ShootableGadgetItemMethods.applyCooldown(player, stack, hand, this::isCannon, cooldown);
 			ShootableGadgetItemMethods.sendPackets(player,
-				b -> new AdvancedPotatoCannonPacket(barrelPos, lookVec.normalize(), itemStack, hand, soundPitch, b));
+				b -> new AdvancedPotatoCannonPacket(barrelPos, lookVec.normalize(), ammoDisplay, hand, soundPitch, b));
 			return InteractionResultHolder.success(stack);
 		})
 			.orElse(InteractionResultHolder.pass(stack));
@@ -151,13 +152,13 @@ public class AdvancedPotatoCannonItem extends ProjectileWeaponItem implements Cu
 	}
 
 	protected static Optional<ItemStack> findAmmoInInventory(Player player) {
+		// Lookup only — consumption happens server-side in use() after the
+		// swap/client checks. Shrinking here ran on both sides and ate ammo
+		// even when the shot was aborted.
 		for(int i = 0; i < player.getInventory().getContainerSize(); ++i) {
 			ItemStack stack = player.getInventory().getItem(i);
-			if(stack.is(TFMGItems.NAPALM_POTATO.get())){
-				if (!player.isCreative())
-					stack.shrink(1);
-				return Optional.of(TFMGItems.NAPALM_POTATO.get().getDefaultInstance());
-			}
+			if(stack.is(TFMGItems.NAPALM_POTATO.get()))
+				return Optional.of(stack);
 		}
 
 

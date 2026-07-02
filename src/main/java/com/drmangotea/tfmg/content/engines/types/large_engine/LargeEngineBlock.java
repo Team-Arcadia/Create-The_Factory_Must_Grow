@@ -142,8 +142,11 @@ public class LargeEngineBlock extends HorizontalDirectionalBlock
 
     @Override
     public void onRemove(BlockState pState, Level pLevel, BlockPos pPos, BlockState pNewState, boolean pIsMoving) {
-        if (pState.hasBlockEntity() && (!pState.is(pNewState.getBlock()) || !pNewState.hasBlockEntity()))
-            pLevel.removeBlockEntity(pPos);
+        // Route through IBE.onRemove so SmartBlockEntity.destroy() and the
+        // electric network cleanup (IElectric.onRemoved) actually run —
+        // removeBlockEntity() alone skipped both and left the network to
+        // lazy stale pruning.
+        IBE.onRemove(pState, pLevel, pPos, pNewState);
         FluidTankBlock.updateBoilerState(pState, pLevel, pPos.relative(getFacing(pState).getOpposite()));
         BlockPos shaftPos = getShaftPos(pState, pPos);
         BlockState shaftState = pLevel.getBlockState(shaftPos);

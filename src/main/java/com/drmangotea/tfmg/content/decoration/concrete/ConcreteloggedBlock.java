@@ -8,6 +8,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemUtils;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
@@ -38,8 +39,10 @@ public interface ConcreteloggedBlock {
         if(state.getValue(CONCRETELOGGED)){
             if(stack.is(Items.BUCKET)){
                 level.setBlock(pos, state.setValue(CONCRETELOGGED, false),3);
-                if(!player.isCreative())
-                    player.setItemInHand(hand, TFMGFluids.LIQUID_CONCRETE.getBucket().get().getDefaultInstance());
+                // createFilledResult keeps the rest of a stacked bucket pile
+                // (the old setItemInHand turned 16 buckets into 1 result).
+                player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player,
+                        TFMGFluids.LIQUID_CONCRETE.getBucket().get().getDefaultInstance()));
                 player.playSound(SoundEvents.BUCKET_FILL, 1F, 1.0F + player.getRandom().nextFloat() * 0.4F);
                 return ItemInteractionResult.SUCCESS;
             }
@@ -47,8 +50,8 @@ public interface ConcreteloggedBlock {
         }else {
             if(stack.is(TFMGFluids.LIQUID_CONCRETE.getBucket().get())){
                 level.setBlock(pos, state.setValue(CONCRETELOGGED, true),3);
-                if(!player.isCreative())
-                    player.setItemInHand(hand, Items.BUCKET.getDefaultInstance());
+                player.setItemInHand(hand, ItemUtils.createFilledResult(stack, player,
+                        Items.BUCKET.getDefaultInstance()));
                 player.playSound(SoundEvents.BUCKET_EMPTY, 1F, 1.0F + player.getRandom().nextFloat() * 0.4F);
                 return ItemInteractionResult.SUCCESS;
             }

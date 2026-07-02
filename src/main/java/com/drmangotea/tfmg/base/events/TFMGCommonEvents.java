@@ -69,6 +69,16 @@ public class TFMGCommonEvents {
     public static void addReloadListeners(AddReloadListenerEvent event) {
         event.addListener(EngineFuelTypeManager.ReloadListener.INSTANCE);
     }
+
+    @SubscribeEvent
+    public static void onPlayerLoggedOut(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        // Must run on the SERVER: a player disconnecting while driving an
+        // engine controller keeps this persistent flag otherwise and is then
+        // rejected by tryStartUsing on every controller forever.
+        Player player = event.getEntity();
+        if (player != null)
+            player.getPersistentData().remove("IsUsingEngineController");
+    }
     @EventBusSubscriber
     public static class ModBusEvents {
         @net.neoforged.bus.api.SubscribeEvent

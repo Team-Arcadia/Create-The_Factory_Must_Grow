@@ -277,12 +277,17 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
             tickRendering();
         }
 
+        // Drop the cached engine when its block entity was replaced (chunk
+        // reload, break-and-replace) — it used to be re-resolved only when
+        // null, so throttle input silently went to a dead instance.
+        if (engine != null && (engine.isRemoved() || !engine.getBlockPos().equals(enginePos)))
+            engine = null;
         if (enginePos != null && (engine == null)) {
             if (level.getBlockEntity(enginePos) instanceof AbstractSmallEngineBlockEntity be) {
                 engine = be;
-                AbstractSmallEngineBlockEntity engineController = engine.getControllerBE();
-                if (engineController != null)
-                    engineController.highestSignal = 4f / 15f;
+                // Push the actual acceleration rate instead of a hardcoded
+                // 4/15 idle value.
+                updateEngine();
             }
         }
 
@@ -322,9 +327,12 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
         if (engine == null)
             return;
 
-        engine.getControllerBE().highestSignal = 0;
-        engine.getControllerBE().engineController = null;
-        engine.getControllerBE().updateGeneratedRotation();
+        AbstractSmallEngineBlockEntity controller = engine.getControllerBE();
+        if (controller == null)
+            return;
+        controller.highestSignal = 0;
+        controller.engineController = null;
+        controller.updateGeneratedRotation();
     }
 
     public void tickRendering() {

@@ -23,11 +23,16 @@ public class ScrewdriverItem extends Item {
 
         Level level = pContext.getLevel();
 
-        if (level.getBlockEntity(positionClicked) != null && level.getBlockEntity(positionClicked) instanceof TFMGPipeBlockEntity pipeBlockEntity) {
-            pipeBlockEntity.toggleLock(player);
-            pContext.getItemInHand().hurtAndBreak(1, pContext.getPlayer(),
-                    LivingEntity.getSlotForHand(pContext.getHand()));
-            return InteractionResult.SUCCESS;
+        if (level.getBlockEntity(positionClicked) instanceof TFMGPipeBlockEntity pipeBlockEntity) {
+            // Lock state and tool damage are server-authoritative; the client
+            // gets both through normal BE/stack sync.
+            if (!level.isClientSide) {
+                pipeBlockEntity.toggleLock(player);
+                if (player != null)
+                    pContext.getItemInHand().hurtAndBreak(1, player,
+                            LivingEntity.getSlotForHand(pContext.getHand()));
+            }
+            return InteractionResult.sidedSuccess(level.isClientSide);
         } else {
             return super.useOn(pContext);
         }

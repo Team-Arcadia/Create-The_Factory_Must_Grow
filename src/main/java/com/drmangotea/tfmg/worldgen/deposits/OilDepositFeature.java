@@ -32,8 +32,11 @@ public class OilDepositFeature extends Feature<NoneFeatureConfiguration> {
 
         for (int i = 0; i < randomsource.nextInt(6) + 1; i++) {
             placeDeposit(pos, level, randomsource);
-            pos = pos.north(randomsource.nextInt(40) - 20);
-            pos = pos.west(randomsource.nextInt(40) - 20);
+            // Stay inside the 3x3-chunk writable region around the origin:
+            // the old cumulative +/-20-blocks-per-pocket walk wandered up to
+            // ~120 blocks out, tripping "Detected setBlock in a far chunk"
+            // and silently dropping deposit blocks.
+            pos = startingPos.offset(randomsource.nextInt(25) - 12, 0, randomsource.nextInt(25) - 12);
         }
 
         return true;

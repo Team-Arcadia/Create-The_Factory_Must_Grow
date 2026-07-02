@@ -58,17 +58,12 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
 
         if (!hasLevel())
             return;
+        // Single 6-neighbour redstone scan; this ran twice per lazyTick.
+        int power = level.getBestNeighborSignal(worldPosition);
         if (isController()) {
-            int power = level.getBestNeighborSignal(worldPosition);
-
-
             if (power != signal)
                 signalChanged = true;
-        }
-        if (level.getBlockEntity(controller) instanceof AccumulatorBlockEntity be) {
-            int power = level.getBestNeighborSignal(worldPosition);
-
-
+        } else if (level.getBlockEntity(controller) instanceof AccumulatorBlockEntity be) {
             if (power != be.signal)
                 be.signalChanged = true;
         }
@@ -297,6 +292,7 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
 
         compound.putInt("ForgeEnergy", energy.getEnergyStored());
         compound.putInt("Length", length);
+        compound.putLong("ControllerPos", controller.asLong());
 
     }
 
@@ -304,7 +300,18 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound, registries, clientPacket);
         length = compound.getInt("Length");
-        //energy = createEnergyStorage(length);
+        // Restore the chain link before the first tick: without it every
+        // block of a reloaded chain briefly acted as its own controller and
+        // capability lookups pointed at the wrong storage.
+        if (compound.contains("ControllerPos"))
+            controller = BlockPos.of(compound.getLong("ControllerPos"));
+        // The field initializer built the storage with length=1 capacity;
+        // rebuild it at the persisted length so setEnergy (which clamps to
+        // capacity) does not truncate a full chain's energy on load.
+        if (energy.getMaxEnergyStored() != getMaxCapacity()) {
+            energy = createEnergyStorage(1);
+            refreshNextTick = true;
+        }
         energy.setEnergy(compound.getInt("ForgeEnergy"));
 
 

@@ -277,6 +277,18 @@ public abstract class AbstractEngineBlockEntity extends KineticElectricBlockEnti
         fuelTank.readFromNBT(registries, compound.getCompound("FuelTank"));
         exhaustTank.readFromNBT(registries, compound.getCompound("ExhaustTank"));
 
+        // Running state survives chunk reloads: rpm/torque/highestSignal used
+        // to be transient, so a redstone-driven engine whose signal did not
+        // CHANGE after reload (neighbourChanged only fires signalChanged on a
+        // difference) stayed dead until the lever was toggled.
+        if (compound.contains("Rpm"))
+            rpm = compound.getFloat("Rpm");
+        if (compound.contains("Torque"))
+            torque = compound.getFloat("Torque");
+        if (compound.contains("HighestSignal"))
+            highestSignal = compound.getFloat("HighestSignal");
+        if (!clientPacket)
+            signalChanged = true;
 
         updateRotation();
         updateGeneratedRotation();
@@ -292,6 +304,10 @@ public abstract class AbstractEngineBlockEntity extends KineticElectricBlockEnti
         compound.putInt("Signal", signal);
         if (hasEngineController())
             compound.putLong("EngineController", engineController.asLong());
+
+        compound.putFloat("Rpm", rpm);
+        compound.putFloat("Torque", torque);
+        compound.putFloat("HighestSignal", highestSignal);
 
         compound.put("FuelTank", fuelTank.writeToNBT(registries, new CompoundTag()));
         compound.put("ExhaustTank", exhaustTank.writeToNBT(registries, new CompoundTag()));

@@ -16,15 +16,12 @@ import com.simibubi.create.foundation.item.ItemDescription;
 import com.simibubi.create.foundation.item.KineticStats;
 import com.simibubi.create.foundation.item.TooltipModifier;
 import net.createmod.catnip.lang.FontHelper;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import org.slf4j.Logger;
@@ -88,16 +85,12 @@ public class TFMG {
         modEventBus.addListener(EventPriority.LOWEST, TFMGDatagen::gatherData);
         modEventBus.addListener(TFMGSoundEvents::register);
         modEventBus.addListener(TFMG::commonSetup);
-        modEventBus.addListener(this::clientSetup);
+        // Render-layer setup lives in TFMGClient.clientInit — this common
+        // class must not reference net.minecraft.client renderer types.
       //  NeoForge.EVENT_BUS.register(this);
        // DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> TFMGClient::new);
         modEventBus.addListener(TFMGCreativeTabs::addCreative);
 
-    }
-    @SuppressWarnings("deprecation")
-    private void clientSetup(final FMLClientSetupEvent event) {
-        ItemBlockRenderTypes.setRenderLayer(TFMGColoredFires.GREEN_FIRE.get(), RenderType.cutout());
-        ItemBlockRenderTypes.setRenderLayer(TFMGColoredFires.BLUE_FIRE.get(), RenderType.cutout());
     }
 
     /**

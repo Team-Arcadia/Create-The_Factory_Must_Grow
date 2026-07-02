@@ -1,7 +1,5 @@
 package com.drmangotea.tfmg.content.items.weapons.explosives.thermite_grenades;
 
-import com.drmangotea.tfmg.base.spark.BlueSpark;
-import com.drmangotea.tfmg.base.spark.GreenSpark;
 import com.drmangotea.tfmg.base.spark.Spark;
 import com.drmangotea.tfmg.registry.TFMGEntityTypes;
 import com.drmangotea.tfmg.registry.TFMGItems;
@@ -69,27 +67,20 @@ public class ThermiteGrenade extends ThrowableItemProjectile {
                 float y= Create.RANDOM.nextFloat(360);
                 float z= Create.RANDOM.nextFloat(360);
 
-                if(flameColor==ChemicalColor.GREEN){
-                    GreenSpark spark = TFMGEntityTypes.GREEN_SPARK.create(level());
-
-
-
-                    spark.moveTo(this.getX(), this.getY()+1, this.getZ());
-                    spark.shootFromRotation( this,x,y,z,0.2f,1);
-                    this.level().addFreshEntity(spark);
-                }else
-                if(flameColor==ChemicalColor.BLUE){
-                    BlueSpark spark = TFMGEntityTypes.BLUE_SPARK.create(level());
-
-
-                    spark.moveTo(this.getX(), this.getY()+1, this.getZ());
-                    spark.shootFromRotation( this,x,y,z,0.2f,1);
-                    this.level().addFreshEntity(spark);
+                Spark spark;
+                if (flameColor == ChemicalColor.GREEN) {
+                    spark = TFMGEntityTypes.GREEN_SPARK.create(level());
+                } else if (flameColor == ChemicalColor.BLUE) {
+                    spark = TFMGEntityTypes.BLUE_SPARK.create(level());
                 } else {
-                    Spark spark = TFMGEntityTypes.SPARK.create(level());
-                    spark.moveTo(this.getX(), this.getY()+1, this.getZ());
-                    spark.shootFromRotation( this,x,y,z,0.2f,1);
-                    this.level().addFreshEntity(spark);}
+                    spark = TFMGEntityTypes.SPARK.create(level());
+                }
+                // EntityType.create is @Nullable (disabled entity types).
+                if (spark == null)
+                    break;
+                spark.moveTo(this.getX(), this.getY()+1, this.getZ());
+                spark.shootFromRotation( this,x,y,z,0.2f,1);
+                this.level().addFreshEntity(spark);
 
 
 
