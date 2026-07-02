@@ -74,8 +74,14 @@ public interface IElectric {
                 existing.members.add(this);
             long newId = getPos();
             existing.id = newId;
-            for (IElectric member : existing.members)
+            for (IElectric member : existing.members) {
                 member.getData().electricalNetworkId = newId;
+                // Drop any stale singleton entry keyed by the member's own
+                // position (mirrors what setNetwork() does), so re-keying
+                // does not leak orphaned network objects in the map.
+                if (member.getPos() != newId)
+                    map.remove(member.getPos());
+            }
             map.put(newId, existing);
             return existing;
         }

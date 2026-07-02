@@ -51,8 +51,13 @@ public class RebarStairsBlock extends StairBlock implements ConcreteloggedBlock{
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource randomSource) {
 
-
-            tickDrying(level,state,TFMGBlocks.REBAR_CONCRETE.stairs.getDefaultState().setValue(FACING, state.getValue(FACING)).setValue(HALF, state.getValue(HALF)),pos, randomSource);
+            // Also carry SHAPE and WATERLOGGED: corner stairs used to dry
+            // into straight stairs until the next neighbor update.
+            tickDrying(level,state,TFMGBlocks.REBAR_CONCRETE.stairs.getDefaultState()
+                    .setValue(FACING, state.getValue(FACING))
+                    .setValue(HALF, state.getValue(HALF))
+                    .setValue(SHAPE, state.getValue(SHAPE))
+                    .setValue(WATERLOGGED, state.getValue(WATERLOGGED)),pos, randomSource);
     }
 
     @Override

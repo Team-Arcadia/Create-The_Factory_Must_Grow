@@ -63,6 +63,13 @@ public class GoggleOverlayRendererMixin {
         ClientLevel world = mc.level;
         HitResult objectMouseOver = mc.hitResult;
 
+        // level/gameMode/player can be null with a stale hitResult during
+        // disconnect — bail out before touching the world.
+        if (world == null || mc.gameMode == null || mc.player == null) {
+            tfmg$lastHovered = null;
+            tfmg$hoverTicks = 0;
+            return;
+        }
 
         if (!(objectMouseOver instanceof BlockHitResult result)) {
             tfmg$lastHovered = null;
@@ -80,6 +87,11 @@ public class GoggleOverlayRendererMixin {
 
         if (mc.options.hideGui || mc.gameMode.getPlayerMode() == GameType.SPECTATOR)
             return;
+
+        // Reset the fade when the player looks at a different block —
+        // tfmg$lastHovered was previously written but never read.
+        if (!pos.equals(tfmg$lastHovered))
+            tfmg$hoverTicks = 0;
 
         // for (Outliner.OutlineEntry entry : outlines.values()) {
         //     if (!entry.isAlive())

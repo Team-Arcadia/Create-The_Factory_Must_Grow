@@ -286,7 +286,13 @@ public class TFMGItems {
     public static final ItemEntry<FireExtinguisherItem> FIRE_EXTINGUISHER =
             REGISTRATE.item("fire_extinguisher", FireExtinguisherItem::new)
                     .model(AssetLookup.itemModelWithPartials())
-                    .properties(p -> p.stacksTo(1))
+                    // Default AMOUNT component: creative menu / JEI / commands
+                    // hand out a FULL extinguisher (creative tabs build stacks
+                    // with new ItemStack(item), which bypasses
+                    // getDefaultInstance overrides).
+                    .properties(p -> p.stacksTo(1)
+                            .component(com.drmangotea.tfmg.registry.TFMGDataComponents.AMOUNT,
+                                    FireExtinguisherItem.DRY_ICE_CAPACITY))
                     .register();
 
     public static final Map<String, ItemEntry<MultimeterItem>> MULTIMETERS = multimeters();

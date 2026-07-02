@@ -44,7 +44,11 @@ public class FuelType {
     public static FuelType fromJson(JsonObject object) {
         FuelType type = new FuelType();
         try {
-            parseJsonPrimitive(object, "fluid", JsonPrimitive::isString, primitive -> type.fluid = FluidTags.create(ResourceLocation.fromNamespaceAndPath("",primitive.getAsString())));
+            // parse() accepts "namespace:path" (and defaults to minecraft:).
+            // The old fromNamespaceAndPath("", value) built an invalid empty
+            // namespace and threw for values like "c:diesel", so every
+            // datapack fuel silently fell back to the default tag.
+            parseJsonPrimitive(object, "fluid", JsonPrimitive::isString, primitive -> type.fluid = FluidTags.create(ResourceLocation.parse(primitive.getAsString())));
 
             parseJsonPrimitive(object, "speed", JsonPrimitive::isNumber, primitive -> type.speed = primitive.getAsFloat());
             parseJsonPrimitive(object, "efficiency", JsonPrimitive::isNumber, primitive -> type.efficiency = primitive.getAsFloat());

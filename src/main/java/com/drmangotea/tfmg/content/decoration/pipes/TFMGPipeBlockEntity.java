@@ -29,7 +29,10 @@ public class TFMGPipeBlockEntity extends FluidPipeBlockEntity {
     }
 
     public void toggleLock(Player player) {
-        level.playSound(player, getBlockPos(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4f, 0.5f);
+        // Called server-side only (ScrewdriverItem guard): pass null so the
+        // broadcast includes the acting player — passing the player would
+        // exclude them and they would hear nothing.
+        level.playSound(null, getBlockPos(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.4f, 0.5f);
 
         locked = !locked;
         if (locked) {

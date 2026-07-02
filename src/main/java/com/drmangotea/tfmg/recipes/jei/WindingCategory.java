@@ -28,8 +28,13 @@ public class WindingCategory extends CreateRecipeCategory<WindingRecipe> {
     public void setRecipe(IRecipeLayoutBuilder builder, WindingRecipe recipe, IFocusGroup focuses) {
         builder.addSlot(RecipeIngredientRole.INPUT, 15, 9).setBackground(getRenderedSlot(), -1, -1).addIngredients(recipe.getIngredients().get(0));
 
-        ItemStack coil = recipe.getIngredients().get(1).getItems()[0];
-        coil.set(TFMGDataComponents.SPOOL_AMOUNT,recipe.getProcessingDuration());
+        // Copy: Ingredient.getItems() exposes the ingredient's cached stacks;
+        // mutating them in place leaked the display component into the live
+        // recipe object shared with matching logic.
+        ItemStack[] spoolStacks = recipe.getSpool().getItems();
+        ItemStack coil = spoolStacks.length == 0 ? ItemStack.EMPTY : spoolStacks[0].copy();
+        if (!coil.isEmpty())
+            coil.set(TFMGDataComponents.SPOOL_AMOUNT,recipe.getProcessingDuration());
 
         builder.addSlot(RecipeIngredientRole.INPUT, 15, 30).setBackground(getRenderedSlot(), -1, -1).addItemStack(coil);
         builder.addSlot(RecipeIngredientRole.OUTPUT, 140, 28).setBackground(getRenderedSlot(), -1, -1).addItemStack(recipe.getResultItem(Minecraft.getInstance().level.registryAccess()));
@@ -42,8 +47,9 @@ public class WindingCategory extends CreateRecipeCategory<WindingRecipe> {
 
         int coilColor = 0;
 
-        if (recipe.getIngredients().get(1).getItems()[0].getItem() instanceof SpoolItem) {
-            coilColor = recipe.getIngredients().get(1).getItems()[0].getBarColor();
+        ItemStack[] spoolStacks = recipe.getSpool().getItems();
+        if (spoolStacks.length > 0 && spoolStacks[0].getItem() instanceof SpoolItem) {
+            coilColor = spoolStacks[0].getBarColor();
         }
         this.windingMachine.draw(graphics, 48, 27,coilColor,true);
         graphics.drawString(Minecraft.getInstance().font, recipe.getProcessingDuration() + " Turns", 86.0F, 9.0F, 4210752, false);
@@ -57,8 +63,11 @@ public class WindingCategory extends CreateRecipeCategory<WindingRecipe> {
         }
 
         public void setRecipe(IRecipeLayoutBuilder builder, SequencedRecipe<?> recipe, IFocusGroup focuses, int x) {
-            ItemStack coil = recipe.getRecipe().getIngredients().get(1).getItems()[0];
-            coil.set(TFMGDataComponents.SPOOL_AMOUNT,recipe.getRecipe().getProcessingDuration());
+            // Copy for the same reason as WindingCategory.setRecipe above.
+            ItemStack[] spoolStacks = recipe.getRecipe().getIngredients().get(1).getItems();
+            ItemStack coil = spoolStacks.length == 0 ? ItemStack.EMPTY : spoolStacks[0].copy();
+            if (!coil.isEmpty())
+                coil.set(TFMGDataComponents.SPOOL_AMOUNT,recipe.getRecipe().getProcessingDuration());
             builder.addSlot(RecipeIngredientRole.INPUT, x + 4, 15).setBackground(CreateRecipeCategory.getRenderedSlot(), -1, -1).addItemStack(coil);
         }
 
@@ -68,8 +77,11 @@ public class WindingCategory extends CreateRecipeCategory<WindingRecipe> {
 
             int coilColor = 0;
 
-            if (recipe.getRecipe().getIngredients().get(1).getItems()[0].getItem() instanceof SpoolItem) {
-                coilColor = recipe.getRecipe().getIngredients().get(1).getItems()[0].getBarColor();
+            ItemStack[] spoolStacks = recipe.getRecipe().getIngredients().size() < 2
+                    ? new ItemStack[0]
+                    : recipe.getRecipe().getIngredients().get(1).getItems();
+            if (spoolStacks.length > 0 && spoolStacks[0].getItem() instanceof SpoolItem) {
+                coilColor = spoolStacks[0].getBarColor();
             }
             windingMachine.offset = index;
             ms.pushPose();

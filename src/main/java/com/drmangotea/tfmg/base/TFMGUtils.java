@@ -208,9 +208,11 @@ public class TFMGUtils {
 
     public static boolean createItemTooltip(BlockEntity be, List<Component> tooltip) {
 
-        IItemHandlerModifiable handler = (IItemHandlerModifiable) Capabilities.ItemHandler.BLOCK.getCapability(be.getLevel(),be.getBlockPos(),be.getBlockState(),be,null);
-
-        IItemHandlerModifiable inventory = handler;
+        // Same null-check as createFluidTooltip above: a BE routed here
+        // without an item handler NPE'd on goggle hover.
+        if (!(Capabilities.ItemHandler.BLOCK.getCapability(be.getLevel(), be.getBlockPos(), be.getBlockState(), be, null)
+                instanceof IItemHandlerModifiable inventory))
+            return true;
         if (inventory.getSlots() == 0) return false;
         CreateLang.translate("goggles.item_storage").style(ChatFormatting.GRAY).forGoggles(tooltip);
         boolean isEmpty = true;
