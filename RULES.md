@@ -104,5 +104,5 @@ Architecture facts that matter (learned the hard way):
 6. After code changes: `gradlew compileJava` minimum; full `build` before pushing.
 7. Commit + push directly (conventional messages, no AI attribution); update `CHANGELOG.md` bilingually for user-visible changes.
 8. Test procedures are LOCAL-ONLY HTML files in `test-procedures/` — never commit them.
-9. The coke-oven over-sizing rework is a known deferred issue (see CHANGELOG 1.2.3) — do not attempt it as a side effect of other fixes.
+9. The coke-oven over-sizing issue (CHANGELOG 1.2.3) is FIXED: the formation scan anchors on the existing controller when the wall exceeds the max formable square (`hasOvenBeyond`/`findIntactAnchor` in `CokeOvenBlockEntity`). Preserve that anchoring behavior when touching oven formation.
 10. When touching electricity/multiblock lifecycle, re-read §4 architecture facts first; chunk-border behavior is the #1 regression source.

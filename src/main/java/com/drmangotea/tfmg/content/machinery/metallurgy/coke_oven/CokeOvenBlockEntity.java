@@ -297,6 +297,52 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
                     break;
                 size++;
             }
+
+        // Over-size guard: when the wall keeps going past the largest
+        // formable square (an extra layer added BELOW or IN FRONT of a
+        // full-size oven), this freshly placed corner used to steal
+        // controllership and re-form the square shifted by one block,
+        // orphaning the far row. Keep the existing structure anchored on
+        // its current controller instead and leave the extra layer as
+        // standalone oven blocks.
+        if (hasOvenBeyond(size, facing)) {
+            CokeOvenBlockEntity anchor = findIntactAnchor(size, facing);
+            if (anchor != null) {
+                Direction back = facing.getOpposite();
+                // Re-assert the anchored structure exactly as a normal
+                // formation from its controller would.
+                for (BlockPos pos : BlockPos.betweenClosed(anchor.getBlockPos(),
+                        anchor.getBlockPos().above(anchor.size - 1).relative(back, anchor.size - 1))) {
+                    if (level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be) {
+                        boolean controllerChanged = !anchor.getBlockPos().equals(be.controller);
+                        be.controller = anchor.getBlockPos();
+                        be.refreshCapability();
+                        if (controllerChanged)
+                            be.notifyUpdate();
+                    }
+                }
+                anchor.setBlockStates(anchor.size);
+                // Everything in the scanned area that is not part of the
+                // anchored square becomes a standalone oven again.
+                for (BlockPos pos : BlockPos.betweenClosed(getBlockPos(),
+                        getBlockPos().above(size).relative(back, size))) {
+                    if (isInPlane(anchor.getBlockPos(), back, anchor.size, pos))
+                        continue;
+                    if (level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be
+                            && be.controller != null && !be.controller.equals(be.getBlockPos())) {
+                        be.controller = be.getBlockPos();
+                        be.refreshCapability();
+                        be.forceOpen = false;
+                        be.doorAngle.setValue(0);
+                        be.notifyUpdate();
+                        level.setBlock(be.getBlockPos(), level.getBlockState(be.getBlockPos())
+                                .setValue(CokeOvenBlock.CONTROLLER_TYPE, CokeOvenBlock.ControllerType.CASUAL), 2);
+                    }
+                }
+                return;
+            }
+        }
+
         for(BlockPos pos : BlockPos.betweenClosed(getBlockPos(),getBlockPos().above(size-1).relative(facing.getOpposite(),size-1))) {
             if(level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be&&(!level.getBlockState(getBlockPos().relative(facing)).is(TFMGBlocks.COKE_OVEN.get())&&!level.getBlockState(getBlockPos().below()).is(TFMGBlocks.COKE_OVEN.get()))){
 
@@ -309,7 +355,10 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         }
         if(!level.getBlockState(getBlockPos().relative(facing)).is(TFMGBlocks.COKE_OVEN.get())&&!level.getBlockState(getBlockPos().below()).is(TFMGBlocks.COKE_OVEN.get()))
             setBlockStates(size);
-        for(BlockPos pos : BlockPos.betweenClosed(getBlockPos(), getBlockPos().above(this.size-1).relative(facing.getOpposite(),this.size-1))){
+        // Cover BOTH the previous and the new footprint, otherwise members
+        // of a larger previous structure were never reset to standalone.
+        int detachRange = Math.max(this.size, size);
+        for(BlockPos pos : BlockPos.betweenClosed(getBlockPos(), getBlockPos().above(detachRange-1).relative(facing.getOpposite(),detachRange-1))){
             if(level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be){
                 if(Math.abs(getBlockPos().getX()-be.getBlockPos().getX())>=size || Math.abs(getBlockPos().getY()-be.getBlockPos().getY())>=size || Math.abs(getBlockPos().getZ()-be.getBlockPos().getZ())>=size)
                     if (be.controller != null && (be.controller.equals(getBlockPos()) || !be.controller.equals(be.getBlockPos()))) {
@@ -327,6 +376,65 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
             notifyUpdate();
         }
     }
+    private boolean isMatchingOven(BlockPos pos, Direction facing) {
+        BlockState state = level.getBlockState(pos);
+        return state.is(TFMGBlocks.COKE_OVEN.get()) && state.getValue(FACING) == facing;
+    }
+
+    /**
+     * True when the oven wall continues past the scanned square — i.e. a
+     * row above it or a column behind it still holds matching oven blocks.
+     */
+    private boolean hasOvenBeyond(int size, Direction facing) {
+        Direction back = facing.getOpposite();
+        for (int i = 0; i < size; i++) {
+            if (isMatchingOven(getBlockPos().above(size).relative(back, i), facing))
+                return true;
+            if (isMatchingOven(getBlockPos().relative(back, size).above(i), facing))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * Finds an already-formed controller inside the scan area whose square
+     * is still complete; the over-size guard re-anchors on it instead of
+     * letting the new corner shift the whole structure.
+     */
+    private CokeOvenBlockEntity findIntactAnchor(int size, Direction facing) {
+        Direction back = facing.getOpposite();
+        for (BlockPos pos : BlockPos.betweenClosed(getBlockPos(), getBlockPos().above(size).relative(back, size))) {
+            if (pos.equals(getBlockPos()))
+                continue;
+            if (!(level.getBlockEntity(pos) instanceof CokeOvenBlockEntity be))
+                continue;
+            if (!be.isController() || be.size <= 1)
+                continue;
+            if (!isMatchingOven(pos, facing))
+                continue;
+            boolean intact = true;
+            for (BlockPos part : BlockPos.betweenClosed(be.getBlockPos(),
+                    be.getBlockPos().above(be.size - 1).relative(back, be.size - 1))) {
+                if (!isMatchingOven(part, facing)) {
+                    intact = false;
+                    break;
+                }
+            }
+            if (intact)
+                return be;
+        }
+        return null;
+    }
+
+    private static boolean isInPlane(BlockPos corner, Direction back, int size, BlockPos pos) {
+        int dx = pos.getX() - corner.getX();
+        int dy = pos.getY() - corner.getY();
+        int dz = pos.getZ() - corner.getZ();
+        int along = dx * back.getStepX() + dz * back.getStepZ();
+        int perpendicular = back.getStepX() == 0 ? dx : dz;
+        return dy >= 0 && dy < size && along >= 0 && along < size && perpendicular == 0;
+    }
+
     public void setBlockStates(int size){
 
         if(size>1){
