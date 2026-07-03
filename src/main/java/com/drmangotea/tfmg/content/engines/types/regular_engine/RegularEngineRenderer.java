@@ -30,22 +30,30 @@ public class RegularEngineRenderer extends EngineRenderer {
 
         VertexConsumer vb = buffer.getBuffer(RenderType.cutoutMipped());
 
-        for (int i = 0; i < be.type.pistons.size(); i++) {
+        // Bound by BOTH sizes: type.pistons and pistonInventory can briefly
+        // disagree on the client (e.g. a piston slot indexed past the
+        // inventory). The old code indexed pistonInventory by the piston
+        // count (IndexOutOfBounds) and called popPose() unconditionally while
+        // pushPose() was guarded (PoseStack underflow) — either one crashed
+        // the client. push/pop are now strictly paired around each render.
+        int count = Math.min(be.type.pistons.size(), be.pistonInventory.getSlots());
+        for (int i = 0; i < count; i++) {
             PistonPosition position = be.type.pistons.get(i);
 
-            if (be.type.pistons.size() == be.pistonInventory.getSlots())
-                ms.pushPose();
-            if (!be.pistonInventory.getStackInSlot(i).isEmpty())
-                CachedBuffers.partial(getCylinderModel(be), blockState)
-                        .center()
-                        .light(light)
-                        .rotateYDegrees(blockState.getValue(HORIZONTAL_FACING).getAxis() == Direction.Axis.Z ? 0 : 90)
-                        .translateY(position.getYOffset())
-                        .translateZ(position.getXOffset())
-                        .translateX(position.getZOffset())
-                        .rotateZDegrees(position.getRotation())
-                        .uncenter()
-                        .renderInto(ms, vb);
+            if (be.pistonInventory.getStackInSlot(i).isEmpty())
+                continue;
+
+            ms.pushPose();
+            CachedBuffers.partial(getCylinderModel(be), blockState)
+                    .center()
+                    .light(light)
+                    .rotateYDegrees(blockState.getValue(HORIZONTAL_FACING).getAxis() == Direction.Axis.Z ? 0 : 90)
+                    .translateY(position.getYOffset())
+                    .translateZ(position.getXOffset())
+                    .translateX(position.getZOffset())
+                    .rotateZDegrees(position.getRotation())
+                    .uncenter()
+                    .renderInto(ms, vb);
             ms.popPose();
         }
 
