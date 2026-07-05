@@ -49,3 +49,11 @@ Session-discovered errors, root causes, and prevention rules for TFMG (Arcadia f
 **Root cause:** Tagging code was lost upstream during the 1.21/Create 6 migration; the shipped jar only stayed correct because nobody re-ran datagen and committed blindly.
 **Fix:** Selective accept: staged only the additive outputs (new c: fluid tags, firebox_fuel, vanilla tool/enchantable item tags, extinguisher filling default-component change, regenerated compressed_lpg) and `git checkout`-restored every drifted file.
 **Prevention:** NEVER commit a full runData output on this repo without reviewing `git diff --stat src/generated` — deletions in tag files are regressions until the lost tagging transforms are restored in code (tracked as future work). Also: `runData` requires NeoForge ≥ 21.1.219 since Create 6.0.10.
+
+## [2026-07-05 18:10] — 'git add -A' silently committed a working-tree deletion of CHANGELOG.md
+
+**Context:** Committing the regular-engine renderer hardening (66c63730).
+**Error:** CHANGELOG.md had been deleted from the working tree (outside this session); `git add -A` staged the deletion and the commit recorded it. Discovered only when a later edit failed with "File does not exist".
+**Root cause:** Committed without reviewing `git status --porcelain` first; `add -A` stages deletions too.
+**Fix:** Restored the file from the parent commit (`git checkout 58067f75 -- CHANGELOG.md`) and re-applied the new entries (f4ead0c1).
+**Prevention:** Always review `git status --porcelain` before `git add -A`; treat unexpected ` D` entries as red flags to investigate, never to commit.
