@@ -108,7 +108,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ### Known issues
 
-- **Coke Oven over-sizing** — Adding a layer to the front or bottom face of a full 6×6 oven can still mis-form the multiblock. A correct fix requires reworking the multiblock (persisting its size and hardening corner detection) and is deferred to avoid regressing valid ovens. Workaround: keep ovens within 6×6.
+- **Coke Oven over-sizing** — ✅ *Fixed in [Unreleased]: the formation scan now anchors on the existing controller and heals the connected component.* ~~Adding a layer to the front or bottom face of a full 6×6 oven can still mis-form the multiblock. A correct fix requires reworking the multiblock (persisting its size and hardening corner detection) and is deferred to avoid regressing valid ovens. Workaround: keep ovens within 6×6.~~
 - **Aluminum / LPG require the right vat tier** — Aluminum (electrolysis) and LPG (pressure) are intentionally restricted to **Steel** and **Firebrick-lined** vats, not Cast Iron. Using a Cast Iron vat is why they appeared broken; the mechanics themselves are correct.
 
 ---
@@ -127,7 +127,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ### Problèmes connus
 
-- **Sur-dimensionnement du Coke Oven** — Ajouter une couche sur la face avant ou dessous d'un four 6×6 complet peut encore mal former le multibloc. Une correction propre nécessite de retravailler le multibloc (persistance de la taille et durcissement de la détection du coin) et est reportée pour éviter de casser les fours valides. Contournement : garder les fours en 6×6.
+- **Sur-dimensionnement du Coke Oven** — ✅ *Corrigé dans [Unreleased] : le scan de formation s'ancre désormais sur le contrôleur existant et guérit le composant connexe.* ~~Ajouter une couche sur la face avant ou dessous d'un four 6×6 complet peut encore mal former le multibloc. Une correction propre nécessite de retravailler le multibloc (persistance de la taille et durcissement de la détection du coin) et est reportée pour éviter de casser les fours valides. Contournement : garder les fours en 6×6.~~
 - **Aluminium / LPG nécessitent le bon palier de cuve** — L'Aluminium (électrolyse) et le LPG (pression) sont volontairement réservés aux cuves en **Acier** et **Briques Réfractaires**, pas en Fonte. Utiliser une cuve en Fonte explique pourquoi ils semblaient cassés ; les mécaniques elles-mêmes sont correctes.
 
 ---
