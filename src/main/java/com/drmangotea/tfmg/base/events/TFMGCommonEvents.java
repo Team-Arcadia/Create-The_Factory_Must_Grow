@@ -71,6 +71,26 @@ public class TFMGCommonEvents {
     }
 
     @SubscribeEvent
+    public static void onLivingDamagePost(net.neoforged.neoforge.event.entity.living.LivingDamageEvent.Post event) {
+        // Item#hurtEnemy only fires for PLAYER attacks, so a mob wielding the
+        // lit lithium blade never applied Hellfire. Mirror the blade's
+        // hurtEnemy behaviour (140 ticks, stacking) for non-player attackers.
+        if (event.getEntity().level().isClientSide)
+            return;
+        if (!(event.getSource().getEntity() instanceof net.minecraft.world.entity.LivingEntity attacker)
+                || attacker instanceof Player)
+            return;
+        if (!attacker.getMainHandItem().is(TFMGItems.LIT_LITHIUM_BLADE.get()))
+            return;
+        net.minecraft.world.entity.LivingEntity target = event.getEntity();
+        net.minecraft.world.effect.MobEffectInstance existing =
+                target.getEffect(com.drmangotea.tfmg.registry.TFMGMobEffects.HELLFIRE);
+        int duration = 140 + (existing != null ? existing.getDuration() : 0);
+        target.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                com.drmangotea.tfmg.registry.TFMGMobEffects.HELLFIRE, duration));
+    }
+
+    @SubscribeEvent
     public static void onPlayerLoggedOut(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
         // Must run on the SERVER: a player disconnecting while driving an
         // engine controller keeps this persistent flag otherwise and is then

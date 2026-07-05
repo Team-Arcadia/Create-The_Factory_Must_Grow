@@ -49,14 +49,29 @@ public class VoltageAlteringBlockEntity extends ElectricBlockEntity{
         return 100;
     }
 
+    /**
+     * Re-entrancy guard: getPowerUsage probes the controlled network, whose
+     * members' getPowerUsage can probe back through another bridge block
+     * (two electric switches + a diode wired in a ring). getNetworkPowerUsage
+     * only excludes the direct caller, so any cycle of 2+ bridges recursed
+     * until StackOverflowError and took the server down on every world load.
+     */
+    protected boolean computingPowerUsage = false;
+
     @Override
     public int getPowerUsage() {
+        if (computingPowerUsage)
+            return 0; // feedback loop: contribute nothing instead of recursing
         Direction facing = getDirection();
         if (level.getBlockEntity(getBlockPos().relative(facing)) instanceof IElectric be && be.getData().getId() != data.getId()) {
-            if (be.hasElectricitySlot(facing.getOpposite()))
-
-                return Math.max(be.getNetworkPowerUsage(this), 0);
-
+            if (be.hasElectricitySlot(facing.getOpposite())) {
+                computingPowerUsage = true;
+                try {
+                    return Math.max(be.getNetworkPowerUsage(this), 0);
+                } finally {
+                    computingPowerUsage = false;
+                }
+            }
         }
 
         return 0;

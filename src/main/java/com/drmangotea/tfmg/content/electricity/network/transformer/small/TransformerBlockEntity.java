@@ -88,14 +88,21 @@ public class TransformerBlockEntity extends VoltageAlteringBlockEntity {
 
     @Override
     public int getPowerUsage() {
+        // Same feedback-loop guard as VoltageAlteringBlockEntity: a ring of
+        // bridge blocks recursed through getNetworkPowerUsage until
+        // StackOverflowError.
+        if (computingPowerUsage)
+            return 0;
         Direction facing = getDirection();
 
         if (level.getBlockEntity(getBlockPos().relative(facing)) instanceof IElectric be && be.getData().getId() != data.getId()) {
             if (be.hasElectricitySlot(facing.getOpposite())) {
-
+                computingPowerUsage = true;
+                try {
                     return Math.max(be.getNetworkPowerUsage(this), 0);
-
-
+                } finally {
+                    computingPowerUsage = false;
+                }
             }
         }
 
