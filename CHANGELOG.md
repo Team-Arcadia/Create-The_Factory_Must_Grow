@@ -4,6 +4,22 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ---
 
+## [1.2.4] - 2026-08-01
+
+### Fixed
+
+- **The arc furnace no longer swallows its coal coke dust** (ticket #225) — `arc_furnace_steel` lists coal coke dust both as an ingredient and as a 90% result, which the vat treated as a non-consumed "catalyst": the dust stayed frozen in the input, never consumed and never emitted, so no amount of running could ever produce any. The catalyst shortcut is removed; the recipe now consumes its coke dust every cycle and re-emits it at the declared 90% chance, a net loss of 10% per run.
+- **The Industrial Mixer no longer eats a stack of mixer blades** (ticket #225) — Inserting a blade replaced the player's entire held stack with a single item, so anyone holding several freshly crafted blades lost the remainder on insertion, which reads as "the blade will not go in". Only one blade is taken now, and whatever was previously installed goes back to the hand, the inventory, or the ground.
+- **The Blast Stove survives a relog** (ticket #227) — Create's `FluidTankBlockEntity#refreshCapability` is package-private, so the stove's same-named method never actually overrode it: after a reload every non-controller block kept serving the empty tanks its constructor had built, killing every pipe on the multiblock, starting with the heated-air output on top, until a block was broken and replaced. The stove now refreshes its own handlers on the first tick following each read.
+
+### Correctifs
+
+- **Le four à arc n'avale plus sa poussière de coke** (ticket #225) — `arc_furnace_steel` déclare la poussière de coke à la fois comme ingrédient et comme résultat à 90 %, ce que la cuve traitait comme un « catalyseur » non consommé : la poussière restait figée dans l'entrée, jamais consommée ni jamais produite, si bien qu'aucune durée de fonctionnement ne pouvait en sortir. Le raccourci catalyseur est supprimé ; la recette consomme désormais sa poussière à chaque cycle et la réémet selon les 90 % annoncés, soit une perte nette de 10 % par passage.
+- **Le mixeur industriel ne dévore plus une pile de pales** (ticket #225) — Insérer une pale remplaçait toute la pile tenue par le joueur par un seul item : quiconque tenait plusieurs pales fraîchement fabriquées perdait le reste au moment de l'insertion, ce qui se lit comme « la pale ne rentre pas ». Une seule pale est désormais prélevée, et la pièce précédemment installée retourne dans la main, dans l'inventaire ou au sol.
+- **Le fourneau à air chaud survit à une reconnexion** (ticket #227) — `FluidTankBlockEntity#refreshCapability` de Create est package-private : la méthode de même nom du fourneau ne l'a donc jamais réellement surchargée. Après un rechargement, chaque bloc non contrôleur continuait à exposer les réservoirs vides construits par son constructeur, ce qui tuait tous les tuyaux du multibloc, à commencer par la sortie d'air chaud du sommet, jusqu'à casser et replacer un bloc. Le fourneau rafraîchit maintenant ses propres handlers au premier tick suivant chaque lecture.
+
+---
+
 ## [1.2.3] - 2026-07-05
 
 ### Added
