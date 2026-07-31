@@ -55,7 +55,11 @@ public class IndustrialMixerBlock extends KineticBlock implements IBE<Industrial
 
             if(be.setMixerMode(stack, true)) {
 
-                player.setItemInHand(hand, mixerMode.item);
+                stack.shrink(1);
+                if (stack.isEmpty())
+                    player.setItemInHand(hand, mixerMode.item.copy());
+                else if (!mixerMode.item.isEmpty() && !player.getInventory().add(mixerMode.item.copy()))
+                    player.drop(mixerMode.item.copy(), false);
                 be.setMixerMode(stack, false);
                 return ItemInteractionResult.SUCCESS;
             }

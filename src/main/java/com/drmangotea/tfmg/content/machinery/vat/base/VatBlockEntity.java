@@ -635,15 +635,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
 
                 ItemStack itemStack = output.rollOutput(level.random);
 
-                // Catalyst: an output that is also one of this recipe's own
-                // ingredients (e.g. the 90%-recovered coal_coke_dust in
-                // arc_furnace_steel) is left untouched in the input instead of
-                // piling up in the output. Pairs with the skip in the
-                // input-consumption loop below, so the item stays constant and
-                // the recipe runs continuously once seeded — no manual loop-back.
-                if (isItemCatalyst(activeRecipe, itemStack))
-                    continue;
-
                 boolean handled = false;
                 for (int i = 0; i < outputInventory.getSlots(); i++) {
                     ItemStack stackInSlot = outputInventory.getStackInSlot(i);
@@ -669,9 +660,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             }
             //item input
             for (Ingredient ingredient : activeRecipe.getIngredients()) {
-                // Don't consume a catalyst ingredient (one the recipe re-emits).
-                if (isIngredientCatalyst(activeRecipe, ingredient))
-                    continue;
                 int needed = ingredient.getItems().length > 0 ? ingredient.getItems()[0].getCount() : 1;
                 for (int i = 0; i < inputInventory.getSlots(); i++) {
                     ItemStack stackInInv = inputInventory.getStackInSlot(i);
@@ -717,31 +705,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
     }
 
     /**
-     * A recipe "catalyst" is an item that appears both as an ingredient and as
-     * a result (e.g. coal_coke_dust in arc_furnace_steel). Such items are left
-     * untouched — neither consumed from the input nor re-emitted to the output —
-     * so the recipe sustains itself on a single seeded stack instead of starving
-     * while its recovered copies pile up uselessly in the output.
-     */
-    private static boolean isItemCatalyst(VatMachineRecipe r, ItemStack resultStack) {
-        if (resultStack.isEmpty())
-            return false;
-        for (Ingredient ingredient : r.getIngredients())
-            if (ingredient.test(resultStack))
-                return true;
-        return false;
-    }
-
-    private static boolean isIngredientCatalyst(VatMachineRecipe r, Ingredient ingredient) {
-        for (ProcessingOutput out : r.getRollableResults()) {
-            ItemStack stack = out.getStack();
-            if (!stack.isEmpty() && ingredient.test(stack))
-                return true;
-        }
-        return false;
-    }
-
-    /**
      * Simulate placing every item + fluid result of the recipe to make sure
      * the outputs can absorb them. Returns true only if every output fits.
      * Mirrors the actual placement order: items first (merge into a same-item
@@ -762,9 +725,6 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         for (ProcessingOutput out : r.getRollableResults()) {
             ItemStack stack = out.getStack();
             if (stack.isEmpty())
-                continue;
-            // Catalysts are never emitted to the output, so they need no space.
-            if (isItemCatalyst(r, stack))
                 continue;
             int needed = stack.getCount();
             int placed = -1;
