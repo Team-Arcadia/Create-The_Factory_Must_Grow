@@ -59,6 +59,16 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
     private static final Object HotBlastRecipesKey = new Object();
     private static final int SYNC_RATE = 8;
     public int timer = 0;
+    // FluidTankBlockEntity#refreshCapability is package-private, so the
+    // same-named method below does NOT override it: the parent's own
+    // updateCapability hook in super.tick() only ever rebuilds the parent's
+    // fluidCapability field, never this stove's primary/secondary handlers.
+    // Those need their own deferred refresh after every read, or a reloaded
+    // slave keeps serving the tanks its constructor built while controller was
+    // still null — its own, permanently empty ones. Every pipe on the
+    // multiblock then goes dead, the heated-air output on top first of all,
+    // until a block is broken and replaced to force a formMulti.
+    private boolean refreshStoveCapability;
 
     public BlastStoveBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -107,6 +117,11 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
         // no longer shadowed. Running them here as well would process the
         // same state twice per tick.
         super.tick();
+
+        if (refreshStoveCapability) {
+            refreshStoveCapability = false;
+            refreshCapability();
+        }
 
 
         if (isController() && !primaryInputInventory.isEmpty() && !secondaryInputInventory.isEmpty() && primaryOutputInventory.getSpace() != 0 && secondaryOutputInventory.getSpace() != 0) {
@@ -326,6 +341,11 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
         // Missing key reads as 0, matching the previous behavior of old saves.
         timer = compound.getInt("Timer");
 
+        // Deferred to the next tick rather than refreshed here: the controller
+        // BE is not necessarily loaded yet at read time, and
+        // handlerForCapability() silently falls back to this BE's own tanks
+        // whenever getControllerBE() comes back null.
+        refreshStoveCapability = true;
 
         if (!clientPacket)
             return;
