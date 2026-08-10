@@ -956,6 +956,7 @@
   "tfmg.goggles.engine.cooling_fluid": "Cooling Fluid: %s",
   "tfmg.goggles.engine.fuel_consumption": "Fuel Consumption: %s mB/s",
   "tfmg.goggles.engine.next_component": "   Next Component: %s",
+  "tfmg.goggles.engine.no_signal": "No redstone signal — the engine will not run",
   "tfmg.goggles.engine.oil": "Oil: %s",
   "tfmg.goggles.engine.pistons_missing": "Pistons Missing",
   "tfmg.goggles.engine.rpm": "Speed: %s RPM",

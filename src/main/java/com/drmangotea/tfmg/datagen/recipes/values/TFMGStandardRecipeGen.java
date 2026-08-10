@@ -875,6 +875,14 @@ public class TFMGStandardRecipeGen extends TFMGRecipeProvider {
             .viaShapeless(b -> b
                     .requires(TFMGBlocks.STEEL_GEARBOX)),
 
+    // The way back. Create ships both directions for its own gearbox and a
+    // one-way conversion is a trap: a player who converts one by mistake has no
+    // route back and simply loses the block.
+    STEEL_GEARBOX_FROM_VERTICAL = create(TFMGBlocks.STEEL_GEARBOX).withSuffix("_from_vertical")
+            .unlockedBy(TFMGItems.STEEL_INGOT::get)
+            .viaShapeless(b -> b
+                    .requires(TFMGItems.STEEL_VERTICAL_GEARBOX)),
+
     REBAR_PILE = create(TFMGBlocks.REBAR_PILE)
             .unlockedBy(TFMGItems.REBAR::get)
             .viaShaped(b -> b
