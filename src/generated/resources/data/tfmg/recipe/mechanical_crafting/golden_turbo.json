@@ -1,0 +1,34 @@
+{
+  "type": "create:mechanical_crafting",
+  "accept_mirrored": false,
+  "category": "misc",
+  "key": {
+    "C": {
+      "tag": "c:ingots/constantan"
+    },
+    "G": {
+      "item": "minecraft:gold_ingot"
+    },
+    "N": {
+      "tag": "c:plates/nickel"
+    },
+    "T": {
+      "item": "tfmg:turbo"
+    },
+    "V": {
+      "item": "tfmg:turbine_blade"
+    }
+  },
+  "pattern": [
+    " GVG ",
+    "GNCNG",
+    "VCTCV",
+    "GNCNG",
+    " GVG "
+  ],
+  "result": {
+    "count": 1,
+    "id": "tfmg:golden_turbo"
+  },
+  "show_notification": false
+}

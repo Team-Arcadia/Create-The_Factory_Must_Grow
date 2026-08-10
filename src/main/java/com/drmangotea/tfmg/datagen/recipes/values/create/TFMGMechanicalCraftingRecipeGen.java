@@ -16,7 +16,27 @@ public class TFMGMechanicalCraftingRecipeGen extends MechanicalCraftingRecipeGen
 
     GeneratedRecipe
 
-            ENGINE_CONTROLLER = create(TFMGBlocks.ENGINE_CONTROLLER::get)
+            // Top of the engine upgrade tree: torque x1.4 and, unlike the plain
+            // turbo, no fuel efficiency penalty. It shipped with no recipe of
+            // any kind, so it was creative-only despite being fully implemented.
+            // Built ON the plain turbo so that upgrade becomes a step rather
+            // than a dead end, and priced with parts nothing else consumed:
+            // turbine blades, nickel sheets and constantan.
+            GOLDEN_TURBO = create(TFMGItems.GOLDEN_TURBO::get)
+            .recipe(b -> b
+                    .key('G', Items.GOLD_INGOT)
+                    .key('V', TFMGItems.TURBINE_BLADE)
+                    .key('N', nickelSheet())
+                    .key('C', constantanIngot())
+                    .key('T', TFMGItems.TURBO)
+                    .patternLine(" GVG ")
+                    .patternLine("GNCNG")
+                    .patternLine("VCTCV")
+                    .patternLine("GNCNG")
+                    .patternLine(" GVG ")
+                    .disallowMirrored()),
+
+    ENGINE_CONTROLLER = create(TFMGBlocks.ENGINE_CONTROLLER::get)
             .recipe(b -> b
                     .key('R', rubber())
                     .key('S', shaft())

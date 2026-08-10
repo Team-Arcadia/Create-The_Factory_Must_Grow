@@ -8,6 +8,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ### Added
 
+- **The Golden Turbo can be built** — The best engine upgrade in the mod, torque ×1.4 with none of the plain turbo's ×0.7 fuel penalty, shipped fully implemented but with no recipe of any kind: it existed only in creative. It is now a 5×5 mechanical crafting recipe built around a plain turbo, so that upgrade becomes a step in the tree instead of a dead end, plated in gold and packed with turbine blades, nickel plate and constantan. Those three had no consumer anywhere in the mod.
 - **Rebar Concrete Pillar and Rebar Concrete Floor** (ticket #244) — The two dried counterparts the rebar family was missing. Each keeps the footprint of its rebar version and uses the same concrete texture as the rest of the rebar concrete family. The pillar also keeps its orientation, so one placed horizontally no longer dries standing upright.
 
 ### Fixed
@@ -39,6 +40,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ### Ajouts
 
+- **Le Golden Turbo est fabricable** — La meilleure amélioration de moteur du mod, couple ×1.4 sans le malus de consommation ×0.7 du turbo standard, était entièrement implémentée mais sans la moindre recette : elle n'existait qu'en créatif. C'est désormais une recette de mechanical crafting en 5×5 construite autour d'un turbo standard, ce qui fait de cette amélioration une étape de progression plutôt qu'un cul-de-sac, plaquée d'or et garnie de pales de turbine, de plaques de nickel et de constantan. Ces trois composants n'avaient aucun consommateur dans tout le mod.
 - **Pilier en béton armé et Sol en béton armé** (ticket #244) — Les deux contreparties séchées qui manquaient à la famille armature. Chacune conserve l'emprise de sa version armature et utilise la même texture de béton que le reste de la famille béton armé. Le pilier conserve aussi son orientation, si bien qu'un pilier posé à l'horizontale ne sèche plus à la verticale.
 
 ### Performance
