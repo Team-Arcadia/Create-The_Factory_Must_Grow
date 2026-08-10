@@ -222,6 +222,27 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
                     .style(net.minecraft.ChatFormatting.RED)
                     .forGoggles(tooltip, 1);
 
+        // Say WHY nothing is charging. In input mode getChargingRate also gates
+        // on the scroll value, which is the output-voltage setting: a converter
+        // left at a high setpoint in output mode and then wrenched to input
+        // silently refuses to charge on a lower-voltage network, with no hint
+        // that the dial is the reason.
+        if (isInput() && getChargingRate() == 0) {
+            String reason;
+            if (energy.getEnergyStored() >= getMaxCapacity())
+                reason = "Not charging: storage full";
+            else if (getData().getVoltage() < voltageGenerated.getValue())
+                reason = "Not charging: network at " + getData().getVoltage()
+                        + " V, dial requires " + voltageGenerated.getValue() + " V";
+            else if (data.notEnoughPower)
+                reason = "Not charging: network has no spare power";
+            else
+                reason = "Not charging";
+            TFMGLang.text(reason)
+                    .style(net.minecraft.ChatFormatting.RED)
+                    .forGoggles(tooltip, 1);
+        }
+
         TFMGTexts.electricalCapacity(energy.getEnergyStored()).forGoggles(tooltip, 1);
         TFMGTexts.chargingRate(getChargingRate()).forGoggles(tooltip, 1);
         TFMGTexts.electricalMaxCapacity(getMaxCapacity()).forGoggles(tooltip, 1);
