@@ -411,6 +411,8 @@
   "block.tfmg.raw_nickel_block": "Block of Raw Nickel",
   "block.tfmg.rebar_block": "Rebar Block",
   "block.tfmg.rebar_concrete": "Rebar Concrete",
+  "block.tfmg.rebar_concrete_floor": "Rebar Concrete Floor",
+  "block.tfmg.rebar_concrete_pillar": "Rebar Concrete Pillar",
   "block.tfmg.rebar_concrete_slab": "Rebar Concrete Slab",
   "block.tfmg.rebar_concrete_stairs": "Rebar Concrete Stairs",
   "block.tfmg.rebar_concrete_wall": "Rebar Concrete Wall",

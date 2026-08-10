@@ -1995,6 +1995,35 @@ public class TFMGBlocks {
                     .register();
 
 
+    // Dried counterparts of the rebar floor and pillar. Both used to dry into a
+    // plain rebar concrete cube because no shaped variant existed, so encasing
+    // either one silently destroyed its shape.
+    public static final BlockEntry<RebarConcreteFloorBlock> REBAR_CONCRETE_FLOOR =
+            REGISTRATE.block("rebar_concrete_floor", RebarConcreteFloorBlock::new)
+                    .initialProperties(() -> Blocks.STONE)
+                    .properties(BlockBehaviour.Properties::noOcclusion)
+                    .properties(BlockBehaviour.Properties::requiresCorrectToolForDrops)
+                    .properties(p -> p.strength(12f, 1200f))
+                    .transform(pickaxeOnly())
+                    .tag(BlockTags.NEEDS_STONE_TOOL)
+                    .blockstate((ctx, prov) -> prov.simpleBlock(ctx.getEntry(), AssetLookup.partialBaseModel(ctx, prov)))
+                    .item()
+                    .transform(customItemModel())
+                    .register();
+
+    public static final BlockEntry<RebarConcretePillarBlock> REBAR_CONCRETE_PILLAR =
+            REGISTRATE.block("rebar_concrete_pillar", RebarConcretePillarBlock::new)
+                    .initialProperties(() -> Blocks.STONE)
+                    .properties(BlockBehaviour.Properties::noOcclusion)
+                    .properties(BlockBehaviour.Properties::requiresCorrectToolForDrops)
+                    .properties(p -> p.strength(12f, 1200f))
+                    .transform(pickaxeOnly())
+                    .tag(BlockTags.NEEDS_STONE_TOOL)
+                    .blockstate(BlockStateGen.directionalBlockProvider(true))
+                    .item()
+                    .transform(customItemModel())
+                    .register();
+
     public static final MaterialSet CONCRETE = generateConcrete(false);
     public static final MaterialSet REBAR_CONCRETE = generateConcrete(true);
 

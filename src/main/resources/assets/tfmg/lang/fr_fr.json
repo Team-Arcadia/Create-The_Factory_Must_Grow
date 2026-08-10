@@ -411,6 +411,8 @@
   "block.tfmg.raw_nickel_block": "Bloc de nickel brut",
   "block.tfmg.rebar_block": "Bloc d'armature",
   "block.tfmg.rebar_concrete": "Béton armé",
+  "block.tfmg.rebar_concrete_floor": "Sol en béton armé",
+  "block.tfmg.rebar_concrete_pillar": "Pilier en béton armé",
   "block.tfmg.rebar_concrete_slab": "Dalle de béton armé",
   "block.tfmg.rebar_concrete_stairs": "Escalier en béton armé",
   "block.tfmg.rebar_concrete_wall": "Muret en béton armé",

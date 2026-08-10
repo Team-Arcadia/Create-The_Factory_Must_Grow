@@ -59,7 +59,10 @@ public class RebarPillarBlock extends TFMGDirectionalBlock implements Concretelo
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource randomSource) {
-       tickDrying(level,state,TFMGBlocks.REBAR_CONCRETE.block.getDefaultState(),pos, randomSource);
+        // Carry the facing over: without it a horizontally placed pillar would
+        // dry standing upright.
+        tickDrying(level, state, TFMGBlocks.REBAR_CONCRETE_PILLAR.getDefaultState()
+                .setValue(FACING, state.getValue(FACING)), pos, randomSource);
     }
 
     @Override

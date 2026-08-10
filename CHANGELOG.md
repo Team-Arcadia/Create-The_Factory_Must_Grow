@@ -4,6 +4,26 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Rebar Concrete Pillar and Rebar Concrete Floor** (ticket #244) — The two dried counterparts the rebar family was missing. Each keeps the footprint of its rebar version and uses the same concrete texture as the rest of the rebar concrete family. The pillar also keeps its orientation, so one placed horizontally no longer dries standing upright.
+
+### Fixed
+
+- **Encasing a rebar pillar or a rebar floor no longer destroys its shape** (ticket #244) — Both dried into a full rebar concrete cube because no shaped variant existed for them, while rebar stairs and rebar walls already had theirs. They now dry into the two blocks above.
+
+### Ajouts
+
+- **Pilier en béton armé et Sol en béton armé** (ticket #244) — Les deux contreparties séchées qui manquaient à la famille armature. Chacune conserve l'emprise de sa version armature et utilise la même texture de béton que le reste de la famille béton armé. Le pilier conserve aussi son orientation, si bien qu'un pilier posé à l'horizontale ne sèche plus à la verticale.
+
+### Correctifs
+
+- **Enrober un pilier ou un sol d'armature ne détruit plus sa forme** (ticket #244) — Les deux séchaient en cube plein de béton armé faute de variante à la bonne forme, alors que l'escalier et le muret d'armature avaient déjà la leur. Ils sèchent désormais vers les deux blocs ci-dessus.
+
+---
+
 ## [1.2.4] - 2026-08-01
 
 ### Fixed
