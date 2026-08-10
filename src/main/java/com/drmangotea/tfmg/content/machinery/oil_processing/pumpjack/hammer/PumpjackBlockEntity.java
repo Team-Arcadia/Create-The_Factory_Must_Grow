@@ -356,6 +356,42 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
     @Override
     public void tick() {
         super.tick();
+
+        // Resolve the crank and base FIRST. Neither reference is persisted, so
+        // on the first tick after a chunk reload both are null even though the
+        // structure is perfectly intact — while "running" IS persisted. The
+        // completeness check further down then saw an incomplete machine and
+        // called disassemble(), whose own guard (!running) let it straight
+        // through, tearing down a working pumpjack: connectorDistance and angle
+        // reset to 0 and running set to false. The hammer hung in the air
+        // exactly as it does before the crank is installed, the crank kept
+        // spinning on its own kinetics, and the base kept pumping because it
+        // reads the crank's speed rather than the hammer's state. Stopping and
+        // restarting rotation could not recover it either, since nothing
+        // re-triggers assembly once running is false.
+        //
+        // Compare identity, not just type. After a chunk reload getBlockEntity
+        // hands back a NEW instance at the same position, so an instanceof test
+        // still saw "a crank is there" and kept the dead reference this field
+        // held: the hammer then wrote crankRadius and read heightModifier on a
+        // removed block entity, which goes nowhere. PumpjackBaseBlockEntity
+        // already validates its own cached hammer this way.
+        if (crank != null && (crank.isRemoved()
+                || (level.isLoaded(crank.getBlockPos()) && level.getBlockEntity(crank.getBlockPos()) != crank)))
+            crank = null;
+        if (base != null && (base.isRemoved()
+                || (level.isLoaded(base.getBlockPos()) && level.getBlockEntity(base.getBlockPos()) != base)))
+            base = null;
+        boolean rescan = refScanCooldown <= 0;
+        if (rescan)
+            refScanCooldown = 10;
+        else
+            refScanCooldown--;
+        if (connectorPosition != null && (crank == null || rescan))
+            crank = findCrank();
+        if (headPosition != null && (base == null || rescan))
+            base = findBase();
+
         if (!isRunning()) {
             if (findScanCooldown <= 0) {
                 findHeadAndConnector();
@@ -403,27 +439,6 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
                 headBaseDistance = Math.abs(base.getBlockPos().getY() - headPosition.getY());
             }
         }
-        // Compare identity, not just type. After a chunk reload getBlockEntity
-        // hands back a NEW instance at the same position, so the old instanceof
-        // test still saw "a crank is there" and kept the dead reference this
-        // field held: the hammer then wrote crankRadius and read heightModifier
-        // on a removed block entity, which goes nowhere. PumpjackBaseBlockEntity
-        // already validates its own cached hammer this way.
-        if (crank != null && (crank.isRemoved()
-                || (level.isLoaded(crank.getBlockPos()) && level.getBlockEntity(crank.getBlockPos()) != crank)))
-            crank = null;
-        if (base != null && (base.isRemoved()
-                || (level.isLoaded(base.getBlockPos()) && level.getBlockEntity(base.getBlockPos()) != base)))
-            base = null;
-        boolean rescan = refScanCooldown <= 0;
-        if (rescan)
-            refScanCooldown = 10;
-        else
-            refScanCooldown--;
-        if (connectorPosition != null && (crank == null || rescan))
-            crank = findCrank();
-        if (headPosition != null && (base == null || rescan))
-            base = findBase();
         prevAngle = angle;
         if (level.isClientSide)
             clientAngleDiff /= 2;
