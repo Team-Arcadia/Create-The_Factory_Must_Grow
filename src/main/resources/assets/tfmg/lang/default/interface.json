@@ -83,6 +83,7 @@
   "tfmg.goggles.engine.oil": "Oil: %s",
   "tfmg.goggles.engine.cooling_fluid": "Cooling Fluid: %s",
   "tfmg.goggles.engine.unfinished": "Engine Unfinished",
+  "tfmg.goggles.engine.no_signal": "No redstone signal — the engine will not run",
   "tfmg.goggles.engine.next_component": "   Next Component: %s",
   "tfmg.goggles.engine.pistons_missing": "Pistons Missing",
   "tfmg.goggles.engine.turbines_missing": "Turbines Missing",

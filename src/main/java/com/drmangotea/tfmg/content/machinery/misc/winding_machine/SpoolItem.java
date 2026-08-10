@@ -169,8 +169,16 @@ public class SpoolItem extends Item {
             if (stack.get(TFMGDataComponents.POSITION) != null) {
                 BlockPos posToConnect = BlockPos.of(stack.get(TFMGDataComponents.POSITION));
                 if (posToConnect.equals(pos)) {
-                    stack.set(TFMGDataComponents.POSITION, 0l);
-                    if (level.isClientSide)
+                    // REMOVE the stored endpoint, do not set it to 0. The check
+                    // above only asks whether the component is present, so a
+                    // stored 0 left the spool believing it had an endpoint at
+                    // (0,0,0): every later click tried to wire the connector to
+                    // the world origin and the spool linked nothing ever again.
+                    stack.remove(TFMGDataComponents.POSITION);
+                    // No isClientSide guard: the method already returned on the
+                    // client further up, so this branch is server-only and the
+                    // guard silently swallowed the message.
+                    if (player != null)
                         player.displayClientMessage(TFMGLang.translateDirect("wires.cant_connect_itself")
                                 .withStyle(ChatFormatting.YELLOW), true);
                     be.player = null;
@@ -209,9 +217,16 @@ public class SpoolItem extends Item {
                         return InteractionResult.PASS;
                     }
                     if (be.connections.contains(connection1) || otherBE.connections.contains(connection1)) {
-                        if (level.isClientSide)
+                        // Same as above: this branch only ever runs server-side,
+                        // so the old isClientSide guard meant the player was
+                        // never told, and the spool looked like it silently ate
+                        // wire for nothing.
+                        if (player != null)
                             player.displayClientMessage(TFMGLang.translateDirect("wires.connection_already_created")
                                     .withStyle(ChatFormatting.YELLOW), true);
+                        // Clear the stored endpoint too, otherwise the refused
+                        // selection stays armed and the next click retries it.
+                        stack.remove(TFMGDataComponents.POSITION);
                         be.player = null;
                         be.sendData();
                         be.setChanged();

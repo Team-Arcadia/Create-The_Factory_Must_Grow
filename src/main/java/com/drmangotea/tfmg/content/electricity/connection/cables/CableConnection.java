@@ -22,6 +22,49 @@ public class CableConnection {
         this.type = type;
     }
 
+    /**
+     * Two connections describe the same wire when they join the same pair of
+     * cable positions with the same cable type, whichever end is listed first.
+     *
+     * Without this the duplicate check in SpoolItem fell back to identity and
+     * therefore never matched: re-linking two connectors that were already
+     * wired added a second connection and charged the spool a second time.
+     *
+     * visible and blockPos1 are deliberately excluded. The two halves of a
+     * single wire disagree on both and still describe the same wire.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (!(o instanceof CableConnection other))
+            return false;
+        if (!java.util.Objects.equals(type, other.type))
+            return false;
+        return (samePos(pos1, other.pos1) && samePos(pos2, other.pos2))
+                || (samePos(pos1, other.pos2) && samePos(pos2, other.pos1));
+    }
+
+    private static boolean samePos(CablePos a, CablePos b) {
+        if (a == b)
+            return true;
+        if (a == null || b == null)
+            return false;
+        return a.x() == b.x() && a.y() == b.y() && a.z() == b.z();
+    }
+
+    @Override
+    public int hashCode() {
+        // Summed rather than ordered so both endpoint orderings hash alike.
+        return java.util.Objects.hashCode(type) + posHash(pos1) + posHash(pos2);
+    }
+
+    private static int posHash(CablePos p) {
+        if (p == null)
+            return 0;
+        return Double.hashCode(p.x()) ^ Double.hashCode(p.y()) ^ Double.hashCode(p.z());
+    }
+
     public CompoundTag saveConnection(){
         CompoundTag compoundTag = new CompoundTag();
 

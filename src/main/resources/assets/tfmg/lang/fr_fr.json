@@ -965,6 +965,7 @@
   "tfmg.goggles.engine.turbines_missing": "Turbines manquantes",
   "tfmg.goggles.engine.type": "Type : %s",
   "tfmg.goggles.engine.unfinished": "Moteur inachevé",
+  "tfmg.goggles.engine.no_signal": "Aucun signal de redstone — le moteur ne tournera pas",
   "tfmg.goggles.fluid_storage": "Stockage de fluide :",
   "tfmg.goggles.gauge.value": "   Tension mesurée :",
   "tfmg.goggles.generator.production": "Production d'énergie : %1$s fe/t",

@@ -139,6 +139,9 @@ public class TFMGTexts {
         public static LangBuilder lastRequirement(String type) {
             return TFMGLang.translate("goggles.engine."+type+"_missing").color(0xde5050);
         }
+        public static LangBuilder noSignal() {
+            return TFMGLang.translate("goggles.engine.no_signal").color(0xde5050);
+        }
         public static LangBuilder shift(String langKey) {
             return TFMGLang.translate("engine.shift", TFMGLang.translate(langKey));
         }

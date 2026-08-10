@@ -551,8 +551,19 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         TFMGTexts.Engine.torque(torque).forGoggles(tooltip);
         TFMGTexts.Engine.signal((int) (highestSignal*15)).forGoggles(tooltip);
         TFMGLang.number(engineNumber).style(ChatFormatting.DARK_GREEN).forGoggles(tooltip);
-        if (isController() && !nextComponent().isEmpty())
-            TFMGLang.text(nextComponent().getItems()[0].getDisplayName().getString()).forGoggles(tooltip);
+        // A missing component silently blocks canWork, so say so instead of
+        // dropping a bare item name into the tooltip with nothing to explain it.
+        // RegularEngineBlockEntity already words it this way; the engines that
+        // fall through to this shared tooltip were the ones left mute.
+        if (isController() && !nextComponent().isEmpty()) {
+            TFMGTexts.Engine.unfinished().forGoggles(tooltip);
+            TFMGTexts.Engine.nextComponent(nextComponent().getItems()[0]).forGoggles(tooltip);
+        } else if (isController() && highestSignal <= 0) {
+            // Fuel alone never starts an engine: rpm is a direct multiple of the
+            // redstone signal, so a fully built and fuelled engine sits at zero
+            // with nothing on screen pointing at the missing signal.
+            TFMGTexts.Engine.noSignal().forGoggles(tooltip);
+        }
 
         TFMGUtils.createFluidTooltip(this, tooltip);
 
