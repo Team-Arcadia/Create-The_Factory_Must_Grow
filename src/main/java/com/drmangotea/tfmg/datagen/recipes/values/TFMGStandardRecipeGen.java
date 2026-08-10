@@ -856,6 +856,14 @@ public class TFMGStandardRecipeGen extends TFMGRecipeProvider {
                     .pattern("OCO")
                     .pattern(" O ")),
 
+    // Mirrors Create's vertical_gearbox_from_conversion: the vertical variant is
+    // a separate item and had no recipe of any kind, so it could not be obtained
+    // outside creative even though the steel gearbox itself is craftable.
+    STEEL_VERTICAL_GEARBOX = create(TFMGItems.STEEL_VERTICAL_GEARBOX)
+            .unlockedBy(TFMGItems.STEEL_INGOT::get)
+            .viaShapeless(b -> b
+                    .requires(TFMGBlocks.STEEL_GEARBOX)),
+
     REBAR_PILE = create(TFMGBlocks.REBAR_PILE)
             .unlockedBy(TFMGItems.REBAR::get)
             .viaShaped(b -> b
