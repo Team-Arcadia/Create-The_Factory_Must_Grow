@@ -29,6 +29,7 @@ import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.drmangotea.tfmg.content.machinery.misc.air_intake.AirIntakeBlock.INVISIBLE;
 import static com.simibubi.create.content.kinetics.base.DirectionalKineticBlock.FACING;
@@ -55,6 +56,20 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
     protected FluidTank tankInventory;
     protected IFluidHandler fluidCapability;
 
+    /** Controller the exposed handler currently delegates to, and whether it has
+     *  been resolved once. refreshCapability only recomputes that delegation, so
+     *  it only has to run when the controller actually changes. */
+    private BlockPos capabilityController;
+    private boolean capabilityResolved = false;
+    private int syncedDiameter = -1;
+    /** Ticks since the last sync. The tank fills every tick but the client only
+     *  reads it for the goggle overlay; the spinning fan is animated locally. */
+    private int syncTimer = 0;
+    private static final int SYNC_INTERVAL = 10;
+    /** Millibuckets the tank must move before its own change callback syncs. */
+    private static final int TANK_SYNC_STEP = 100;
+    private int lastSyncedAmount = -1;
+
 
     public AirIntakeBlockEntity(BlockEntityType<?> typeIn, BlockPos pos, BlockState state) {
         super(typeIn, pos, state);
@@ -75,23 +90,46 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
     public void tick(){
         super.tick();
 
-    //if(!level.isClientSide) {
-        int production = ((int) maxShaftSpeed * ((diameter * diameter))) / 40;
-        if (tankInventory.getFluidAmount() + production <= tankInventory.getCapacity()) {
-            //tankInventory.fill(new FluidStack(TFMGFluids.AIR.getSource(), production), IFluidHandler.FluidAction.EXECUTE);
-            tankInventory.setFluid(new FluidStack(FluidHelper.convertToStill(TFMGFluids.AIR.get()), production + tankInventory.getFluidAmount()));
-           // if(controller!=null) {
-           //     ((AirIntakeBlockEntity) level.getBlockEntity(controller)).setChanged();
-           //     ((AirIntakeBlockEntity) level.getBlockEntity(controller)).sendData();
-           // }
+        // Producing air is server logic. The guard around it was commented out,
+        // so the client filled its own copy of the tank every tick and the
+        // amount it showed drifted from the server until a packet corrected it.
+        if (level != null && !level.isClientSide) {
+            int production = ((int) maxShaftSpeed * ((diameter * diameter))) / 40;
+            if (tankInventory.getFluidAmount() + production <= tankInventory.getCapacity()) {
+                tankInventory.setFluid(new FluidStack(FluidHelper.convertToStill(TFMGFluids.AIR.get()), production + tankInventory.getFluidAmount()));
+            }
         }
-   // }
         ////////////////
 
         if(isUsedByController) {
-            refreshCapability();
-            sendData();
-            setChanged();
+            // Structure state reaches the client only through this block, so a
+            // change to the controller or the diameter still syncs at once —
+            // the fan model is built from the diameter.
+            boolean structureChanged = !capabilityResolved
+                    || !Objects.equals(capabilityController, controller)
+                    || syncedDiameter != diameter;
+
+            if (structureChanged) {
+                capabilityResolved = true;
+                capabilityController = controller;
+                syncedDiameter = diameter;
+                // refreshCapability only recomputes the delegation to the
+                // controller's tank, so it has nothing to do until that
+                // controller changes. Running it every tick also meant
+                // invalidateCapabilities twenty times a second, which drops
+                // every neighbouring pipe's cached handler.
+                refreshCapability();
+                syncTimer = 0;
+                sendData();
+                setChanged();
+            } else if (++syncTimer >= SYNC_INTERVAL) {
+                // Nothing structural moved. The tank still creeps up every tick
+                // and the goggles want a current number, so keep a slow refresh
+                // instead of a packet and a chunk-dirty flag twenty times a second.
+                syncTimer = 0;
+                sendData();
+                setChanged();
+            }
         }
 
 
@@ -477,6 +515,18 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
 
     protected void onFluidStackChanged(FluidStack newFluidStack) {
             setChanged();
+
+            // The intake tops this tank up every tick, so syncing on every
+            // change was a packet per tick on top of the one the tick loop
+            // already sent. The client reads this only for the goggle overlay,
+            // so sync the empty/not-empty flip and then only once the amount has
+            // moved enough to be worth a packet.
+            int amount = newFluidStack.getAmount();
+            boolean emptinessFlipped = (amount == 0) != (lastSyncedAmount == 0);
+            if (!emptinessFlipped && lastSyncedAmount >= 0 && Math.abs(amount - lastSyncedAmount) < TANK_SYNC_STEP)
+                return;
+
+            lastSyncedAmount = amount;
             sendData();
            //if(((AirIntakeBlockEntity) level.getBlockEntity(controller))!=null) {
            //    ((AirIntakeBlockEntity) level.getBlockEntity(controller)).setChanged();
