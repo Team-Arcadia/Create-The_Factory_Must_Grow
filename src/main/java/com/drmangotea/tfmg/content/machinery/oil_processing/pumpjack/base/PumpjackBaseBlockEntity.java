@@ -103,20 +103,38 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
     }
 
     public void findDeposit() {
+        BlockPos previous = deposit;
         int minY = level.getMinBuildHeight();
         for (int y = this.getBlockPos().getY() - 1; y >= minY; y--) {
             BlockPos checkedPos = new BlockPos(this.getBlockPos().getX(), y, this.getBlockPos().getZ());
             BlockState state = level.getBlockState(checkedPos);
             if (state.is(TFMGBlocks.OIL_DEPOSIT.get())) {
                 deposit = checkedPos;
+                depositChanged(previous);
                 return;
             }
             if (!state.is(TFMGTags.TFMGBlockTags.INDUSTRIAL_PIPE.tag)) {
                 deposit = null;
+                depositChanged(previous);
                 return;
             }
         }
         deposit = null;
+        depositChanged(previous);
+    }
+
+    /**
+     * The goggle tooltip reads {@code deposit} to decide whether to say
+     * "Machine Invalid", and that tooltip renders on the client. The field was
+     * only ever written by this scan, which runs server-side, and was neither
+     * saved nor synced — so the client saw null forever and a perfectly healthy
+     * pumpjack always claimed to be invalid while it happily pumped oil.
+     */
+    private void depositChanged(BlockPos previous) {
+        if (java.util.Objects.equals(previous, deposit))
+            return;
+        setChanged();
+        sendData();
     }
 
     public void process() {
@@ -203,12 +221,18 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound,registries , clientPacket);
         tank.readFromNBT(registries,compound.getCompound("TankContent"));
+        // Carried in both the save and the sync packet: the client needs it for
+        // the goggle tooltip, and keeping it across a reload spares the server a
+        // downward rescan before the pumpjack reports itself valid again.
+        deposit = compound.contains("Deposit") ? BlockPos.of(compound.getLong("Deposit")) : null;
     }
 
     @Override
     public void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
 
         compound.put("TankContent", tank.writeToNBT(registries,new CompoundTag()));
+        if (deposit != null)
+            compound.putLong("Deposit", deposit.asLong());
         super.write(compound,registries , clientPacket);
     }
 
