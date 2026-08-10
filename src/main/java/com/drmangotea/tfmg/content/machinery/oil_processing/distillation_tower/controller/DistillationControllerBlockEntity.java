@@ -151,7 +151,13 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
         // single output instead of breaking the chain — all the still-
         // empty outputs keep receiving their fractions and the tank
         // drains proportionally to what was actually filled.
-        int consumption = recipe.getInputFluid().amount() / 6;
+        // Each output that actually gets filled drains its own share, so a full
+        // set consumes exactly the recipe's input. The divisor was hardcoded to
+        // six while the loop below runs once per output, so every recipe with
+        // fewer than six fractions burned less oil than it declared: the
+        // three-fraction light distillations ran on half the crude oil they
+        // were supposed to consume, which reads as the tower yielding double.
+        int consumption = recipe.getInputFluid().amount() / Math.max(1, recipe.getFluidResults().size());
         boolean anyFilled = false;
         for (int numero = 0; numero < outputs.size() && numero < recipe.getFluidResults().size(); numero++) {
             DistillationOutputBlockEntity output = outputs.get(numero);

@@ -298,7 +298,18 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     public void lazyTick() {
         super.lazyTick();
         if (isScanAreaLoaded()) {
+            int previousSize = cachedSize;
+            boolean wasReinforced = isReinforced;
             cachedSize = getSize();
+            // Push the rescan result out when it actually moved. Both values
+            // feed the goggle overlay, and nothing else here syncs them, so a
+            // structure that changed between two recipe events kept showing the
+            // height and reinforced status of its previous scan. Guarded on a
+            // change so an idle furnace does not send a packet every lazy tick.
+            if (!level.isClientSide && (cachedSize != previousSize || isReinforced != wasReinforced)) {
+                setChanged();
+                sendData();
+            }
         }
         onContentsChanged();
         collectItems();
@@ -437,8 +448,14 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
 
         tuyerePos = null;
 
-        if ((isValidWall(middlePos) == FurnaceBlockType.NONE))
+        // Every exit path below has to settle isReinforced. It is persisted and
+        // synced, so a path that left it untouched kept whatever the field was
+        // constructed with: a freshly placed output block reported "not
+        // reinforced" until an unrelated event happened to rescan and sync.
+        if ((isValidWall(middlePos) == FurnaceBlockType.NONE)) {
+            isReinforced = false;
             return 0;
+        }
 
         int size = 0;
 
@@ -486,6 +503,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
             }
             size++;
         }
+        isReinforced = normalAmount == 0 && reinforcedAmount > 0;
         return size;
     }
 

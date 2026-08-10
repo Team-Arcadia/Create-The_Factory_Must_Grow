@@ -55,12 +55,19 @@ public class IndustrialMixerBlock extends KineticBlock implements IBE<Industrial
 
             if(be.setMixerMode(stack, true)) {
 
+                // Resolve the new mode from the item being inserted, captured
+                // before the stack is decremented. Passing the leftover stack
+                // meant that inserting the last blade of a stack handed
+                // setMixerMode an empty one, and an empty stack matches
+                // MixerMode.NONE: the blade was consumed and the mixer stayed
+                // empty unless the player happened to hold several.
+                ItemStack inserted = stack.copyWithCount(1);
                 stack.shrink(1);
                 if (stack.isEmpty())
                     player.setItemInHand(hand, mixerMode.item.copy());
                 else if (!mixerMode.item.isEmpty() && !player.getInventory().add(mixerMode.item.copy()))
                     player.drop(mixerMode.item.copy(), false);
-                be.setMixerMode(stack, false);
+                be.setMixerMode(inserted, false);
                 return ItemInteractionResult.SUCCESS;
             }
         }
