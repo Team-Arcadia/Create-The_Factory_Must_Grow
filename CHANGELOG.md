@@ -23,9 +23,19 @@ All notable changes to Create: The Factory Must Grow are documented here.
 - **The spool walks the right connector run** (ticket #235) — When completing a link, the first endpoint was walked along the facing of the block just clicked instead of its own, so it could resolve to a different connector than the one the player selected or wander off the run. Each endpoint now follows its own facing.
 - **The accumulator no longer vanishes when taken with a wrench** (ticket #236) — Its drop was built in `onDestroyedByPlayer`, a hook that only fires when a player mines the block, while `getDrops` was stubbed out to return nothing. Create's wrench reads `getDrops` and then destroys the block without dropping, so a sneak-wrenched accumulator was deleted along with the energy it held. The drop is now produced by `getDrops` itself, which covers mining, the wrench, explosions and pistons alike, and still carries the stored charge.
 
+### Performance
+
+- **The blast furnace stops running its server logic on the client** — Heat damage and ground-item collection both ran on either side. The client queried entities every tick for each working furnace, shrank `ItemEntity` stacks locally and filled inventories that the next sync packet overwrote, so dropped items flickered. Both paths are server-only now, with Ponder scenes still simulating.
+- **The transformer no longer spawns ghost coils** — Breaking the block spawned its coils on both sides. The spawn is server-only now, as in the mixer and the electrode holder, while the network update stays on both sides because the electrical simulation is mirrored by design.
+
 ### Ajouts
 
 - **Pilier en béton armé et Sol en béton armé** (ticket #244) — Les deux contreparties séchées qui manquaient à la famille armature. Chacune conserve l'emprise de sa version armature et utilise la même texture de béton que le reste de la famille béton armé. Le pilier conserve aussi son orientation, si bien qu'un pilier posé à l'horizontale ne sèche plus à la verticale.
+
+### Performance
+
+- **Le haut fourneau ne fait plus tourner sa logique serveur sur le client** — Les dégâts de chaleur et le ramassage des items au sol s'exécutaient des deux côtés. Le client interrogeait donc les entités à chaque tick pour chaque fourneau en fonctionnement, rétrécissait localement des `ItemEntity` et remplissait des inventaires que le paquet de synchronisation suivant écrasait, d'où des items qui clignotaient. Les deux chemins sont désormais réservés au serveur, les scènes Ponder continuant de simuler.
+- **Le transformateur ne fait plus apparaître de bobines fantômes** — La casse du bloc faisait apparaître les bobines des deux côtés. Le spawn est réservé au serveur, comme dans le mixeur et le porte-électrode ; la mise à jour du réseau reste exécutée des deux côtés, la simulation électrique étant volontairement mise en miroir.
 
 ### Correctifs
 

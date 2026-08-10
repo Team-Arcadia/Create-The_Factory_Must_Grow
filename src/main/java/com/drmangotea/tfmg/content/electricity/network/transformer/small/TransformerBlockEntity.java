@@ -75,13 +75,20 @@ public class TransformerBlockEntity extends VoltageAlteringBlockEntity {
     public void destroy() {
         super.destroy();
         BlockPos pos = this.getBlockPos();
-        if(!primaryCoil.isEmpty()){
-            ItemEntity item = new ItemEntity(level, pos.getX()+.5f,pos.getY()+.5f,pos.getZ()+.5f,primaryCoil);
-            level.addFreshEntity(item);
-        }
-        if(!secondaryCoil.isEmpty()){
-            ItemEntity item = new ItemEntity(level, pos.getX()+.5f,pos.getY()+.5f,pos.getZ()+.5f,secondaryCoil);
-            level.addFreshEntity(item);
+        // Spawning the coils is server logic, as in the mixer and the electrode
+        // holder. Unguarded it ran on the client too, which briefly showed item
+        // entities the server never created. updateInFront stays outside the
+        // guard: the electrical simulation is mirrored on both sides and the
+        // client network still has to learn this transformer is gone.
+        if (level != null && !level.isClientSide) {
+            if(!primaryCoil.isEmpty()){
+                ItemEntity item = new ItemEntity(level, pos.getX()+.5f,pos.getY()+.5f,pos.getZ()+.5f,primaryCoil);
+                level.addFreshEntity(item);
+            }
+            if(!secondaryCoil.isEmpty()){
+                ItemEntity item = new ItemEntity(level, pos.getX()+.5f,pos.getY()+.5f,pos.getZ()+.5f,secondaryCoil);
+                level.addFreshEntity(item);
+            }
         }
         updateInFront();
     }

@@ -330,6 +330,12 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
 
     public void hurtEntities() {
 
+        // Damage is server logic. Running it on the client also meant an entity
+        // query every tick of every working furnace purely to set fire ticks
+        // the server never agreed to.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
+
         List<LivingEntity> entities = level.getEntitiesOfClass(LivingEntity.class, new AABB(this.getBlockPos().relative(getBlockState().getValue(FACING).getOpposite()).above()));
 
         for (LivingEntity entity : entities) {
@@ -344,6 +350,13 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     }
 
     public void collectItems() {
+
+        // Consuming dropped items is server logic: on the client this shrank
+        // ItemEntity stacks and filled local inventories that the next sync
+        // packet overwrote, so items flickered away and came back. It also
+        // cost an entity query per lazy tick on every furnace in render range.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
 
         List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, new AABB(this.getBlockPos().relative(getBlockState().getValue(FACING).getOpposite()).above()));
 
