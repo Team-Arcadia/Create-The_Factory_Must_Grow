@@ -34,8 +34,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
-import net.neoforged.neoforge.items.wrapper.CombinedInvWrapper;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.wrapper.RecipeWrapper;
 
 import java.util.List;
@@ -51,7 +50,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
     public FluidTank primaryTank;
     public FluidTank secondaryTank;
     protected IFluidHandler fluidCapability;
-    public IItemHandlerModifiable itemCapability;
+    public IItemHandler itemCapability;
     public int fuel = 0;
     public int fuelConsumeTimer = 0;
     public float duration;
@@ -82,7 +81,7 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
         secondaryTank = new SmartFluidTank(4000, this::onFluidChanged);
 
 
-        itemCapability = new CombinedInvWrapper(inputInventory, fluxInventory);
+        itemCapability = new InputRouter();
         fluidCapability = new CombinedTankWrapper(primaryTank, secondaryTank);
     }
 
@@ -411,6 +410,90 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
                 // different item). Stop on this entity and try the next.
                 break;
             }
+        }
+    }
+
+    /**
+     * Accepts one stack the way collectItems accepts one dropped on the furnace:
+     * blast furnace fuel goes to the fuel counter, flux to the flux slot and
+     * anything else to the input slot. Returns whatever did not fit.
+     */
+    private ItemStack routeInsert(ItemStack stack, boolean simulate) {
+        if (stack.isEmpty())
+            return ItemStack.EMPTY;
+
+        if (stack.is(TFMGTags.TFMGItemTags.BLAST_FURNACE_FUEL.tag)) {
+            int moved = Math.min(Math.max(STORAGE_SPACE - fuel, 0), stack.getCount());
+            if (moved <= 0)
+                return stack;
+            if (!simulate) {
+                fuel += moved;
+                setChanged();
+                sendData();
+            }
+            return moved == stack.getCount() ? ItemStack.EMPTY : stack.copyWithCount(stack.getCount() - moved);
+        }
+
+        SmartInventory target = stack.is(TFMGTags.TFMGItemTags.FLUX.tag) ? fluxInventory : inputInventory;
+        ItemStack current = target.getItem(0);
+        if (!current.isEmpty() && !ItemStack.isSameItemSameComponents(current, stack))
+            return stack;
+
+        int limit = Math.min(stack.getMaxStackSize(), target.getSlotLimit(0));
+        int moved = Math.min(Math.max(limit - current.getCount(), 0), stack.getCount());
+        if (moved <= 0)
+            return stack;
+        if (!simulate) {
+            target.setItem(0, stack.copyWithCount(current.getCount() + moved));
+            setChanged();
+            sendData();
+        }
+        return moved == stack.getCount() ? ItemStack.EMPTY : stack.copyWithCount(stack.getCount() - moved);
+    }
+
+    /**
+     * Item capability exposed to funnels, hoppers and pipes.
+     *
+     * Both internal inventories are built with forbidInsertion, so the handler
+     * that used to be published here refused everything: the only way to load
+     * the furnace was to drop items on top of it and let collectItems pick them
+     * up, which is why it could not be automated. This routes an inserted stack
+     * exactly like a dropped one instead of letting an inserter drop ore into
+     * the flux slot.
+     *
+     * Extraction stays closed. The furnace has no item output — it produces
+     * fluids — and opening it would let a pipe pull the ore back out.
+     */
+    private class InputRouter implements IItemHandler {
+
+        @Override
+        public int getSlots() {
+            return 2;
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            return slot == 1 ? fluxInventory.getItem(0) : inputInventory.getItem(0);
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            return routeInsert(stack, simulate);
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return STORAGE_SPACE;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return routeInsert(stack, true).getCount() < stack.getCount();
         }
     }
 
