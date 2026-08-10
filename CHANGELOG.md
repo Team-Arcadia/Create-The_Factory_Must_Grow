@@ -4,6 +4,44 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ---
 
+## [1.2.6] - 2026-08-10
+
+Everything here comes from the first full singleplayer test pass on 1.2.5.
+
+### Added
+
+- **The steel vertical gearbox converts back** — Create ships both directions for its own gearbox; the steel variant only had the forward one, which made a one-way trap where converting by mistake simply lost the block.
+
+### Fixed
+
+- **The spool no longer bricks itself on a self-link** — Selecting the same connector twice reset the stored endpoint with `set(POSITION, 0L)`, while the guard above only asks whether the component is present. A stored zero is present, so the spool believed it held an endpoint at (0,0,0) and every later click tried to wire the connector to the world origin. It never linked anything again.
+- **The spool's refusal messages actually appear** — Both sat behind `if (level.isClientSide)` in a method that returns on the client thirty lines earlier, so the branch was server-only and the condition never true. Neither message had ever been sent, which is why adding the missing translation keys changed nothing.
+- **A duplicate link no longer eats wire** — `CableConnection` had no `equals`, so the duplicate check compared by identity and never matched: re-linking two already-wired connectors added a second connection and charged the spool again. Equality is now the unordered endpoint pair plus the cable type.
+- **Engines say why they will not start** — The shared tooltip dropped a bare item name into the overlay when a component was missing and said nothing at all when the redstone signal was zero. Speed is a direct multiple of that signal, so a fully built and fuelled engine sits at zero and looks broken. It now names the missing component and an absent signal, wording it as `RegularEngineBlockEntity` already did.
+- **The arc furnace keeps running on its recovered coke** (ticket #249) — A result that is also one of the recipe's own ingredients went to the output inventory, which no recipe reads, so `arc_furnace_steel` consumed its seeded dust and stalled while the recovery piled up in a slot nothing consumes. Such a result now returns to the input, and only after the consumption pass so the declared loss still applies.
+- **A lone accumulator works** (ticket #247) — The chain rebuild starts one step away from its seed, which is right for destruction but wrong for placement and refresh, where the block is still there. A single accumulator matched no sub-chain, was never promoted, and its storage and capability were never rebuilt.
+- **The pumpjack stops calling itself invalid while it pumps** — The goggle tooltip decides that from a field only ever written by the server-side deposit scan and present in neither `write` nor `read`, so the client held null forever.
+- **The pumpjack survives a reload** — `tick` checked completeness near its start but resolved the cached crank and base near its end. Neither reference is persisted, so the first tick after a chunk reload saw an incomplete machine and disassembled a working one, while `running` being persisted let `disassemble` past its own guard. The hammer hung in the air, the crank kept spinning on its own kinetics and the base kept pumping from the crank's speed.
+- **FE to TFMG conversion works** — `IElectric` asked each neighbouring source for a slot on the direction pointing *at* it, rather than the opposite face that actually touches. Sources answering on an axis are symmetric and hid the bug; the converter exposes one single face, so a correctly oriented one was never seen at all.
+
+### Ajouts
+
+- **Le boîtier d'engrenages vertical en acier se reconvertit** — Create fournit les deux sens pour son propre boîtier ; la variante acier n'avait que l'aller, ce qui en faisait un piège à sens unique où une conversion par erreur perdait le bloc.
+
+### Correctifs
+
+- **La bobine ne se bloque plus sur une auto-liaison** — Sélectionner deux fois le même connecteur remettait l'extrémité stockée à `set(POSITION, 0L)`, alors que le test au-dessus demande seulement si le composant est présent. Un zéro stocké l'est : la bobine croyait détenir une extrémité en (0,0,0) et tentait ensuite de relier chaque connecteur à l'origine du monde. Elle ne reliait plus jamais rien.
+- **Les messages de refus de la bobine s'affichent enfin** — Les deux étaient sous `if (level.isClientSide)` dans une méthode qui sort côté client trente lignes plus haut : la branche est serveur-only, la condition toujours fausse, aucun message n'avait jamais été envoyé. C'est pourquoi ajouter les clés de traduction manquantes n'avait rien changé.
+- **Une liaison en double ne consomme plus de fil** — `CableConnection` n'avait pas d'`equals` : la détection de doublon comparait par identité et ne matchait jamais, si bien que relier deux connecteurs déjà reliés ajoutait une seconde liaison et refacturait la bobine. L'égalité porte désormais sur la paire d'extrémités non ordonnée et le type de câble.
+- **Les moteurs disent pourquoi ils ne démarrent pas** — Le tooltip partagé lâchait un nom d'objet brut quand un composant manquait, et restait muet quand le signal de redstone était nul. Le régime étant un multiple direct de ce signal, un moteur complet et alimenté reste à zéro et paraît cassé. Il annonce maintenant le composant manquant et l'absence de signal, dans les mêmes termes que `RegularEngineBlockEntity` le faisait déjà.
+- **Le four à arc continue de tourner sur son coke récupéré** (ticket #249) — Un résultat qui est aussi un ingrédient de la recette partait dans l'inventaire de sortie, qu'aucune recette ne lit : `arc_furnace_steel` consommait sa poussière d'amorçage puis calait pendant que la récupération s'entassait dans un emplacement que rien ne consomme. Un tel résultat retourne désormais dans l'entrée, et seulement après la passe de consommation pour que la perte annoncée s'applique toujours.
+- **Un accumulateur isolé fonctionne** (ticket #247) — La reconstruction de chaîne démarre un bloc plus loin que sa graine, ce qui est correct pour une destruction mais faux à la pose et au rafraîchissement, où le bloc est toujours là. Un accumulateur seul ne correspondait à aucune sous-chaîne, n'était jamais promu, et ni son stockage ni sa capability n'étaient reconstruits.
+- **Le pumpjack ne se déclare plus invalide pendant qu'il pompe** — Le tooltip des lunettes en décidait depuis un champ alimenté uniquement par le scan de gisement côté serveur, absent de `write` comme de `read` : le client voyait null en permanence.
+- **Le pumpjack survit à un rechargement** — `tick` testait la complétude en tête mais résolvait la manivelle et la base en fin de méthode. Aucune de ces références n'est persistée : au premier tick après un rechargement de chunk, la machine paraissait incomplète et se démontait alors qu'elle fonctionnait, `running` étant persisté et laissant `disassemble` passer son propre garde. Le balancier restait en l'air, la manivelle continuait sur sa propre cinétique et la base continuait de pomper d'après sa vitesse.
+- **La conversion FE vers TFMG fonctionne** — `IElectric` demandait à chaque source voisine un connecteur dans la direction pointant *vers* elle, au lieu de la face opposée qui la touche réellement. Les sources répondant sur un axe sont symétriques et masquaient le défaut ; le convertisseur n'expose qu'une seule face, donc un convertisseur correctement orienté n'était jamais vu.
+
+---
+
 ## [1.2.5] - 2026-08-10
 
 ### Added
