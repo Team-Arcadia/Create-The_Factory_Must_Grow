@@ -8,6 +8,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ### Added
 
+- **Synthetic leather is worth pressing** — It is pressed from a rubber sheet and carries the `c:leathers` tag, but nothing consumes that tag: vanilla recipes ask for `minecraft:leather` by item and no TFMG recipe uses leather at all, so the sheet was a dead end. A shapeless conversion turns it into leather, making rubber a renewable source. Its sibling synthetic string needed nothing: `c:strings` is already consumed by both pumpjack recipes.
 - **The Golden Turbo can be built** — The best engine upgrade in the mod, torque ×1.4 with none of the plain turbo's ×0.7 fuel penalty, shipped fully implemented but with no recipe of any kind: it existed only in creative. It is now a 5×5 mechanical crafting recipe built around a plain turbo, so that upgrade becomes a step in the tree instead of a dead end, plated in gold and packed with turbine blades, nickel plate and constantan. Those three had no consumer anywhere in the mod.
 - **Rebar Concrete Pillar and Rebar Concrete Floor** (ticket #244) — The two dried counterparts the rebar family was missing. Each keeps the footprint of its rebar version and uses the same concrete texture as the rest of the rebar concrete family. The pillar also keeps its orientation, so one placed horizontally no longer dries standing upright.
 
@@ -40,6 +41,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ### Ajouts
 
+- **Le cuir synthétique vaut la peine d'être pressé** — Il est pressé depuis une feuille de caoutchouc et porte le tag `c:leathers`, mais rien ne consomme ce tag : les recettes vanilla exigent `minecraft:leather` en dur et aucune recette de TFMG n'utilise de cuir, la feuille était donc un cul-de-sac. Une conversion shapeless la transforme en cuir, ce qui fait du caoutchouc une source renouvelable. Son homologue la ficelle synthétique n'avait besoin de rien : `c:strings` est déjà consommé par les deux recettes de pumpjack.
 - **Le Golden Turbo est fabricable** — La meilleure amélioration de moteur du mod, couple ×1.4 sans le malus de consommation ×0.7 du turbo standard, était entièrement implémentée mais sans la moindre recette : elle n'existait qu'en créatif. C'est désormais une recette de mechanical crafting en 5×5 construite autour d'un turbo standard, ce qui fait de cette amélioration une étape de progression plutôt qu'un cul-de-sac, plaquée d'or et garnie de pales de turbine, de plaques de nickel et de constantan. Ces trois composants n'avaient aucun consommateur dans tout le mod.
 - **Pilier en béton armé et Sol en béton armé** (ticket #244) — Les deux contreparties séchées qui manquaient à la famille armature. Chacune conserve l'emprise de sa version armature et utilise la même texture de béton que le reste de la famille béton armé. Le pilier conserve aussi son orientation, si bien qu'un pilier posé à l'horizontale ne sèche plus à la verticale.
 

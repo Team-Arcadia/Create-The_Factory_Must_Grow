@@ -859,6 +859,17 @@ public class TFMGStandardRecipeGen extends TFMGRecipeProvider {
     // Mirrors Create's vertical_gearbox_from_conversion: the vertical variant is
     // a separate item and had no recipe of any kind, so it could not be obtained
     // outside creative even though the steel gearbox itself is craftable.
+    // Synthetic leather is pressed from a rubber sheet and carries c:leathers,
+    // but nothing consumes that tag: vanilla asks for minecraft:leather by item
+    // and no TFMG recipe uses leather at all, so the pressed sheet was a dead
+    // end. Converting it makes rubber a renewable leather source, which is the
+    // whole point of a synthetic material. Its sibling synthetic_string needs
+    // no equivalent — c:strings is already consumed by both pumpjack recipes.
+    LEATHER_FROM_SYNTHETIC = create(() -> Items.LEATHER).withSuffix("_from_synthetic")
+            .unlockedBy(TFMGItems.SYNTHETIC_LEATHER::get)
+            .viaShapeless(b -> b
+                    .requires(TFMGItems.SYNTHETIC_LEATHER)),
+
     STEEL_VERTICAL_GEARBOX = create(TFMGItems.STEEL_VERTICAL_GEARBOX)
             .unlockedBy(TFMGItems.STEEL_INGOT::get)
             .viaShapeless(b -> b
