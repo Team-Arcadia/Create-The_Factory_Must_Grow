@@ -119,14 +119,20 @@ public class SmokestackBlockEntity extends SmartBlockEntity {
         if (tankInventory.isEmpty())
             return;
 
-
-        if (getBlockState().getValue(TOP)) {
-            tankInventory.drain(tankInventory.getSpace() < 1000 ? 50 : 10, IFluidHandler.FluidAction.EXECUTE);
-
+        // Arming the smoke timer stays on both sides: it is derived from the
+        // tank, which is synced, and the client needs it to keep animating.
+        if (getBlockState().getValue(TOP))
             smokeTimer = 40;
 
-        }
+        // Draining the stack and pushing CO2 upward is server logic. Running it
+        // on the client as well emptied the client's own copy of the tank, so
+        // the level shown drifted away from reality until the next sync packet
+        // happened to correct it.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
 
+        if (getBlockState().getValue(TOP))
+            tankInventory.drain(tankInventory.getSpace() < 1000 ? 50 : 10, IFluidHandler.FluidAction.EXECUTE);
 
         if (level.getBlockEntity(getBlockPos().above()) instanceof SmokestackBlockEntity be) {
 
@@ -145,9 +151,9 @@ public class SmokestackBlockEntity extends SmartBlockEntity {
 
         compound.put("TankContent", tankInventory.writeToNBT(registries,new CompoundTag()));
 
-
-        compound.putBoolean("Active", smokeTimer > 0);
-
+        // "Active" used to be written here and read nowhere, in every save and
+        // every sync packet. The smoke timer is derived from the tank, which is
+        // already synced, so the flag had no reader to gain.
 
     }
 

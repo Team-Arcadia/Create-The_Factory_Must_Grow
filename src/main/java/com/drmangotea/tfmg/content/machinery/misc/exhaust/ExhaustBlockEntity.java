@@ -106,11 +106,20 @@ public class ExhaustBlockEntity extends SmartBlockEntity implements IHaveGoggleI
         if (direction == Direction.WEST)
             if(spawnsSmoke)
                 makeParticles(level, this.getBlockPos(), 5);
+        // Arming the smoke timer stays on both sides: it is derived from the
+        // tank, which is synced, and the client needs it to keep animating.
         if(tankInventory.getFluidAmount()>0) {
 
             smokeTimer = 100;
             spawnsSmoke = true;
         }
+
+        // Venting the exhaust is server logic. Running it on the client too
+        // emptied the client's own copy of the tank, so the amount shown by the
+        // goggles drifted until the next sync packet corrected it.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
+
             if(tankInventory.getSpace()>700) {
                 tankInventory.drain(100, IFluidHandler.FluidAction.EXECUTE);
             }else tankInventory.drain(10, IFluidHandler.FluidAction.EXECUTE);
@@ -142,7 +151,9 @@ public class ExhaustBlockEntity extends SmartBlockEntity implements IHaveGoggleI
 
         compound.put("TankContent", tankInventory.writeToNBT(registries,new CompoundTag()));
 
-        compound.putBoolean("Active", smokeTimer>0);
+        // "Active" used to be written here and read nowhere, in every save and
+        // every sync packet. The smoke timer is derived from the tank, which is
+        // already synced, so the flag had no reader to gain.
     }
 
     public static void makeParticles(Level level, BlockPos pos, int particleRotation) {
