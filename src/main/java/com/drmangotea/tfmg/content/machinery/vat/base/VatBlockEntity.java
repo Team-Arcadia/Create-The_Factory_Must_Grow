@@ -631,9 +631,24 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             }
             //item output
 
+            // Recovered ingredients, returned to the input after consumption.
+            List<ItemStack> recovered = new ArrayList<>();
+
             for (ProcessingOutput output : activeRecipe.getRollableResults()) {
 
                 ItemStack itemStack = output.rollOutput(level.random);
+
+                // A result that is also one of this recipe's own ingredients —
+                // the 90%-recovered coal_coke_dust of arc_furnace_steel — is set
+                // aside and returned to the INPUT once the consumption loop
+                // below has run. Returning it here instead would hand it straight
+                // back to that loop and cancel the loss; sending it to the output
+                // is what made the recipe stall, since it consumed its seed stack
+                // while the recovery piled up in a slot nothing reads.
+                if (isItemAlsoAnIngredient(activeRecipe, itemStack)) {
+                    recovered.add(itemStack);
+                    continue;
+                }
 
                 boolean handled = false;
                 for (int i = 0; i < outputInventory.getSlots(); i++) {
@@ -671,6 +686,32 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                     }
                 }
             }
+            // Recovered ingredients go back now that consumption has run, so a
+            // cycle really does cost its full ingredient and give back only the
+            // declared chance. If the input has no room the stack falls through
+            // to the output rather than being voided.
+            for (ItemStack back : recovered) {
+                if (returnToInput(back))
+                    continue;
+                for (int i = 0; i < outputInventory.getSlots(); i++) {
+                    ItemStack inSlot = outputInventory.getStackInSlot(i);
+                    if (!inSlot.isEmpty() && inSlot.is(back.getItem())
+                            && inSlot.getCount() + back.getCount() <= inSlot.getMaxStackSize()) {
+                        inSlot.setCount(inSlot.getCount() + back.getCount());
+                        back = ItemStack.EMPTY;
+                        break;
+                    }
+                }
+                if (back.isEmpty())
+                    continue;
+                for (int i = 0; i < outputInventory.getSlots(); i++) {
+                    if (outputInventory.getStackInSlot(i).isEmpty()) {
+                        outputInventory.setStackInSlot(i, back);
+                        break;
+                    }
+                }
+            }
+
             //fluid output — cascade across multiple output segments
             SmartFluidTankBehaviour.TankSegment[] segs = outputTank.getTanks();
             for (FluidStack fluidStack : activeRecipe.getFluidResults()) {
@@ -702,6 +743,42 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
         } else {
             timer++;
         }
+    }
+
+    /** True when this result is also one of the recipe's own ingredients. */
+    private static boolean isItemAlsoAnIngredient(VatMachineRecipe r, ItemStack resultStack) {
+        if (resultStack.isEmpty())
+            return false;
+        for (Ingredient ingredient : r.getIngredients())
+            if (ingredient.test(resultStack))
+                return true;
+        return false;
+    }
+
+    /**
+     * Puts a recovered ingredient back into the input inventory. Returns false
+     * when there is no room, in which case the caller falls back to the output
+     * rather than voiding it.
+     */
+    private boolean returnToInput(ItemStack stack) {
+        for (int i = 0; i < inputInventory.getSlots(); i++) {
+            ItemStack inSlot = inputInventory.getStackInSlot(i);
+            if (inSlot.isEmpty())
+                continue;
+            if (!ItemStack.isSameItemSameComponents(inSlot, stack))
+                continue;
+            if (inSlot.getCount() + stack.getCount() > inSlot.getMaxStackSize())
+                continue;
+            inSlot.setCount(inSlot.getCount() + stack.getCount());
+            return true;
+        }
+        for (int i = 0; i < inputInventory.getSlots(); i++) {
+            if (inputInventory.getStackInSlot(i).isEmpty()) {
+                inputInventory.setStackInSlot(i, stack);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
