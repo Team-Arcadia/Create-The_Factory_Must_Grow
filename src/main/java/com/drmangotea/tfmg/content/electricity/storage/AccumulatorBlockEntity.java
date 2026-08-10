@@ -90,7 +90,7 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
     @Override
     public void onPlaced() {
         super.onPlaced();
-        rebuildChainAround(getBlockPos(), 0);
+        rebuildChainIncludingSelf(0);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
     }
 
     public void refreshController() {
-        rebuildChainAround(getBlockPos(), 0);
+        rebuildChainIncludingSelf(0);
     }
 
     /**
@@ -121,6 +121,28 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
      * into the side facing.opposite (the controller side, where storage
      * lives anyway).
      */
+    /**
+     * Rebuild from a block that is STILL THERE.
+     *
+     * rebuildChainAround deliberately starts one step away from the seed
+     * because it is written for the destroy case, where the block is already
+     * gone and the chain has split in two. Reusing it from place, refresh and
+     * controller-refresh made the block skip itself: a lone accumulator matched
+     * no sub-chain at all, so it was never promoted, its storage was never
+     * rebuilt and refreshCapability never ran — its charge simply went nowhere.
+     *
+     * Scanning from this block covers both cases: rebuildSubChainStartingFrom
+     * walks facing.opposite to find the tail and then sums forward, so a chain
+     * of one and a chain of ten are handled the same way.
+     */
+    private void rebuildChainIncludingSelf(int donatedEnergy) {
+        if (level == null)
+            return;
+        if (rebuildSubChainStartingFrom(getBlockPos(), getBlockState().getValue(FACING), donatedEnergy))
+            return;
+        rebuildChainAround(getBlockPos(), donatedEnergy);
+    }
+
     private void rebuildChainAround(BlockPos seed, int donatedEnergy) {
         if (level == null)
             return;
@@ -198,9 +220,9 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
         // could fire on the same chain across different events (lazyTick vs
         // place/destroy) and leave members pointing at conflicting
         // controllers — the resulting drift was the source of 'discharge
-        // doesn't work'. Route everything through rebuildChainAround so a
-        // single canonical pass picks the tail and resets every member.
-        rebuildChainAround(getBlockPos(), 0);
+        // doesn't work'. Route everything through one canonical pass that picks
+        // the tail and resets every member, this block included.
+        rebuildChainIncludingSelf(0);
     }
 
     public void refreshCapability() {
