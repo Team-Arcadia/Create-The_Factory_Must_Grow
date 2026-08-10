@@ -522,7 +522,8 @@
   "block.tfmg.zinc_truss": "Treillis en zinc",
   "create.goggles.item_storage": "Stockage d'objets :",
   "create.recipe.advanced_distillation": "Distillation avancée",
-  "create.recipe.assembly.winding": "Enrouler une bobine",
+  "tfmg.recipe.assembly.winding": "Enrouler une bobine",
+  "tfmg.recipe.assembly.polarizing": "Polariser",
   "create.recipe.casting": "Coulée",
   "create.recipe.chemical_vat": "Cuve chimique",
   "create.recipe.coking": "Cokéfaction",
@@ -1179,5 +1180,8 @@
   "tfmg.voltage": "Tension : %1$s",
   "tfmg.winding_machine.header": "Enrouleuse",
   "tfmg.winding_machine.turn_percentage": "Pourcentage de tours autorisés (sur 1000)",
-  "tfmg.wires.removed_data": "Données supprimées"
+  "tfmg.wires.removed_data": "Données supprimées",
+  "tfmg.wires.cant_connect_itself": "Un connecteur ne peut pas être relié à lui-même",
+  "tfmg.wires.connection_already_created": "Ces connecteurs sont déjà reliés entre eux",
+  "tfmg.traffic_light.timer": "Durée du cycle"
 }

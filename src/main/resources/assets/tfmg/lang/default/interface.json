@@ -140,7 +140,8 @@
   "tfmg.tooltip.cylinder": "Supported Fuels:",
   "tfmg.tooltip.fluid_item": "Fluid Amount: %1$s",
 
-  "create.recipe.assembly.winding": "Wind a Spool",
+  "tfmg.recipe.assembly.winding": "Wind a Spool",
+  "tfmg.recipe.assembly.polarizing": "Polarize",
   "create.recipe.distillation": "Distillation",
   "create.recipe.advanced_distillation": "Advanced Distillation",
   "create.recipe.industrial_blasting": "Industrial Blasting",
@@ -242,6 +243,10 @@
   "effect.tfmg.hellfire": "Hellfire",
 
   "tfmg.wires.removed_data": "Data Removed",
+  "tfmg.wires.cant_connect_itself": "A connector cannot be wired to itself",
+  "tfmg.wires.connection_already_created": "These connectors are already wired together",
+
+  "tfmg.traffic_light.timer": "Cycle Duration",
 
   "tfmg.oil_hammer.reserves": "Oil Reserves: %1$s",
 
