@@ -161,7 +161,12 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
             return getControllerBE().hasTwoShafts();
         if (this.getBlockState().getValue(ENGINE_STATE) == SHAFT) {
             BlockPos pos = getBlockPos().relative(this.getBlockState().getValue(SHAFT_FACING).getOpposite(), engineLength() );
-            if (level.getBlockState(pos).getValue(ENGINE_STATE) == SHAFT)
+            // The far end is derived from engines.size(), so a half-built or
+            // partially broken engine can point this at air. getValue would then
+            // throw out of the stress calculation, which runs on the kinetic
+            // path; a block without the property is simply not a second shaft.
+            BlockState farEnd = level.getBlockState(pos);
+            if (farEnd.hasProperty(ENGINE_STATE) && farEnd.getValue(ENGINE_STATE) == SHAFT)
                 return true;
         }
         return false;

@@ -145,7 +145,16 @@ public class SpoolItem extends Item {
 
         if (Objects.equals(cableTypeKey, TFMG.asResource("empty")))
             return InteractionResult.PASS;
-        Direction direction = level.getBlockState(pos).getValue(FACING);
+        // Nothing above guarantees the clicked block is a cable connector, and
+        // BlockState#getValue throws when the property is absent. FACING here is
+        // BlockStateProperties.FACING, which most blocks do not carry (a chest
+        // uses HORIZONTAL_FACING, a different property), so right-clicking an
+        // ordinary block with a wound spool threw straight out of useOn — on the
+        // server, since the client already returned above.
+        BlockState clickedState = level.getBlockState(pos);
+        if (!clickedState.hasProperty(FACING))
+            return InteractionResult.PASS;
+        Direction direction = clickedState.getValue(FACING);
         for (int i = 0; i < 64; i++) {
             if (level.getBlockEntity(pos.relative(direction)) instanceof CableConnectorBlockEntity) {
                 pos = pos.relative(direction);
