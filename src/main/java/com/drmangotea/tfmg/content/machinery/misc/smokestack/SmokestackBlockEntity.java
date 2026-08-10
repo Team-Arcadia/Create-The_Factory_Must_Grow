@@ -31,6 +31,12 @@ public class SmokestackBlockEntity extends SmartBlockEntity {
 
     int smokeTimer = 0;
 
+    /** Millibuckets the tank must move before another sync packet is worth it. */
+    private static final int SYNC_STEP = 100;
+    /** Amount at the last packet sent, -1 until the first one. Not persisted:
+     *  a fresh block entity simply syncs on its first change. */
+    private int lastSyncedAmount = -1;
+
 
     public FluidTank tankInventory;
 
@@ -88,9 +94,20 @@ public class SmokestackBlockEntity extends SmartBlockEntity {
             return;
 
         setChanged();
+
+        // A running stack drains every tick, so syncing on every change sent a
+        // packet per tick to every client in range. The client needs exactly two
+        // things from this tank: whether it is empty, which decides if smoke
+        // keeps spawning, and a readable amount for the goggles. Always sync the
+        // empty/not-empty flip, otherwise only once the amount has moved enough
+        // to be worth a packet.
+        int amount = newFluidStack.getAmount();
+        boolean emptinessFlipped = (amount == 0) != (lastSyncedAmount == 0);
+        if (!emptinessFlipped && lastSyncedAmount >= 0 && Math.abs(amount - lastSyncedAmount) < SYNC_STEP)
+            return;
+
+        lastSyncedAmount = amount;
         sendData();
-
-
     }
 
     public static void makeParticles(Level level, BlockPos pos) {
