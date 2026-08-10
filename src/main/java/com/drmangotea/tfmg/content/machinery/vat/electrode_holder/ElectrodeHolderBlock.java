@@ -33,8 +33,19 @@ public class ElectrodeHolderBlock extends Block implements IBE<ElectrodeHolderBl
             if(stack.is(stackInside.getItem()))
                 return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
             if(be.setElectrode(stack, true)) {
-                player.setItemInHand(hand, electrode.getStack());
-                be.setElectrode(stack, false);
+                // Take a single electrode instead of swallowing the whole held
+                // stack, and resolve the new electrode from the inserted item
+                // captured beforehand: setElectrode matches nothing for an
+                // empty stack, so reading the decremented stack would keep the
+                // previous electrode while consuming the new one.
+                ItemStack inserted = stack.copyWithCount(1);
+                ItemStack previous = electrode.getStack();
+                stack.shrink(1);
+                if (stack.isEmpty())
+                    player.setItemInHand(hand, previous);
+                else if (!previous.isEmpty() && !player.getInventory().add(previous))
+                    player.drop(previous, false);
+                be.setElectrode(inserted, false);
                 return ItemInteractionResult.SUCCESS;
             }
             if (player.isShiftKeyDown() && player.getItemInHand(hand).isEmpty()) {

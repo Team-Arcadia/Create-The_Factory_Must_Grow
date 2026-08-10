@@ -48,10 +48,17 @@ public class TransformerBlock extends TFMGHorizontalDirectionalBlock implements 
 
             if(inHand.is(TFMGItems.ELECTROMAGNETIC_COIL.get())){
                 if(coil.isEmpty()) {
+                    // Install a single-item copy and take one off the stack.
+                    // Assigning inHand directly parked the player's entire
+                    // stack in the coil slot and kept it aliased to the stack
+                    // the hand still referenced, so a player holding several
+                    // coils installed all of them at once and the slot ended up
+                    // with a count the transformer never expects.
+                    ItemStack installed = inHand.copyWithCount(1);
                     if(primary){
-                        be.primaryCoil = inHand;
-                    }else be.secondaryCoil = inHand;
-                    player.setItemInHand(hand,ItemStack.EMPTY);
+                        be.primaryCoil = installed;
+                    }else be.secondaryCoil = installed;
+                    inHand.shrink(1);
                     withBlockEntityDo(level, pos, TransformerBlockEntity::updateCoils);
                     return ItemInteractionResult.SUCCESS;
                 }
