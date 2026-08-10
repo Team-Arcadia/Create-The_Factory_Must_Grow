@@ -463,7 +463,14 @@ public interface IElectric {
                         && !(src instanceof VoltageAlteringBlockEntity)) {
                     if (src.getData().getId() != getData().getId())
                         if (src.getOutputVoltage() != 0)
-                            if (src.hasElectricitySlot(direction)) {
+                            // The neighbour touches us through the OPPOSITE face:
+                            // "direction" points from here to it. Asking it for a
+                            // slot on "direction" only ever matched sources whose
+                            // slot happens to be symmetric on an axis, like the
+                            // accumulator. The converter exposes one single face,
+                            // so a correctly oriented one was never seen and
+                            // FE->TFMG published no voltage at all.
+                            if (src.hasElectricitySlot(direction.getOpposite())) {
                                 voltageGeneration = Math.max(voltageGeneration, src.getOutputVoltage());
                                 getData().getsOutsidePower = true;
                             }
@@ -505,7 +512,11 @@ public interface IElectric {
                         && src.canWork()) {
                     if (src.getData().getId() != getData().getId())
                         if (src.getOutputVoltage() != 0)
-                            if (src.hasElectricitySlot(direction)) {
+                            // Same opposite-face correction as in voltageGeneration:
+                            // without it a single-face source published no power
+                            // either, so even a converter that did expose voltage
+                            // would have been treated as able to deliver nothing.
+                            if (src.hasElectricitySlot(direction.getOpposite())) {
                                 int cachedGen = src.getData().networkPowerGeneration;
                                 int maxOut = src.getMaxPowerOutput();
                                 int available = cachedGen > 0 ? Math.min(maxOut, cachedGen) : maxOut;
