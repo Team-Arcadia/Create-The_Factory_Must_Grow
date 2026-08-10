@@ -134,6 +134,10 @@ public class PolarizerBlockEntity extends ElectricBlockEntity implements IHaveGo
     }
 
     public void performRecipe(PolarizingRecipe recipe) {
+        // A datapack recipe declaring no item result would throw out of the
+        // machine tick rather than simply not matching.
+        if (recipe.getRollableResults().isEmpty())
+            return;
         ItemStack stack = recipe.getRollableResults().get(0).rollOutput(level.random);
         inventory.setStackInSlot(0, stack);
         TFMGUtils.spawnElectricParticles(level, getBlockPos());

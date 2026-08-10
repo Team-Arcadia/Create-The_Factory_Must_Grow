@@ -257,6 +257,11 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         // Generic winding recipe path (sequenced assembly etc.).
         if (recipe == null)
             return;
+        // Both exits of this branch take result 0. A datapack recipe declaring
+        // no item result would throw out of the machine tick rather than simply
+        // not matching, so refuse it here instead.
+        if (recipe.getRollableResults().isEmpty())
+            return;
         // Resistor / coil items must NEVER take the generic branch; their
         // dedicated branches above are the only paths that should drain
         // their spool. The generic branch runs amountWinded++ which is

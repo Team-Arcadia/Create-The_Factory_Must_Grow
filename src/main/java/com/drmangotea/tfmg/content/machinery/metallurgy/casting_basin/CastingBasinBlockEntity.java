@@ -84,6 +84,10 @@ public class CastingBasinBlockEntity extends SmartBlockEntity implements IHaveGo
         // craft. Original 144 mB recipes work without modification.
         if (recipe == null || !recipe.getIngrenient().test(tank.getFluid()))
             findRecipe();
+        // A datapack recipe declaring no item result would throw below rather
+        // than simply not matching, and it would take the basin's tick with it.
+        if (recipe != null && recipe.getRollableResults().isEmpty())
+            recipe = null;
         if (recipe != null) {
             int needed = recipe.getIngrenient().amount();
             if (tank.getFluidAmount() >= needed && inventory.isEmpty()) {
