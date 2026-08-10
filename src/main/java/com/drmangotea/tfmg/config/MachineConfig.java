@@ -9,7 +9,13 @@ public class MachineConfig extends ConfigBase {
 
     public final ConfigFloat electricMotorInternalResistance = f(30, 0, "electricMotorInternalResistance", Comments.electricMotorInternalResistance);
     public final ConfigInt cokeOvenMaxSize = i(5, 1, "cokeOvenMaxSize", Comments.cokeOvenMaxSize);
-    public final ConfigFloat FEtoWattTickConversionRate = f(1, 0, "FEtoWattTickConversionRate", Comments.FEtoWattTickConversionRate);
+    // Minimum is positive because this value is a DIVISOR in the accumulator and
+    // converter energy paths. At 0 the float division yields Infinity and the
+    // cast to int lands on Integer.MAX_VALUE, so a single tick filled or drained
+    // the whole storage and the FE conversion silently stopped making sense.
+    // Kept fractional-friendly rather than clamped to 1 so rates below one FE
+    // per watt-tick remain configurable.
+    public final ConfigFloat FEtoWattTickConversionRate = f(1, 0.001f, "FEtoWattTickConversionRate", Comments.FEtoWattTickConversionRate);
 
 
     public final ConfigInt electrolysisMinimumCurrent = i(5, 1, "electrolysisMinimumCurrent", Comments.electrolysisMinimumCurrent);

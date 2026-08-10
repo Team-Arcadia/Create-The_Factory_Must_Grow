@@ -403,12 +403,18 @@ public class PumpjackBlockEntity extends GeneratingKineticBlockEntity
                 headBaseDistance = Math.abs(base.getBlockPos().getY() - headPosition.getY());
             }
         }
-        if (crank != null && level.isLoaded(crank.getBlockPos()))
-            if (!(level.getBlockEntity(crank.getBlockPos()) instanceof PumpjackCrankBlockEntity))
-                crank = null;
-        if (base != null && level.isLoaded(base.getBlockPos()))
-            if (!(level.getBlockEntity(base.getBlockPos()) instanceof PumpjackBaseBlockEntity))
-                base = null;
+        // Compare identity, not just type. After a chunk reload getBlockEntity
+        // hands back a NEW instance at the same position, so the old instanceof
+        // test still saw "a crank is there" and kept the dead reference this
+        // field held: the hammer then wrote crankRadius and read heightModifier
+        // on a removed block entity, which goes nowhere. PumpjackBaseBlockEntity
+        // already validates its own cached hammer this way.
+        if (crank != null && (crank.isRemoved()
+                || (level.isLoaded(crank.getBlockPos()) && level.getBlockEntity(crank.getBlockPos()) != crank)))
+            crank = null;
+        if (base != null && (base.isRemoved()
+                || (level.isLoaded(base.getBlockPos()) && level.getBlockEntity(base.getBlockPos()) != base)))
+            base = null;
         boolean rescan = refScanCooldown <= 0;
         if (rescan)
             refScanCooldown = 10;
