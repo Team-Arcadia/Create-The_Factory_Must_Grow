@@ -9,17 +9,14 @@ import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 
-import java.util.Collections;
 import java.util.List;
 
 public class AccumulatorBlock extends TFMGDirectionalBlock implements IBE<AccumulatorBlockEntity> {
@@ -35,23 +32,20 @@ public class AccumulatorBlock extends TFMGDirectionalBlock implements IBE<Accumu
         withBlockEntityDo(level, pos, be -> be.setCapacity(stack));
     }
 
+    /**
+     * Carries the stored energy into the dropped item. This has to live here
+     * rather than in onDestroyedByPlayer: that hook only fires when a player
+     * mines the block, while every other removal path (the Create wrench,
+     * explosions, pistons) reads Block#getDrops. IWrenchable#onSneakWrenched in
+     * particular collects getDrops and then calls destroyBlock without dropping,
+     * so an accumulator taken with a wrench used to vanish outright.
+     */
     @Override
     public List<ItemStack> getDrops(BlockState p_287732_, LootParams.Builder p_287596_) {
-        return Collections.emptyList();
-    }
-
-
-
-    @Override
-    public boolean onDestroyedByPlayer(BlockState state, Level level, BlockPos pos, Player player, boolean willHarvest, FluidState fluid) {
-        if(!player.isCreative()&&level.getBlockEntity(pos) instanceof AccumulatorBlockEntity be) {
-            ItemStack item = TFMGBlocks.ACCUMULATOR.asItem().getDefaultInstance();
-            item.set(TFMGDataComponents.ACCUMULATOR_STORAGE, be.energy.getEnergyStored());
-            ItemEntity itemToSpawn = new ItemEntity((Level) level, pos.getX() + 0.5f, pos.getY() + 0.5f, pos.getZ() + 0.5f, item);
-            if (itemToSpawn.getItem().getCount() > 0)
-                level.addFreshEntity(itemToSpawn);
-        }
-        return super.onDestroyedByPlayer(state, level, pos, player, willHarvest, fluid);
+        ItemStack stack = TFMGBlocks.ACCUMULATOR.asItem().getDefaultInstance();
+        if (p_287596_.getOptionalParameter(LootContextParams.BLOCK_ENTITY) instanceof AccumulatorBlockEntity be)
+            stack.set(TFMGDataComponents.ACCUMULATOR_STORAGE, be.energy.getEnergyStored());
+        return List.of(stack);
     }
 
     @Override

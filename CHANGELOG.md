@@ -13,6 +13,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 ### Fixed
 
 - **Encasing a rebar pillar or a rebar floor no longer destroys its shape** (ticket #244) — Both dried into a full rebar concrete cube because no shaped variant existed for them, while rebar stairs and rebar walls already had theirs. They now dry into the two blocks above.
+- **The accumulator no longer vanishes when taken with a wrench** (ticket #236) — Its drop was built in `onDestroyedByPlayer`, a hook that only fires when a player mines the block, while `getDrops` was stubbed out to return nothing. Create's wrench reads `getDrops` and then destroys the block without dropping, so a sneak-wrenched accumulator was deleted along with the energy it held. The drop is now produced by `getDrops` itself, which covers mining, the wrench, explosions and pistons alike, and still carries the stored charge.
 
 ### Ajouts
 
@@ -21,6 +22,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 ### Correctifs
 
 - **Enrober un pilier ou un sol d'armature ne détruit plus sa forme** (ticket #244) — Les deux séchaient en cube plein de béton armé faute de variante à la bonne forme, alors que l'escalier et le muret d'armature avaient déjà la leur. Ils sèchent désormais vers les deux blocs ci-dessus.
+- **L'accumulateur ne disparaît plus quand on le retire à la clé** (ticket #236) — Son drop était construit dans `onDestroyedByPlayer`, un hook qui ne se déclenche que lorsqu'un joueur mine le bloc, tandis que `getDrops` était neutralisé et ne renvoyait rien. La clé de Create lit `getDrops` puis détruit le bloc sans drop : un accumulateur retiré à la clé était donc supprimé avec l'énergie qu'il contenait. Le drop est désormais produit par `getDrops` lui-même, ce qui couvre aussi bien le minage que la clé, les explosions et les pistons, et conserve toujours la charge stockée.
 
 ---
 
