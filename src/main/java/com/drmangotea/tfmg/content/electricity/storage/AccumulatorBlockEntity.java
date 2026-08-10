@@ -270,12 +270,11 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
             refreshNextTick = false;
         }
 
+        // Charging and discharging stay mutually exclusive for the tick, as the
+        // early return used to enforce, so that the push below runs either way.
         if (getData().getVoltage() > TFMGConfigs.common().machines.accumulatorVoltage.get() * length) {
             energy.receiveEnergy((int) (getChargingRate() / TFMGConfigs.common().machines.FEtoWattTickConversionRate.get()), false);
-
-            return;
-        }
-        if (canPower()) {
+        } else if (canPower()) {
 
             int energyToExtract = data.networkPowerGeneration == 0 ? getNetworkPowerUsage() : (int) Math.max(0, Math.max(((float) powerGeneration() / (float) data.networkPowerGeneration) * (float) getNetworkPowerUsage(), 0));
             energyToExtract /= TFMGConfigs.common().machines.FEtoWattTickConversionRate.get();
@@ -284,6 +283,37 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
                 updateNextTick();
         }
 
+        pushForgeEnergy();
+    }
+
+    /**
+     * Feeds stored FE to adjacent consumers. Exposing the energy capability
+     * alone only served machines and cables that pull; a passive consumer
+     * received nothing, which read as "the accumulator gives no FE" unless the
+     * player switched their cable to pull mode. Mirrors the converter's push.
+     */
+    private void pushForgeEnergy() {
+        if (level == null || level.isClientSide || energy.getEnergyStored() <= 0)
+            return;
+        for (Direction direction : Direction.values()) {
+            // Never push out of a TFMG electricity slot: those faces carry the
+            // mod's own network, not Forge Energy.
+            if (hasElectricitySlot(direction))
+                continue;
+            if (energy.getEnergyStored() <= 0)
+                break;
+            IEnergyStorage neighbour = level.getCapability(
+                    Capabilities.EnergyStorage.BLOCK,
+                    worldPosition.relative(direction), direction.getOpposite());
+            if (neighbour == null || !neighbour.canReceive())
+                continue;
+            int simulated = neighbour.receiveEnergy(energy.getEnergyStored(), true);
+            if (simulated <= 0)
+                continue;
+            int extracted = energy.extractEnergy(simulated, false);
+            if (extracted > 0)
+                neighbour.receiveEnergy(extracted, false);
+        }
     }
 
     @Override

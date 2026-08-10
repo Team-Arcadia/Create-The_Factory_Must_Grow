@@ -25,6 +25,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -168,12 +169,21 @@ public class SpoolItem extends Item {
                     be.setChanged();
                     return InteractionResult.SUCCESS;
                 }
-                for (int i = 0; i < 64; i++) {
-                    if (level.getBlockEntity(posToConnect.relative(direction)) instanceof CableConnectorBlockEntity) {
-                        posToConnect = posToConnect.relative(direction);
+                // Walk the stored endpoint along ITS OWN facing. This used to
+                // reuse "direction", the facing of the block just clicked, so
+                // the first endpoint was walked in a direction belonging to an
+                // unrelated connector and could resolve to the wrong block or
+                // wander off the run entirely.
+                BlockState otherState = level.getBlockState(posToConnect);
+                if (otherState.hasProperty(FACING)) {
+                    Direction otherDirection = otherState.getValue(FACING);
+                    for (int i = 0; i < 64; i++) {
+                        if (level.getBlockEntity(posToConnect.relative(otherDirection)) instanceof CableConnectorBlockEntity) {
+                            posToConnect = posToConnect.relative(otherDirection);
 
-                    } else break;
+                        } else break;
 
+                    }
                 }
                 if (level.getBlockEntity(posToConnect) instanceof CableConnectorBlockEntity otherBE) {
                     //CableConnectorBlockEntity connectedBe1 = pos.asLong()>posToConnect.asLong() ? otherBE : be;
