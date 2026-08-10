@@ -4,7 +4,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ---
 
-## [Unreleased]
+## [1.2.5] - 2026-08-10
 
 ### Added
 
