@@ -138,8 +138,20 @@ public class PolarizerBlockEntity extends ElectricBlockEntity implements IHaveGo
         // machine tick rather than simply not matching.
         if (recipe.getRollableResults().isEmpty())
             return;
-        ItemStack stack = recipe.getRollableResults().get(0).rollOutput(level.random);
-        inventory.setStackInSlot(0, stack);
+        // Both sides reach this - tick() charges the capacitors on the client
+        // too, so the gauge keeps animating between syncs - but each side may
+        // only do its own half. The client used to craft into its local copy of
+        // the inventory, and with a rolled output it did not even pick the same
+        // item the server did, so the result flickered until the next sync
+        // corrected it. The casting basin, firebox and winding machine were
+        // taken off the client for exactly this; the polarizer was missed.
+        //
+        // The particles stay unguarded on purpose: addParticle does nothing on
+        // a server level, so moving them behind the guard would silence them.
+        if (level != null && !level.isClientSide) {
+            ItemStack stack = recipe.getRollableResults().get(0).rollOutput(level.random);
+            inventory.setStackInSlot(0, stack);
+        }
         TFMGUtils.spawnElectricParticles(level, getBlockPos());
         capacitorPercentage = 0;
     }
