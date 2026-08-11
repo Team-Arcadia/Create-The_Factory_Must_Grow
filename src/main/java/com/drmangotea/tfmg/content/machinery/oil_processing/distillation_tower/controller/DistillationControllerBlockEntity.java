@@ -281,13 +281,28 @@ public class DistillationControllerBlockEntity extends SmartBlockEntity implemen
     //}
 
     public ArrayList<DistillationOutputBlockEntity> getOutputsCached() {
-        if (cachedOutputs == null || outputsCacheCooldown <= 0) {
+        if (cachedOutputs == null || outputsCacheCooldown <= 0 || !cachedOutputsStillValid()) {
             cachedOutputs = getOutputs();
             outputsCacheCooldown = 20;
         } else {
             outputsCacheCooldown--;
         }
         return cachedOutputs;
+    }
+
+    /**
+     * The cache is rebuilt on a 20-tick timer, so for up to a second after a
+     * player breaks a stage — or after the stages' chunk unloads while the
+     * controller stays loaded, which a tower straddling a chunk border does —
+     * the controller still counted the missing stage towards outputCount and
+     * pushed its fraction into a block entity detached from the world, where
+     * the fluid simply disappeared. Six references, checked once per tick.
+     */
+    private boolean cachedOutputsStillValid() {
+        for (DistillationOutputBlockEntity output : cachedOutputs)
+            if (output.isRemoved())
+                return false;
+        return true;
     }
 
     public void invalidateOutputsCache() {
