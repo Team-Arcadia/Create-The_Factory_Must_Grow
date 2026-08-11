@@ -4,6 +4,58 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ---
 
+## [Unreleased]
+
+Everything here comes from the full 169-test pass on 1.2.6.
+
+### Fixed
+
+- **The vat no longer crashes the game when its output fills up** — The item-output loop merged a result into any output slot holding the same item, with no stack-limit test, while the `canFitAllOutputs` pre-flight it mirrors does check the limit and had already reserved an empty slot for that stack. The result poured into the full slot instead, and the count grew past 64 and then past 99, where `ItemStack`'s codec range-checks it: the block entity could no longer serialise and the game crashed on the next sync. Reported on aluminium nuggets and on rubber sheets.
+- **An accumulator keeps its charge when placed** — `setCapacity` wrote the item's stored energy straight into the storage, but the field initializer runs before `length = 1` is assigned, so a fresh block entity carries a capacity of zero and `setEnergy` clamped the whole charge away. A block placed onto an existing column is also a slave whose own storage the chain zeroes on its next pass.
+- **The winding machine no longer grants a step for free** — A spool with no turns left, or one that never carried a turn count, took a branch that finished the recipe outright without even checking the spool matched. In a sequenced assembly that advanced the transitional item without a single turn being wound and put the whole sequence out of phase, which is why the potentiometer asked for a steel cogwheel where the winding machine was due.
+- **The converter names the right port for each mode** — Both mode lines named the blue side, but the blockstate swaps to the rotated model in input mode, so the colour painted on the fixed electricity face flips with the mode. Wiring a converter exactly as the tooltip described left it converting nothing.
+- **The spool says why a run was refused and stays usable** — Not enough wire returned silently with the first endpoint still armed, so every later attempt retried the same over-long run and the spool looked dead.
+- **Two connectors carry one cable, whatever it is made of** — The duplicate check compared whole connections, cable type included, so a second wire of a different material between the same pair was not a duplicate. Three cables could stack on one pair.
+- **A compressor or freezer added to a formed vat is seen** — The vat only rescanned its attachment volume while its machine list was empty, and only on the server. Adding one to a vat that already had an attachment did nothing until a vat block was broken and replaced, and the client kept an empty list while the server had three compressors, which is why the readout flickered between two values.
+- **The cooling fluid bottle can be filled** — It only accepted Create's own fluid tank, so a TFMG steel tank, a vat, a pipe or a spout all did nothing and the bottle sat permanently at 0 mB. It goes through the fluid handler capability now and drains by fluid type.
+- **The lit lithium blade can be swung** — The burn-down ran on both sides once per tick, so the server rewrote a data component on the held stack twenty times a second and the container menu broadcast a slot packet for each one. The countdown is server-side and steps once a second for the same total burn time.
+- **The large transformer shows its turn ratio** — The line was built and never added to the tooltip. The regular transformer now also names each coil's turn count alongside the ratio.
+- **The neon tube can be given a power face** — The six wrench click-regions were tested unconditionally, each overwriting the last, so the Z pair always won and any click on the north or south face toggled the north or south arm. Since a freshly placed tube has no connection at all and only a connected face accepts power, the tube could not be wired.
+- **The copycat cable accepts a material again** — The interaction that applies one by right-clicking was commented out during the port and never replaced, leaving only the undiscoverable off-hand-at-placement path.
+- **A concreted electric post stays a post** — Drying turned it into a concreted cable tube, so the concreted post existed in the registry and never in game.
+- **Concrete filling skips its own root** — The root position was compared by reference against a fresh `BlockPos` built on every call, so it almost never matched itself.
+
+### Changed
+
+- **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
+- **The six cable hubs state their current rating** (16 A copper through 250 A steel) — that is the value that actually differs between them; every hub holds the same voltage.
+- **The concrete hose explains itself** — it fills concretable blocks below it once stopped, and only those.
+
+### Correctifs
+
+- **La cuve ne fait plus planter le jeu quand sa sortie se remplit** — La boucle de sortie fusionnait un résultat dans n'importe quel slot contenant le même item, sans contrôle de taille de pile, alors que le contrôle de place qu'elle est censée refléter respecte cette limite et avait déjà réservé un slot vide. Le résultat partait dans le slot plein, la pile dépassait 64 puis 99, limite que le codec d'`ItemStack` vérifie : le bloc ne pouvait plus être sérialisé et le jeu plantait à la synchronisation suivante. Signalé sur les pépites d'aluminium et les plaques de caoutchouc.
+- **Un accumulateur conserve sa charge à la pose** — La charge était écrite directement dans le stockage, or le champ est initialisé avant `length = 1` : la capacité valait zéro et `setEnergy` écrasait tout. Un bloc posé sur une colonne existante est en plus un esclave, dont le stockage est remis à zéro au passage suivant de la chaîne.
+- **La machine à bobiner n'accorde plus une étape gratuitement** — Une bobine sans tours, ou qui n'en a jamais eu, empruntait une branche qui terminait la recette sans même vérifier que la bobine correspondait. Dans un assemblage séquencé, l'item avançait sans qu'un seul tour soit enroulé, ce qui déphasait toute la suite : d'où le potentiomètre qui réclamait une roue dentée là où la machine à bobiner était attendue.
+- **Le convertisseur annonce le bon port selon son mode** — Les deux modes nommaient le côté bleu, alors que le modèle pivote en mode entrée : la couleur peinte sur la face électrique, elle fixe, change avec le mode. Câbler exactement comme l'infobulle l'indiquait ne convertissait rien.
+- **La bobine dit pourquoi une portée est refusée et reste utilisable** — Le manque de fil renvoyait un refus muet en laissant le premier point armé, si bien que chaque essai suivant rejouait la même portée trop longue.
+- **Deux connecteurs portent un seul câble, quel que soit son matériau** — Le contrôle comparait les connexions entières, type de câble compris : un second fil d'un autre matériau n'était donc pas un doublon. Trois câbles pouvaient s'empiler sur la même paire.
+- **Un compresseur ou un congélateur ajouté à une cuve déjà formée est détecté** — La cuve ne rebalayait ses attachements que tant que sa liste était vide, et uniquement côté serveur. En ajouter un à une cuve qui en avait déjà ne faisait rien tant qu'on ne cassait pas un bloc, et le client gardait une liste vide pendant que le serveur en comptait trois : d'où l'affichage qui alternait entre deux valeurs.
+- **La bouteille de fluide de refroidissement se remplit** — Elle n'acceptait que la cuve de Create : une cuve TFMG, une cuve chimique, un tuyau ou un bec verseur ne faisaient rien et la bouteille restait à 0 mB. Elle passe désormais par la capacité de fluide et n'aspire que son propre fluide.
+- **La lame au lithium allumée peut frapper** — Le décompte tournait des deux côtés à chaque tick : le serveur réécrivait un composant de l'item en main vingt fois par seconde et diffusait un paquet de slot à chaque fois. Il est désormais côté serveur et avance d'un pas par seconde, pour la même durée totale.
+- **Le grand transformateur affiche son rapport de tours** — La ligne était construite puis jamais ajoutée à l'infobulle. Le transformateur classique indique en plus le nombre de tours de chacune de ses deux bobines.
+- **Le tube néon peut recevoir une face d'alimentation** — Les six zones de clic de la clé étaient testées sans condition, chacune écrasant la précédente : l'axe Z avait toujours le dernier mot et tout clic sur une face nord ou sud ouvrait le bras nord ou sud. Comme un tube fraîchement posé n'a aucune connexion et que seule une face connectée accepte le courant, il était impossible à alimenter.
+- **Le câble copycat accepte de nouveau un habillage** — L'interaction du clic droit avait été commentée lors du portage et jamais remise ; il ne restait que la pose avec le bloc en main secondaire, que personne ne devine.
+- **Un poteau électrique bétonné reste un poteau** — Le séchage le transformait en gaine de câble bétonnée : la version bétonnée du poteau existait dans le registre et jamais en jeu.
+- **Le remplissage de béton ignore sa propre racine** — La position racine était comparée par référence à un `BlockPos` reconstruit à chaque appel, donc elle ne se reconnaissait presque jamais.
+
+### Modifications
+
+- **Tuyaux, vannes, pompes et tuyaux intelligents passent dans l'onglet créatif principal**, avec les axes coffrés : c'est de la machinerie, pas de la décoration. Le parpaing de debug n'apparaît plus du tout dans le menu créatif.
+- **Les six hubs de câbles annoncent leur intensité admissible** (16 A pour le cuivre jusqu'à 250 A pour l'acier) : c'est la valeur qui les distingue réellement, la tension étant la même partout.
+- **Le tuyau à béton s'explique** : il remplit les blocs bétonnables situés en dessous une fois arrêté, et eux seuls.
+
+---
+
 ## [1.2.6] - 2026-08-10
 
 Everything here comes from the first full singleplayer test pass on 1.2.5.
