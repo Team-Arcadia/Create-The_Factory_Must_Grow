@@ -12,7 +12,12 @@ import static com.drmangotea.tfmg.TFMG.REGISTRATE;
 
 public class TFMGPipes {
 
-    public static final TFMGRegistrate registrate = (TFMGRegistrate) REGISTRATE.setCreativeTab(TFMGCreativeTabs.TFMG_DECORATION);
+    // Pipes, valves, pumps and smart pipes are machinery, not scenery, and they
+    // were all landing in the decoration tab next to the concrete and the
+    // bricks. The registrate's creative tab is a mutable global, so the tab is
+    // restored to decoration at the end of the static block below: everything
+    // registered after this class keeps the tab it had before.
+    public static final TFMGRegistrate registrate = (TFMGRegistrate) REGISTRATE.setCreativeTab(TFMGCreativeTabs.TFMG_MAIN);
 
     public static final Map<PipeMaterial, TFMGPipeEntry> PIPES = new HashMap<>();
 
@@ -22,6 +27,7 @@ public class TFMGPipes {
         PIPES.put(PipeMaterial.ALUMINUM, createEntry(PipeMaterial.ALUMINUM,  TFMGSpriteShifts.ALUMINUM_FLUID_CASING));
         PIPES.put(PipeMaterial.CAST_IRON, createEntry(PipeMaterial.CAST_IRON, TFMGSpriteShifts.CAST_IRON_FLUID_CASING));
         PIPES.put(PipeMaterial.PLASTIC, createEntry(PipeMaterial.PLASTIC, TFMGSpriteShifts.PLASTIC_FLUID_CASING));
+        REGISTRATE.setCreativeTab(TFMGCreativeTabs.TFMG_DECORATION);
     }
 
     private static TFMGPipeEntry createEntry(PipeMaterial material, CTSpriteShiftEntry spriteShiftEntry) {

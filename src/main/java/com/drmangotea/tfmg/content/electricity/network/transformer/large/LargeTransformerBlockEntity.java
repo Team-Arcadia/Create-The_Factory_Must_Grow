@@ -252,7 +252,16 @@ public class LargeTransformerBlockEntity extends KineticElectricBlockEntity {
         };
 
         TFMGLang.translate(stateKey).color(0x69c9c5).forGoggles(tooltip);
-        TFMGTexts.Multimeter.transformerRatio(turnRatio);
+        // The ratio line was built and then thrown away — no forGoggles call —
+        // so a finished large transformer showed its cooling state and nothing
+        // about the two coils it was assembled from. Testers had no way to read
+        // the turn ratio the small transformer shows them.
+        if (turnRatio != 0)
+            TFMGTexts.Multimeter.transformerRatio(turnRatio).forGoggles(tooltip, 1);
+        else
+            TFMGLang.text("Needs two large coils with different turn counts")
+                    .style(net.minecraft.ChatFormatting.RED)
+                    .forGoggles(tooltip, 1);
 
         super.makeMultimeterTooltip(tooltip, isPlayerSneaking);
         return true;

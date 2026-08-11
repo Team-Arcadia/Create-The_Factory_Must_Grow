@@ -1,6 +1,8 @@
 package com.drmangotea.tfmg.base;
 
 import com.drmangotea.tfmg.content.decoration.kinetics.encased.TFMGEncasedCogwheelBlock;
+import com.drmangotea.tfmg.content.decoration.kinetics.encased.TFMGEncasedShaftBlock;
+import com.drmangotea.tfmg.registry.TFMGEncasedBlocks;
 import com.drmangotea.tfmg.content.machinery.misc.winding_machine.SpoolItem;
 import com.drmangotea.tfmg.registry.TFMGBlocks;
 import com.drmangotea.tfmg.registry.TFMGDataComponents;
@@ -72,6 +74,11 @@ public class TFMGCreativeTabs {
                     continue;
                 if(item.get() instanceof BlockItem blockItem && blockItem.getBlock() instanceof TFMGEncasedCogwheelBlock)
                     continue;
+                // Encased shafts are kinetics, and the encased cogwheels right
+                // next to them were already filtered out of this tab. They are
+                // listed in the main tab through customAdditions instead.
+                if(item.get() instanceof BlockItem blockItem2 && blockItem2.getBlock() instanceof TFMGEncasedShaftBlock)
+                    continue;
                 if(item.get() instanceof SequencedAssemblyItem)
                     continue;
 
@@ -91,12 +98,19 @@ public class TFMGCreativeTabs {
         list.add(TFMGItems.ALUMINUM_SPOOL);
         list.add(TFMGItems.COPPER_SPOOL);
         list.add(TFMGItems.CONSTANTAN_SPOOL);
+        // Debug-only item: it has no recipe and no JEI page, and it has no
+        // business being browsable next to the real cinder blocks.
+        list.add(TFMGItems.DEBUG_CINDERBLOCK);
 
 
         return list;
     }
     public static List<ItemStack> customAdditions(){
         List<ItemStack> list = new ArrayList<>();
+
+        // Kinetics, listed here because the decoration tab filters them out.
+        list.add(TFMGEncasedBlocks.STEEL_ENCASED_SHAFT.asStack());
+        list.add(TFMGEncasedBlocks.HEAVY_CASING_ENCASED_SHAFT.asStack());
 
         ItemStack copperSpool = TFMGItems.COPPER_SPOOL.asStack();
         copperSpool.set(TFMGDataComponents.SPOOL_AMOUNT,1000);

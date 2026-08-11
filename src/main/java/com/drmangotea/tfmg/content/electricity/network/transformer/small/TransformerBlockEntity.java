@@ -150,6 +150,16 @@ public class TransformerBlockEntity extends VoltageAlteringBlockEntity {
         TFMGTexts.Multimeter.separator().forGoggles(tooltip);
         if(coilRatio!=0) {
             TFMGTexts.Multimeter.transformerRatio(coilRatio).forGoggles(tooltip, 1);
+            // Name both coils. The ratio alone does not tell a player which
+            // side they wired, and the whole mechanism is "output turns divided
+            // by input turns" — testers reported having to read the wiki to get
+            // that far.
+            TFMGLang.text("Input coil: " + primaryCoil.getOrDefault(TFMGDataComponents.COIL_TURNS, 0) + " turns")
+                    .style(ChatFormatting.GRAY)
+                    .forGoggles(tooltip, 1);
+            TFMGLang.text("Output coil: " + secondaryCoil.getOrDefault(TFMGDataComponents.COIL_TURNS, 0) + " turns")
+                    .style(ChatFormatting.GRAY)
+                    .forGoggles(tooltip, 1);
         } else {
             // A dead transformer used to show NOTHING — surface why.
             TFMGLang.text("Needs two coils with at least 50 turns each")

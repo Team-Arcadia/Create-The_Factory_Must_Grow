@@ -105,9 +105,24 @@ public class LitLithiumBladeItem extends SwordItem {
         // burn-down and the revert-to-unlit swap only apply to players.
         if (!(entity instanceof Player player))
             return;
+        // Server owns the countdown, and it steps once a second rather than
+        // once a tick.
+        //
+        // Both sides used to decrement, so the client fought the server's value
+        // while the server rewrote a data component on the held stack twenty
+        // times a second. The container menu diffs stacks by value, so every one
+        // of those ticks broadcast a SetSlot packet for the selected slot and the
+        // held item was replaced under the renderer continuously — which is what
+        // made the lit blade impossible to swing with. Stepping by 20 every 20
+        // ticks keeps the same 2000-tick burn time for one packet per second.
+        if (pLevel.isClientSide)
+            return;
+        if (pLevel.getGameTime() % 20 != 0)
+            return;
         if (stack.get(TFMGDataComponents.LITHIUM_BLADE_TIMER) != null)
             if (stack.get(TFMGDataComponents.LITHIUM_BLADE_TIMER) > 0) {
-                stack.set(TFMGDataComponents.LITHIUM_BLADE_TIMER, stack.get(TFMGDataComponents.LITHIUM_BLADE_TIMER) - 1);
+                stack.set(TFMGDataComponents.LITHIUM_BLADE_TIMER,
+                        Math.max(0, stack.get(TFMGDataComponents.LITHIUM_BLADE_TIMER) - 20));
 
 
             } else {
