@@ -20,6 +20,24 @@ public class CableConnectorRenderer extends SafeBlockEntityRenderer<CableConnect
     public CableConnectorRenderer(BlockEntityRendererProvider.Context context) {
     }
 
+    /**
+     * A wire is drawn once, by whichever connector holds the visible half of the
+     * connection. That anchor is culled with its own chunk section, so standing
+     * at the far end and looking away from it made the whole cable vanish even
+     * a dozen blocks out — the render bounding box does not help, because a block
+     * entity in a culled section is never collected in the first place.
+     *
+     * Only connectors that actually anchor a wire opt out of section culling;
+     * a bare connector is still culled normally.
+     */
+    @Override
+    public boolean shouldRenderOffScreen(CableConnectorBlockEntity be) {
+        for (CableConnection connection : be.connections)
+            if (connection.visible)
+                return true;
+        return false;
+    }
+
     @Override
     protected void renderSafe(CableConnectorBlockEntity be, float partialTicks, PoseStack ms, MultiBufferSource bufferSource, int light, int overlay) {
         renderPlayerHeldCable(be, ms, bufferSource, partialTicks);
@@ -48,7 +66,14 @@ public class CableConnectorRenderer extends SafeBlockEntityRenderer<CableConnect
         Player player = be.player;
         if (player.getInventory().contains(TFMGTags.TFMGItemTags.SPOOLS.tag)) {
             ItemStack stack = player.getMainHandItem();
-            if (stack.get(TFMGDataComponents.POSITION) != 0) {
+            // has(), not get() != 0: the spool now REMOVES the component when a
+            // selection is dropped rather than storing a zero, so this unboxed a
+            // null the moment a player kept holding the spool after a refused or
+            // completed link.
+            if (stack.has(TFMGDataComponents.POSITION)
+                    && stack.has(TFMGDataComponents.X_POS)
+                    && stack.has(TFMGDataComponents.Y_POS)
+                    && stack.has(TFMGDataComponents.Z_POS)) {
 
                 CablePos position = new CablePos(stack.get(TFMGDataComponents.X_POS), stack.get(TFMGDataComponents.Y_POS), stack.get(TFMGDataComponents.Z_POS));
                 BlockPos pos = BlockPos.of(stack.get(TFMGDataComponents.POSITION));

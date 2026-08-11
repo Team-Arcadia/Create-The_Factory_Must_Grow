@@ -60,7 +60,6 @@ public class SpoolItem extends Item {
         if (player.isCrouching() && stack.getOrDefault(TFMGDataComponents.POSITION, 0f).longValue() != 0f) {
             if (level.getBlockEntity(BlockPos.of(stack.getOrDefault(TFMGDataComponents.POSITION, 0f).longValue())) instanceof CableConnectorBlockEntity be)
                 be.player = null;
-            stack.set(TFMGDataComponents.POSITION, 0l);
             stack.remove(TFMGDataComponents.POSITION);
             stack.remove(TFMGDataComponents.X_POS);
             stack.remove(TFMGDataComponents.Y_POS);

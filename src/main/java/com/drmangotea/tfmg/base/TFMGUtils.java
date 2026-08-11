@@ -332,9 +332,22 @@ public class TFMGUtils {
         float f2 = (float) (vec3.z);
         VertexConsumer vertexconsumer = pBuffer.getBuffer(RenderType.leash());
         Matrix4f matrix4f = pMatrixStack.last().pose();
-        float f4 = (float) (Mth.fastInvSqrt(f * f + f2 * f2) * 0.025F / 2.0F);
-        float f5 = f2 * f4;
-        float f6 = f * f4;
+        // Horizontal span, used to build the offset that gives the wire its
+        // width. Two connectors stacked straight above one another have none of
+        // it, and fastInvSqrt(0) is infinity: f5 and f6 both came out NaN and
+        // the whole strip was dropped, so a purely vertical cable rendered
+        // nothing at all. Fall back to a fixed offset along one axis there.
+        float horizontal = f * f + f2 * f2;
+        float f5;
+        float f6;
+        if (horizontal < 1.0E-6F) {
+            f5 = 0.025F / 2.0F;
+            f6 = 0;
+        } else {
+            float f4 = (float) (Mth.fastInvSqrt(horizontal) * 0.025F / 2.0F);
+            f5 = f2 * f4;
+            f6 = f * f4;
+        }
         //int i =15;
         //int j = 15;
 
