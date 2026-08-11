@@ -65,6 +65,12 @@ public class TrafficLightBlockEntity extends ElectricBlockEntity {
 
         if (level.isClientSide) {
             glow.chase(200f, 0.4, LerpedFloat.Chaser.EXP);
+            // chase() only sets the target; tickChaser() is what moves towards
+            // it. Without it the value stayed where read() last put it - zero,
+            // since it resets on every light change - so the renderer packed a
+            // constant light level of 5 out of 15 and the lamp never lit up or
+            // faded in. The light bulb does both calls together.
+            glow.tickChaser();
             return;
         }
 
