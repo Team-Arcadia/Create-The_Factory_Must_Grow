@@ -65,24 +65,39 @@ public class NeonTubeBlock extends PipeBlock implements IBE<NeonTubeBlockEntity>
 
         SimplePos clickPosition = new SimplePos(position.x()-pos.getX(),position.y()-pos.getY(),position.z()-pos.getZ());
 
-        Direction dirToToggle = Direction.NORTH;
-
-        if(clickPosition.x()>=0.375&&clickPosition.x()<=0.625&&clickPosition.y()>=0.375&&clickPosition.y()<=0.625&&clickPosition.z()>=0.375&&clickPosition.z()<=0.625){
-            dirToToggle = facing;
+        // Which arm did the player actually click?
+        //
+        // The six tests below used to run unconditionally, each overwriting the
+        // last, so the Z pair always had the final say. Clicking any point of
+        // the north or south face is by definition off-centre in Z, which meant
+        // every wrench click on those faces toggled NORTH or SOUTH no matter
+        // which arm was under the cursor — and since a freshly placed tube has
+        // no connection at all (getStateForPlacement only links to another tube)
+        // and hasElectricitySlot only accepts faces that carry one, the tube
+        // could not be given a usable power face and read as dead content.
+        //
+        // Only the two axes perpendicular to the clicked face can be chosen by
+        // the click position; the third is the face itself, and it wins when the
+        // cursor sits over the middle of the block.
+        Direction dirToToggle = facing;
+        double dx = clickPosition.x() - 0.5;
+        double dy = clickPosition.y() - 0.5;
+        double dz = clickPosition.z() - 0.5;
+        double best = 0.125;
+        for (Direction.Axis axis : Direction.Axis.values()) {
+            if (axis == facing.getAxis())
+                continue;
+            double delta = switch (axis) {
+                case X -> dx;
+                case Y -> dy;
+                case Z -> dz;
+            };
+            if (Math.abs(delta) <= best)
+                continue;
+            best = Math.abs(delta);
+            dirToToggle = Direction.get(delta > 0 ? Direction.AxisDirection.POSITIVE
+                    : Direction.AxisDirection.NEGATIVE, axis);
         }
-
-        if(clickPosition.x()>0.625)
-            dirToToggle = Direction.EAST;
-        if(clickPosition.x()<0.375)
-            dirToToggle = Direction.WEST;
-        if(clickPosition.y()>0.625)
-            dirToToggle = Direction.UP;
-        if(clickPosition.y()<0.375)
-            dirToToggle = Direction.DOWN;
-        if(clickPosition.z()>0.625)
-            dirToToggle = Direction.SOUTH;
-        if(clickPosition.z()<0.375)
-            dirToToggle = Direction.NORTH;
 
 
 

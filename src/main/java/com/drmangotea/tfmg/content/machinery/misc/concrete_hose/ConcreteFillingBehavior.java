@@ -244,7 +244,11 @@ public class ConcreteFillingBehavior extends TFMGFluidManipulationBehaviour {
 	protected SpaceType getAtPos(Level world, BlockPos pos, Fluid toFill) {
 		BlockState blockState = world.getBlockState(pos);
 
-		if(pos == rootPos)
+		// Reference comparison, not value comparison: rootPos comes from
+		// worldPosition.below(...), a fresh BlockPos on every call, so the root
+		// almost never matched itself and was re-judged by the concretelogged
+		// rule below instead of being skipped.
+		if (Objects.equals(pos, rootPos))
 			return SpaceType.FILLED;
 
 		if (blockState.hasProperty(CONCRETELOGGED))

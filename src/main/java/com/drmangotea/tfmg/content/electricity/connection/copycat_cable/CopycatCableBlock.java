@@ -14,7 +14,10 @@ import net.minecraft.client.color.block.BlockColor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -69,52 +72,57 @@ public class CopycatCableBlock extends Block implements IBE<CopycatCableBlockEnt
         });
     }
 
-    //@Override
-    //public InteractionResult use(BlockState pState, Level pLevel, BlockPos pPos, Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
-//
-    //    if (pPlayer == null)
-    //        return InteractionResult.PASS;
-//
-    //    Direction face = pHit.getDirection();
-    //    ItemStack itemInHand = pPlayer.getItemInHand(pHand);
-    //    BlockState materialIn = getAcceptedBlockState(pLevel, pPos, itemInHand, face);
-//
-    //    if (materialIn != null)
-    //        materialIn = prepareMaterial(pLevel, pPos, pState, pPlayer, pHand, pHit, materialIn);
-    //    if (materialIn == null)
-    //        return InteractionResult.PASS;
-//
-    //    BlockState material = materialIn;
-    //    return onBlockEntityUse(pLevel, pPos, ufte -> {
-    //        if (ufte.getMaterial()
-    //                .is(material.getBlock())) {
-    //            if (!ufte.cycleMaterial())
-    //                return InteractionResult.PASS;
-    //            ufte.getLevel()
-    //                    .playSound(null, ufte.getBlockPos(), SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, .75f,
-    //                            .95f);
-    //            return InteractionResult.SUCCESS;
-    //        }
-    //        if (ufte.hasCustomMaterial())
-    //            return InteractionResult.PASS;
-    //        if (pLevel.isClientSide())
-    //            return InteractionResult.SUCCESS;
-//
-    //        ufte.setMaterial(material);
-    //        ufte.setConsumedItem(itemInHand);
-    //        ufte.getLevel()
-    //                .playSound(null, ufte.getBlockPos(), material.getSoundType()
-    //                        .getPlaceSound(), SoundSource.BLOCKS, 1, .75f);
-//
-    //        if (pPlayer.isCreative())
-    //            return InteractionResult.SUCCESS;
-//
-    //        itemInHand.shrink(1);
-    //        if (itemInHand.isEmpty())
-    //            pPlayer.setItemInHand(pHand, ItemStack.EMPTY);
-    //        return InteractionResult.SUCCESS;
-    //    });
-    //}
+
+    /**
+     * Applies a material by right-clicking the block with it.
+     *
+     * The 1.20-era `use` override that did this was commented out during the
+     * port and never replaced, so the only way left to give a copycat cable a
+     * material was to hold it in the off hand at the moment of placing — which
+     * nobody discovers. Testers reported the block as "the copycat side does not
+     * work". This is the same flow as Create's own CopycatBlock: same material
+     * cycles the variant, a different one is refused while a custom material is
+     * already set, and creative does not consume the item.
+     */
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack itemInHand, BlockState pState, Level pLevel, BlockPos pPos,
+                                              Player pPlayer, InteractionHand pHand, BlockHitResult pHit) {
+        if (pPlayer == null || pPlayer.isShiftKeyDown())
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+
+        BlockState materialIn = getAcceptedBlockState(pLevel, pPos, itemInHand, pHit.getDirection());
+        if (materialIn != null)
+            materialIn = prepareMaterial(pLevel, pPos, pState, pPlayer, pHand, pHit, materialIn);
+        if (materialIn == null)
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+
+        CopycatCableBlockEntity be = getBlockEntity(pLevel, pPos);
+        if (be == null)
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+
+        if (be.getMaterial().is(materialIn.getBlock())) {
+            if (!be.cycleMaterial())
+                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            pLevel.playSound(null, pPos, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, .75f, .95f);
+            return ItemInteractionResult.SUCCESS;
+        }
+        if (be.hasCustomMaterial())
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        if (pLevel.isClientSide())
+            return ItemInteractionResult.SUCCESS;
+
+        be.setMaterial(materialIn);
+        be.setConsumedItem(itemInHand);
+        pLevel.playSound(null, pPos, materialIn.getSoundType().getPlaceSound(), SoundSource.BLOCKS, 1, .75f);
+
+        if (pPlayer.isCreative())
+            return ItemInteractionResult.SUCCESS;
+
+        itemInHand.shrink(1);
+        if (itemInHand.isEmpty())
+            pPlayer.setItemInHand(pHand, ItemStack.EMPTY);
+        return ItemInteractionResult.SUCCESS;
+    }
 
     @Override
     public void setPlacedBy(Level pLevel, BlockPos pPos, BlockState pState, LivingEntity pPlacer, ItemStack pStack) {

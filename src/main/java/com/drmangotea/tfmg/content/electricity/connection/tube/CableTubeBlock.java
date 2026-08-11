@@ -67,8 +67,12 @@ public class CableTubeBlock extends RotatedPillarBlock implements IBE<CableTubeB
         if (state.is(TFMGBlocks.CABLE_TUBE.get()))
             tickDrying(level, state, TFMGBlocks.CONCRETE_ENCASED_CABLE_TUBE.getDefaultState().setValue(AXIS, state.getValue(AXIS)), pos, randomSource);
 
+        // Copy-paste: an electric post left to dry under concrete turned into a
+        // concrete encased CABLE TUBE, silently swapping the block for a
+        // different one. concrete_encased_electric_post exists for exactly this
+        // and was unreachable in game as a result.
         if (state.is(TFMGBlocks.ELECTRIC_POST.get()))
-            tickDrying(level, state, TFMGBlocks.CONCRETE_ENCASED_CABLE_TUBE.getDefaultState().setValue(AXIS, state.getValue(AXIS)), pos, randomSource);
+            tickDrying(level, state, TFMGBlocks.CONCRETE_ENCASED_ELECTRIC_POST.getDefaultState().setValue(AXIS, state.getValue(AXIS)), pos, randomSource);
     }
 
 
