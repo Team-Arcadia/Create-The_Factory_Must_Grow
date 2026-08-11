@@ -23,6 +23,10 @@ Everything here comes from the full 169-test pass on 1.2.6.
 - **The neon tube can be given a power face** — The six wrench click-regions were tested unconditionally, each overwriting the last, so the Z pair always won and any click on the north or south face toggled the north or south arm. Since a freshly placed tube has no connection at all and only a connected face accepts power, the tube could not be wired.
 - **The copycat cable accepts a material again** — The interaction that applies one by right-clicking was commented out during the port and never replaced, leaving only the undiscoverable off-hand-at-placement path.
 - **A concreted electric post stays a post** — Drying turned it into a concreted cable tube, so the concreted post existed in the registry and never in game.
+- **A vertical cable is visible** — The offset that gives a wire its width is built from the horizontal span between its two ends, and two connectors stacked straight above one another have none of it: the inverse square root of zero is infinity, both offsets came out `NaN` and the whole strip was dropped.
+- **A cable no longer vanishes when you look away from one end** — A wire is drawn once, by whichever connector holds the visible half of the connection, and that anchor is culled together with its chunk section. Standing at the far end with the anchor behind you removed the cable from view a dozen blocks out. Connectors that anchor a wire now opt out of section culling; bare ones are still culled normally.
+- **Holding a spool after a link no longer risks a client crash** — The renderer read the stored endpoint with `get(...) != 0`, which unboxes null, and the spool now removes that component instead of storing a zero.
+
 - **Concrete filling skips its own root** — The root position was compared by reference against a fresh `BlockPos` built on every call, so it almost never matched itself.
 
 ### Changed
@@ -30,6 +34,7 @@ Everything here comes from the full 169-test pass on 1.2.6.
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
 - **The six cable hubs state their current rating** (16 A copper through 250 A steel) — that is the value that actually differs between them; every hub holds the same voltage.
 - **The concrete hose explains itself** — it fills concretable blocks below it once stopped, and only those.
+- **The segmented display says it is driven by a Display Link** — there is no direct interaction, which is why the number could not be changed by hand. The electrician's wrench now states plainly that the group number it stores is read by nothing in this version.
 
 ### Correctifs
 
@@ -46,6 +51,10 @@ Everything here comes from the full 169-test pass on 1.2.6.
 - **Le tube néon peut recevoir une face d'alimentation** — Les six zones de clic de la clé étaient testées sans condition, chacune écrasant la précédente : l'axe Z avait toujours le dernier mot et tout clic sur une face nord ou sud ouvrait le bras nord ou sud. Comme un tube fraîchement posé n'a aucune connexion et que seule une face connectée accepte le courant, il était impossible à alimenter.
 - **Le câble copycat accepte de nouveau un habillage** — L'interaction du clic droit avait été commentée lors du portage et jamais remise ; il ne restait que la pose avec le bloc en main secondaire, que personne ne devine.
 - **Un poteau électrique bétonné reste un poteau** — Le séchage le transformait en gaine de câble bétonnée : la version bétonnée du poteau existait dans le registre et jamais en jeu.
+- **Un câble vertical est visible** — Le décalage qui donne son épaisseur au fil est construit à partir de la distance horizontale entre ses deux extrémités, et deux connecteurs superposés n'en ont aucune : l'inverse de la racine de zéro vaut l'infini, les deux décalages devenaient `NaN` et toute la bande était abandonnée.
+- **Un câble ne disparaît plus quand on tourne le dos à l'une de ses extrémités** — Un fil n'est dessiné qu'une fois, par le connecteur qui porte la moitié visible de la connexion, et celui-ci est éliminé en même temps que sa section de chunk. Se placer à l'autre bout, l'ancrage derrière soi, faisait disparaître le câble à une dizaine de blocs. Les connecteurs qui portent un fil échappent désormais à cette élimination ; les autres restent traités normalement.
+- **Garder une bobine en main après une connexion ne risque plus de planter le client** — Le rendu lisait le point enregistré avec `get(...) != 0`, ce qui déréférence un null, alors que la bobine supprime désormais ce composant au lieu d'y écrire zéro.
+
 - **Le remplissage de béton ignore sa propre racine** — La position racine était comparée par référence à un `BlockPos` reconstruit à chaque appel, donc elle ne se reconnaissait presque jamais.
 
 ### Modifications
@@ -53,6 +62,7 @@ Everything here comes from the full 169-test pass on 1.2.6.
 - **Tuyaux, vannes, pompes et tuyaux intelligents passent dans l'onglet créatif principal**, avec les axes coffrés : c'est de la machinerie, pas de la décoration. Le parpaing de debug n'apparaît plus du tout dans le menu créatif.
 - **Les six hubs de câbles annoncent leur intensité admissible** (16 A pour le cuivre jusqu'à 250 A pour l'acier) : c'est la valeur qui les distingue réellement, la tension étant la même partout.
 - **Le tuyau à béton s'explique** : il remplit les blocs bétonnables situés en dessous une fois arrêté, et eux seuls.
+- **L'afficheur segmenté indique qu'il est piloté par un lien d'affichage** : il n'y a pas d'interaction directe, d'où l'impossibilité de changer le nombre à la main. La clé d'électricien précise désormais que le numéro de groupe qu'elle enregistre n'est lu par rien dans cette version.
 
 ---
 
