@@ -247,7 +247,18 @@ public abstract class AbstractEngineBlockEntity extends KineticElectricBlockEnti
         updateRotation();
     }
 
+    /**
+     * Server-side only. Every caller sits in an interaction handler that runs on
+     * both sides — Create's WrenchItem forwards onWrenched/onSneakWrenched
+     * without a side check, and useItemOn is called on the client too — so the
+     * client used to spawn its own copy of the component, the shaft or the
+     * upgrade being pulled off. That copy belongs to no server entity, cannot be
+     * picked up, and hangs around next to the real drop until the chunk
+     * reloads.
+     */
     public void dropItem(ItemStack stack) {
+        if (level == null || level.isClientSide)
+            return;
         Vec3 dropVec = VecHelper.getCenterOf(worldPosition).add(0, 0.3f, 0);
         ItemEntity dropped = new ItemEntity(level, dropVec.x, dropVec.y, dropVec.z, stack);
         dropped.setDefaultPickUpDelay();
