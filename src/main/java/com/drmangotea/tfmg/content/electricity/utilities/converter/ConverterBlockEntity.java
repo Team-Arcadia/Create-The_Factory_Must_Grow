@@ -213,8 +213,16 @@ public class ConverterBlockEntity extends ElectricBlockEntity implements IVoltag
 
         // Surface the wrench-toggled mode — with no feedback, a converter
         // left in the wrong mode simply looked broken.
-        TFMGLang.text(isInput() ? "Mode: TFMG → FE (charges from the blue side)"
-                        : "Mode: FE → TFMG (generates on the blue side)")
+        //
+        // Both lines used to name the blue side, which is only right in input
+        // mode. hasElectricitySlot always returns FACING.getClockWise(), but the
+        // blockstate swaps to block_rotated when input=true, so the colour
+        // painted on that fixed physical side flips with the mode: blue for
+        // TFMG → FE, orange for FE → TFMG. A tester wired FE to orange and a
+        // heavy cable to blue in output mode, exactly as the tooltip said, and
+        // watched 500k FE sit there converting nothing. Name both ports.
+        TFMGLang.text(isInput() ? "Mode: TFMG → FE — TFMG cable on the BLUE side, FE machine on the ORANGE side"
+                        : "Mode: FE → TFMG — FE source on the BLUE side, TFMG cable on the ORANGE side")
                 .style(net.minecraft.ChatFormatting.AQUA)
                 .forGoggles(tooltip, 1);
         if (!isInput() && timer > 0)

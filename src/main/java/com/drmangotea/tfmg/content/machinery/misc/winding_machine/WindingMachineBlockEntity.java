@@ -293,25 +293,32 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         }
         if (spool.isEmpty() || spool.is(TFMGItems.EMPTY_SPOOL.get()))
             return;
+        // The recipe's own spool must be the one mounted. Checking this only
+        // inside the "has turns left" branch let the machine fall through to a
+        // free completion with the wrong spool entirely.
+        if (!recipe.getSpool().isEmpty() && !recipe.getSpool().test(spool))
+            return;
         int spoolAmount = spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0);
-        if (spoolAmount > 0) {
-            if (recipe.getSpool().test(spool)) {
-                spool.set(TFMGDataComponents.SPOOL_AMOUNT, spoolAmount - 1);
-                amountWinded++;
-                convertEmptyIfDrained();
-                // Without this the client never receives the per-tick
-                // SPOOL_AMOUNT / amountWinded updates, so the goggle tooltip
-                // and the spool durability bar stay frozen until the recipe
-                // finishes. The dedicated resistor/coil branches already
-                // send data per drain — the generic branch was the outlier.
-                setChanged();
-                sendData();
-            }
-        } else {
-            inventory.setStackInSlot(0, recipe.rollResults(level.random).get(0));
-            sendData();
-            setChanged();
-        }
+        // A spool with no turns left — or a spool item that never carried a
+        // SPOOL_AMOUNT, which is what /give hands out — used to take an else
+        // branch that finished the recipe outright. For a sequenced assembly
+        // that meant the winding step was granted for free and the transitional
+        // item advanced without a single turn being wound, putting the whole
+        // sequence out of phase with what the item asks for next: the reported
+        // potentiometer that wanted a steel cogwheel where the winding machine
+        // was due. Stalling is the correct answer; the player refills the spool.
+        if (spoolAmount <= 0)
+            return;
+        spool.set(TFMGDataComponents.SPOOL_AMOUNT, spoolAmount - 1);
+        amountWinded++;
+        convertEmptyIfDrained();
+        // Without this the client never receives the per-tick
+        // SPOOL_AMOUNT / amountWinded updates, so the goggle tooltip
+        // and the spool durability bar stay frozen until the recipe
+        // finishes. The dedicated resistor/coil branches already
+        // send data per drain — the generic branch was the outlier.
+        setChanged();
+        sendData();
     }
 
     /** Promote a depleted SpoolItem to an empty_spool. */

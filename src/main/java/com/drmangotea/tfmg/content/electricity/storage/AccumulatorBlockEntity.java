@@ -250,9 +250,27 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
         };
     }
 
+    /**
+     * Restores the charge carried by the placed item.
+     *
+     * Writing it straight into `energy` lost it twice over. The field
+     * initializer `energy = createEnergyStorage(1)` runs before `length = 1` is
+     * assigned, so the storage a freshly built BE carries has a capacity of
+     * accumulatorStorage * 0 and setEnergy clamped the whole charge away — read()
+     * already rebuilds the storage for exactly that reason on load, and
+     * placement had no equivalent. And a block placed onto an existing column is
+     * a slave whose own storage the chain ignores and zeroes on its next pass,
+     * so even an uncapped write would have been stranded.
+     *
+     * Donating through the chain rebuild covers both: the sub-chain scan sets
+     * `length` before it builds the storage, and folds the donation into
+     * whichever block actually owns the energy.
+     */
     public void setCapacity(ItemStack stack) {
-        if (stack.get(TFMGDataComponents.ACCUMULATOR_STORAGE) != null)
-            energy.setEnergy(stack.get(TFMGDataComponents.ACCUMULATOR_STORAGE));
+        Integer stored = stack.get(TFMGDataComponents.ACCUMULATOR_STORAGE);
+        if (stored == null || stored <= 0)
+            return;
+        rebuildChainIncludingSelf(stored);
     }
 
     protected void analogSignalChanged() {

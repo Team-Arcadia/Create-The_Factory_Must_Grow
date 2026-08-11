@@ -267,7 +267,20 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
             recipe = getMatchingRecipe();
         }
 
-        if (!level.isClientSide && isController() && machineMap.isEmpty())
+        // Rescan the attachment volume every lazy tick, on both sides.
+        //
+        // Two bugs came out of the old "server only, and only while the map is
+        // empty" condition. A compressor or freezer added to a vat that already
+        // had one attachment was never noticed — the player had to break and
+        // replace a vat block to force a formation pass. And machineMap is
+        // neither saved nor synced, so a client that missed its one evaluation
+        // kept an empty list forever while the server had three compressors,
+        // which is why the goggle readout flickered between the synced pressure
+        // and a locally computed efficiency of 1.
+        //
+        // evaluate() is idempotent: it only calls notifyUpdate and only clears
+        // the cached recipe when the machine set actually changed.
+        if (isController())
             evaluateNextTick = true;
 
         revalidateMachines();
@@ -656,8 +669,17 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                     if (stackInSlot.isEmpty())
                         continue;
 
-                    if (stackInSlot.is(itemStack.getItem())) {
-                        outputInventory.getStackInSlot(i).setCount(stackInSlot.getCount() + (itemStack.getCount()));
+                    // Mirror canFitAllOutputs exactly: same item AND components,
+                    // and the merge must stay within the stack limit. Merging on
+                    // item alone with no limit is what grew an output slot past
+                    // 64 and then past 99, at which point ItemStack's codec
+                    // (count is range-checked to [1;99]) refused to serialise the
+                    // block entity and the game crashed on the next sync. The
+                    // pre-flight had already reserved an empty slot for this
+                    // stack; this loop then poured it into the full one instead.
+                    if (ItemStack.isSameItemSameComponents(stackInSlot, itemStack)
+                            && stackInSlot.getCount() + itemStack.getCount() <= stackInSlot.getMaxStackSize()) {
+                        stackInSlot.setCount(stackInSlot.getCount() + itemStack.getCount());
 
                         handled = true;
                         break;

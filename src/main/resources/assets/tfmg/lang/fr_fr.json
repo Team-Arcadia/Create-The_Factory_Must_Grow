@@ -1184,5 +1184,6 @@
   "tfmg.wires.removed_data": "Données supprimées",
   "tfmg.wires.cant_connect_itself": "Un connecteur ne peut pas être relié à lui-même",
   "tfmg.wires.connection_already_created": "Ces connecteurs sont déjà reliés entre eux",
+  "tfmg.wires.not_enough_wire": "Il ne reste pas assez de fil sur la bobine pour cette portée",
   "tfmg.traffic_light.timer": "Durée du cycle"
 }

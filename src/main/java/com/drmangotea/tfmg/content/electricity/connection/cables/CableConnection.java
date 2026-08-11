@@ -45,6 +45,21 @@ public class CableConnection {
                 || (samePos(pos1, other.pos2) && samePos(pos2, other.pos1));
     }
 
+    /**
+     * Endpoint-only comparison, ignoring the cable type.
+     *
+     * Two connectors carry at most one wire between them whatever it is made
+     * of, so the "already wired" check has to ask this and not equals: a copper
+     * wire and an aluminum wire between the same pair are different by equals,
+     * which let a player stack a second and a third cable on one pair.
+     */
+    public boolean linksSameEndpoints(CableConnection other) {
+        if (other == null)
+            return false;
+        return (samePos(pos1, other.pos1) && samePos(pos2, other.pos2))
+                || (samePos(pos1, other.pos2) && samePos(pos2, other.pos1));
+    }
+
     private static boolean samePos(CablePos a, CablePos b) {
         if (a == b)
             return true;

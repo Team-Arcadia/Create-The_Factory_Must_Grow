@@ -214,9 +214,29 @@ public class SpoolItem extends Item {
 
 
                     if (stack.get(TFMGDataComponents.SPOOL_AMOUNT) < wireCost * 125) {
-                        return InteractionResult.PASS;
+                        // Returning PASS here left the first endpoint armed on
+                        // the spool with no message, so the spool looked dead:
+                        // every later click retried the same over-long run and
+                        // failed the same way, even with turns left for a
+                        // shorter one. Say why and disarm.
+                        if (player != null)
+                            player.displayClientMessage(TFMGLang.translateDirect("wires.not_enough_wire")
+                                    .withStyle(ChatFormatting.RED), true);
+                        stack.remove(TFMGDataComponents.POSITION);
+                        stack.remove(TFMGDataComponents.X_POS);
+                        stack.remove(TFMGDataComponents.Y_POS);
+                        stack.remove(TFMGDataComponents.Z_POS);
+                        be.player = null;
+                        be.sendData();
+                        be.setChanged();
+                        return InteractionResult.SUCCESS;
                     }
-                    if (be.connections.contains(connection1) || otherBE.connections.contains(connection1)) {
+                    // Endpoint-only test: a second cable of a DIFFERENT material
+                    // between the same pair is still a duplicate. Comparing full
+                    // connections let a player stack copper, aluminum and
+                    // constantan wires on one pair of connectors.
+                    if (be.connections.stream().anyMatch(connection1::linksSameEndpoints)
+                            || otherBE.connections.stream().anyMatch(connection1::linksSameEndpoints)) {
                         // Same as above: this branch only ever runs server-side,
                         // so the old isClientSide guard meant the player was
                         // never told, and the spool looked like it silently ate

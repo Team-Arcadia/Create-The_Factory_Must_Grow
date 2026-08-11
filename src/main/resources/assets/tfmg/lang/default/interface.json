@@ -246,6 +246,7 @@
   "tfmg.wires.removed_data": "Data Removed",
   "tfmg.wires.cant_connect_itself": "A connector cannot be wired to itself",
   "tfmg.wires.connection_already_created": "These connectors are already wired together",
+  "tfmg.wires.not_enough_wire": "Not enough wire left on the spool for this run",
 
   "tfmg.traffic_light.timer": "Cycle Duration",
 

@@ -16,6 +16,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 
@@ -79,28 +81,41 @@ public class FluidContainingItem extends Item {
             return InteractionResult.SUCCESS;
         }
 
-        if (level.getBlockEntity(pos) != null)
-            if (level.getBlockEntity(pos) instanceof FluidTankBlockEntity fluidTankBe) {
+        // Any block that exposes a fluid handler will do.
+        //
+        // This used to accept Create's own FluidTankBlockEntity and nothing
+        // else, so the bottle could not be filled from a TFMG steel tank, a
+        // vat, a pipe or a spout — every container a TFMG player actually
+        // builds. The item then sat permanently at 0 mB with no way to fill it
+        // and no hint that a vanilla-adjacent Create tank was the one thing
+        // that worked.
+        if (context.getPlayer() == null)
+            return InteractionResult.PASS;
 
-                FluidTankBlockEntity be = fluidTankBe.isController() ? fluidTankBe : fluidTankBe.getControllerBE();
+        IFluidHandler handler = level.getCapability(Capabilities.FluidHandler.BLOCK, pos, context.getClickedFace());
+        if (handler == null)
+            handler = level.getCapability(Capabilities.FluidHandler.BLOCK, pos, null);
+        if (handler == null)
+            return InteractionResult.PASS;
 
-                if (be.getFluid(0).getFluid().isSame(fluid.get())) {
+        int space = CAPACITY - stack.getOrDefault(TFMGDataComponents.AMOUNT, 0);
+        if (space <= 0 || context.getPlayer().getCooldowns().isOnCooldown(stack.getItem()))
+            return InteractionResult.PASS;
 
-                    int toDrain = Math.min(CAPACITY - stack.getOrDefault(TFMGDataComponents.AMOUNT, 0), be.getFluid(0).getAmount());
-                    if(toDrain == 0||context.getPlayer().getCooldowns().isOnCooldown(stack.getItem()))
-                        return InteractionResult.PASS;
-                    level.playSound(null, be.getBlockPos(), SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
-                    be.getTankInventory().drain(toDrain, IFluidHandler.FluidAction.EXECUTE);
-                    stack.set(TFMGDataComponents.AMOUNT, stack.getOrDefault(TFMGDataComponents.AMOUNT, 0) + toDrain);
-                    context.getPlayer().getCooldowns().addCooldown(stack.getItem(), 20);
+        // Ask for OUR fluid by name: draining by amount alone would happily
+        // pull diesel into a cooling fluid bottle out of a multi-tank block.
+        FluidStack drained = handler.drain(new FluidStack(fluid.get(), space), IFluidHandler.FluidAction.SIMULATE);
+        if (drained.isEmpty())
+            return InteractionResult.PASS;
 
+        drained = handler.drain(new FluidStack(fluid.get(), space), IFluidHandler.FluidAction.EXECUTE);
+        if (drained.isEmpty())
+            return InteractionResult.PASS;
 
+        level.playSound(null, pos, SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
+        stack.set(TFMGDataComponents.AMOUNT, stack.getOrDefault(TFMGDataComponents.AMOUNT, 0) + drained.getAmount());
+        context.getPlayer().getCooldowns().addCooldown(stack.getItem(), 20);
 
-
-                    return InteractionResult.SUCCESS;
-                }
-            }
-
-        return InteractionResult.PASS;
+        return InteractionResult.SUCCESS;
     }
 }
