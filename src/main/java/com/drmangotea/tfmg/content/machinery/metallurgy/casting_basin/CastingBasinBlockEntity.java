@@ -66,9 +66,25 @@ public class CastingBasinBlockEntity extends SmartBlockEntity implements IHaveGo
     @Override
     public void tick() {
         super.tick();
+        if (level == null)
+            return;
+
+        // Fill animation, and it has to run BEFORE the server guard below.
+        //
+        // It used to sit at the end of this method, unreachable on the client
+        // ever since the guard was added: nothing drove the chaser, so the
+        // renderer read a fluid level frozen at zero and the basin looked empty
+        // however much metal was in it.
+        if (level.isClientSide) {
+            if (flowTimer > 0)
+                flowTimer--;
+            fluidLevel.chase(tank.getFluidAmount(), 0.3f, LerpedFloat.Chaser.EXP);
+            fluidLevel.tickChaser();
+        }
+
         // Casting is server logic; the client used to run the whole recipe
         // on its local copy (drain + setStackInSlot), flickering results.
-        if (level == null || (level.isClientSide && !isVirtual()))
+        if (level.isClientSide && !isVirtual())
             return;
         // Old code gated the recipe on tank.getSpace() == 0 (tank full at
         // capacity 144 mB), which meant the only way to start a 144 mB
@@ -99,15 +115,6 @@ public class CastingBasinBlockEntity extends SmartBlockEntity implements IHaveGo
                 } else timer++;
             } else timer = 0;
         } else timer = 0;
-
-        if(level.isClientSide){
-
-            if(flowTimer>0)
-                flowTimer--;
-
-            fluidLevel.chase(tank.getFluidAmount(), 0.3f, LerpedFloat.Chaser.EXP);
-            fluidLevel.tickChaser();
-        }
     }
 
     public void findRecipe() {
