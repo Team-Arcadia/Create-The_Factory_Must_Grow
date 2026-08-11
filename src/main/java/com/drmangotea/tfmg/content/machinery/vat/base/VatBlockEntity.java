@@ -1031,6 +1031,13 @@ public class VatBlockEntity extends SmartBlockEntity implements IHaveGoggleInfor
                     if (VatBlock.isVat(blockState))
                         continue;
 
+                    // Most of the scanned volume is air or plain blocks. Asking
+                    // the state first keeps this off the block entity map for
+                    // all of them, which matters now that the scan runs every
+                    // lazy tick on both sides rather than once at formation.
+                    if (!blockState.hasBlockEntity())
+                        continue;
+
                     BlockEntity blockEntity = level.getBlockEntity(pos);
 
                     if (blockEntity instanceof IVatMachine be) {
