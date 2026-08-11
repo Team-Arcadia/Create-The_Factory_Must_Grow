@@ -82,6 +82,22 @@ public class CableTubeBlock extends RotatedPillarBlock implements IBE<CableTubeB
         return true;
     }
 
+    /**
+     * The concreted variants have no item of their own — they only exist through
+     * in-world drying and drop the plain block — so the default pick-block asked
+     * for an item that does not exist and handed back nothing. Answer with what
+     * their loot tables already drop.
+     */
+    @Override
+    public ItemStack getCloneItemStack(BlockState state, net.minecraft.world.phys.HitResult target,
+                                       net.minecraft.world.level.LevelReader level, BlockPos pos, Player player) {
+        if (state.is(TFMGBlocks.CONCRETE_ENCASED_CABLE_TUBE.get()))
+            return TFMGBlocks.CABLE_TUBE.asStack();
+        if (state.is(TFMGBlocks.CONCRETE_ENCASED_ELECTRIC_POST.get()))
+            return TFMGBlocks.ELECTRIC_POST.asStack();
+        return super.getCloneItemStack(state, target, level, pos, player);
+    }
+
     @Override
     public void onPlace(BlockState pState, Level level, BlockPos pos, BlockState pOldState, boolean pIsMoving) {
         withBlockEntityDo(level, pos, IElectric::onPlaced);

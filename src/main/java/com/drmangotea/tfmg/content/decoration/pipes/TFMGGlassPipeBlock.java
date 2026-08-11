@@ -18,6 +18,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -40,11 +42,19 @@ public class TFMGGlassPipeBlock extends GlassFluidPipeBlock {
         return ItemRequirement.of(TFMGPipes.PIPES.get(material).getPipe().getDefaultState(), te);
     }
 
-   // @Override
-   // public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter world, BlockPos pos,
-   //                                    Player player) {
-   //     return TFMGPipes.TFMG_PIPES.get(material).get(0).asStack();
-   // }
+    /**
+     * A glass pipe has no item of its own — it exists only placed, made by
+     * wrenching a pipe, and it drops the plain pipe when broken. With this
+     * override commented out since the port, middle-clicking one asked for the
+     * block's item and got an empty stack: pick-block on a glass pipe returned
+     * nothing at all. getRequiredItems right above already answers the plain
+     * pipe, and the encased pipe handles it the same way.
+     */
+    @Override
+    public ItemStack getCloneItemStack(BlockState state, HitResult target, LevelReader level, BlockPos pos,
+                                       Player player) {
+        return TFMGPipes.PIPES.get(material).getPipe().asStack();
+    }
 
     @Override
     public BlockState toRegularPipe(LevelAccessor world, BlockPos pos, BlockState state) {
