@@ -134,7 +134,13 @@ public class RotorBlockEntity extends KineticElectricBlockEntity {
             if (be.rotor != null && !be.rotor.equals(getBlockPos()))
                 continue;
             BlockState target = entry.getValue();
-            if (!level.getBlockState(pos).equals(target))
+            // Authoring the stator's shape is server business. The client runs
+            // this from its own tick and lazy tick as well, and on chunk load it
+            // sees a partial ring: it then wrote those states locally, leaving a
+            // visually broken generator until the chunk was loaded again. The
+            // server's writes reach it as ordinary block updates. The scan and
+            // the stators list stay on both sides, since they only read.
+            if (!level.isClientSide && !level.getBlockState(pos).equals(target))
                 level.setBlock(pos, target, 2);
             be.rotor = getBlockPos();
             found.add(pos);
