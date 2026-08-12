@@ -19,7 +19,7 @@ public class MetallurgyScenes {
 
     public static void blast_furnace(SceneBuilder builder, SceneBuildingUtil util) {
         CreateSceneBuilder scene = new CreateSceneBuilder(builder);
-        scene.title("blast_furnace", "");
+        scene.title("blast_furnace", "Blast Furnace");
         scene.configureBasePlate(0, 0, 6);
         scene.scaleSceneView(.7f);
         scene.showBasePlate();
@@ -179,7 +179,7 @@ public class MetallurgyScenes {
 
     public static void coke_oven(SceneBuilder builder, SceneBuildingUtil util) {
         CreateSceneBuilder scene = new CreateSceneBuilder(builder);
-        scene.title("coke_oven", "");
+        scene.title("coke_oven", "Coke Oven");
         scene.configureBasePlate(0, 0, 6);
         scene.scaleSceneView(.7f);
 

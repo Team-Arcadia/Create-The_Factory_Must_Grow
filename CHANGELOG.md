@@ -71,6 +71,14 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **The voltage observer stops waking its neighbours for nothing** — Its update flag is raised whenever the network's voltage or power moves, which on a live network is most ticks, and it then rewrote its blockstate and issued a redstone update to all six neighbours even when neither the powered state nor the comparator reading had changed. Both are now published only when they actually change, and the powered state is compared against the real block rather than a cached copy.
 
+- **Three Ponder scenes get their title back** — The blast furnace, the coke oven and the distillation tower all declared an empty title, so opening their Ponder showed a blank header. Portuguese and Ukrainian carried the same three keys as empty strings, which overrides English with nothing rather than falling back to it; those entries are gone, so a locale with no translation now shows the English title.
+
+- **Six tooltips were being overridden by the text they replaced** — The electrical switch, the voltmeter, the voltage observer, the potentiometer and the two large engines each had their entry declared twice in the language files. JSON keeps the last one, and the order differed between the two files: English shipped the old text while French shipped the new. Ten duplicate entries removed across both, and the two languages now say the same thing.
+
+- **The simple large engine says what actually makes it simple** — It shares its block entity with the regular large engine, so fuel, air, speed and torque are identical; the difference is stress capacity, _40_ against _55_. The old text called it "less effective" without saying at what, and the corrected tooltip had briefly dropped the distinction altogether.
+
+- **The German translation no longer carries every key twice** — 250 entries were duplicated with identical values, so editing the first copy of any of them would have had no effect at all.
+
 ### Changed
 
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
@@ -140,6 +148,14 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **La lampe à gaz conserve sa rémanence** — Elle porte une minuterie de cinq secondes censée la maintenir allumée après la dernière goutte, mais le test de réservoir vide sortait avant et éteignait la lumière sans jamais laisser la minuterie s'écouler.
 
 - **L'observateur de tension cesse de réveiller ses voisins pour rien** — Son drapeau de mise à jour est levé dès que la tension ou la puissance du réseau bouge, ce qui sur un réseau vivant arrive presque à chaque tick, et il réécrivait alors son état de bloc et envoyait une mise à jour redstone aux six voisins même quand ni l'état alimenté ni la lecture du comparateur n'avaient changé. Les deux ne sont désormais publiés que lorsqu'ils changent réellement, et l'état alimenté est comparé au bloc réel plutôt qu'à une copie en cache.
+
+- **Trois scènes Ponder retrouvent leur titre** — Le haut fourneau, le four à coke et la tour de distillation déclaraient tous un titre vide : ouvrir leur Ponder affichait un en-tête blanc. Le portugais et l'ukrainien portaient les trois mêmes clés en chaîne vide, ce qui écrase l'anglais par du rien au lieu d'y retomber ; ces entrées ont été retirées, une langue sans traduction affiche donc maintenant le titre anglais.
+
+- **Six infobulles étaient écrasées par le texte qu'elles remplaçaient** — L'interrupteur électrique, le voltmètre, l'observateur de tension, le potentiomètre et les deux gros moteurs avaient chacun leur entrée déclarée deux fois dans les fichiers de langue. Le JSON garde la dernière, et l'ordre différait entre les deux fichiers : l'anglais livrait l'ancien texte pendant que le français livrait le nouveau. Dix entrées en double retirées des deux côtés, les deux langues disent désormais la même chose.
+
+- **Le gros moteur simplifié dit ce qui le rend simple** — Il partage sa block entity avec le gros moteur standard : carburant, air, vitesse et couple sont identiques ; la différence est la capacité de contrainte, _40_ contre _55_. L'ancien texte le disait « moins efficace » sans dire en quoi, et l'infobulle corrigée avait un temps perdu la distinction.
+
+- **La traduction allemande ne porte plus chaque clé en double** — 250 entrées étaient dupliquées avec des valeurs identiques : éditer la première copie de l'une d'elles n'aurait eu aucun effet.
 
 ### Modifications
 

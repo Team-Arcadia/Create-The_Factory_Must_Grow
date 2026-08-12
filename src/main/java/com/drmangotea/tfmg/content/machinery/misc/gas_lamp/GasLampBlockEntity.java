@@ -29,6 +29,12 @@ public class GasLampBlockEntity extends SmartBlockEntity implements IHaveGoggleI
 
     public int lightTimer = 0;
 
+    /** Millibuckets the tank must move before another sync packet is worth it. */
+    private static final int SYNC_STEP = 100;
+    /** Amount at the last packet sent, -1 until the first one. Not persisted:
+     *  a fresh block entity simply syncs on its first change. */
+    private int lastSyncedAmount = -1;
+
 
     public GasLampBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -61,8 +67,20 @@ public class GasLampBlockEntity extends SmartBlockEntity implements IHaveGoggleI
 
     protected void onFluidStackChanged(FluidStack newFluidStack) {
         if (!hasLevel()) return;
-        sendData();
         setChanged();
+
+        // The lamp burns a millibucket at a time out of a 4000 mB tank, and
+        // every one of them sent a full block entity packet. Its lit state
+        // travels through the blockstate, not this tank, so the client only
+        // reads it for the goggles: sync the empty/not-empty flip at once and
+        // the amount only once it has moved enough to be worth a packet.
+        int amount = newFluidStack.getAmount();
+        boolean emptinessFlipped = (amount == 0) != (lastSyncedAmount == 0);
+        if (!emptinessFlipped && lastSyncedAmount >= 0 && Math.abs(amount - lastSyncedAmount) < SYNC_STEP)
+            return;
+
+        lastSyncedAmount = amount;
+        sendData();
     }
 
     @Override

@@ -702,7 +702,7 @@ public class MiscTFMGScenes {
 
     public static void distillation_tower(SceneBuilder builder, SceneBuildingUtil util) {
         CreateSceneBuilder scene = new CreateSceneBuilder(builder);
-        scene.title("distillation_tower", "");
+        scene.title("distillation_tower", "Distillation Tower");
         scene.configureBasePlate(0, 0, 6);
         scene.showBasePlate();
         scene.scaleSceneView(.6f);

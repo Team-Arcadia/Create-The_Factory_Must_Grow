@@ -37,6 +37,12 @@ public class FlarestackBlockEntity extends SmartBlockEntity implements IHaveGogg
     public boolean spawnsSmoke=false;
     public int smokeTimer=0;
 
+    /** Millibuckets the tank must move before another sync packet is worth it. */
+    private static final int SYNC_STEP = 250;
+    /** Amount at the last packet sent, -1 until the first one. Not persisted:
+     *  a fresh block entity simply syncs on its first change. */
+    private int lastSyncedAmount = -1;
+
 
     public FlarestackBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -72,8 +78,21 @@ public class FlarestackBlockEntity extends SmartBlockEntity implements IHaveGogg
     }
 
     protected void onFluidStackChanged(FluidStack newFluidStack) {
-        sendData();
         setChanged();
+
+        // A burning flarestack drains every tick, so syncing on every change
+        // sent a full block entity packet per tick to every client in range.
+        // The client needs two things from this tank: whether it holds anything,
+        // which decides if the flame keeps burning, and a readable amount for
+        // the goggles. Always sync the empty/not-empty flip, otherwise only once
+        // the amount has moved enough to be worth a packet.
+        int amount = newFluidStack.getAmount();
+        boolean emptinessFlipped = (amount == 0) != (lastSyncedAmount == 0);
+        if (!emptinessFlipped && lastSyncedAmount >= 0 && Math.abs(amount - lastSyncedAmount) < SYNC_STEP)
+            return;
+
+        lastSyncedAmount = amount;
+        sendData();
     }
 
     @Override
