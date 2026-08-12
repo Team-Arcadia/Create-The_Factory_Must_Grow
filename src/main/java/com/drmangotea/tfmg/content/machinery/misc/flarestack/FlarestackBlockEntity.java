@@ -80,36 +80,50 @@ public class FlarestackBlockEntity extends SmartBlockEntity implements IHaveGogg
     public void tick() {
         super.tick();
 
+        if (level == null)
+            return;
 
-        if(smokeTimer!=0) {
+        if (smokeTimer != 0) {
             spawnsSmoke = true;
             smokeTimer--;
-        }else {
+        } else {
             spawnsSmoke = false;
-
         }
 
-            if(spawnsSmoke) {
-                level.setBlock(getBlockPos(), this.getBlockState()
-                        .setValue(FlarestackBlock.LIT, true), 2);
-                makeParticles(level, this.getBlockPos());
-
-            } else
-    {
-        level.setBlock(getBlockPos(), this.getBlockState()
-                .setValue(FlarestackBlock.LIT, false), 2);
-    }
-        if(tankInventory.getFluidAmount()>0) {
-
+        // The tank is synced, so both sides agree on whether there is anything
+        // to burn and the flame keeps its timer topped up. Only the server may
+        // burn it: the client used to drain its own copy at up to 100 mB a tick
+        // and ran a 2500 mB tank dry in twenty-five ticks, so the goggle readout
+        // collapsed to zero and jumped back on every sync.
+        if (tankInventory.getFluidAmount() > 0) {
             smokeTimer = 100;
             spawnsSmoke = true;
-
-            if(tankInventory.getFluidAmount()>1000) {
-                tankInventory.drain(100, IFluidHandler.FluidAction.EXECUTE);
-            }else tankInventory.drain(30, IFluidHandler.FluidAction.EXECUTE);
-
         }
 
+        if (level.isClientSide && !isVirtual()) {
+            if (spawnsSmoke)
+                makeParticles(level, this.getBlockPos());
+            return;
+        }
+
+        setLit(spawnsSmoke);
+
+        if (tankInventory.getFluidAmount() > 0) {
+            if (tankInventory.getFluidAmount() > 1000) {
+                tankInventory.drain(100, IFluidHandler.FluidAction.EXECUTE);
+            } else tankInventory.drain(30, IFluidHandler.FluidAction.EXECUTE);
+        }
+    }
+
+    // Both branches called setBlock on every tick, whatever the state already
+    // was: a block update packet to every player in range and a light engine
+    // recalculation twenty times a second, for a value that changes twice a
+    // burn. Only write it when it actually differs.
+    private void setLit(boolean lit) {
+        BlockState state = getBlockState();
+        if (!state.hasProperty(FlarestackBlock.LIT) || state.getValue(FlarestackBlock.LIT) == lit)
+            return;
+        level.setBlock(getBlockPos(), state.setValue(FlarestackBlock.LIT, lit), 2);
     }
 
     public static void makeParticles(Level level, BlockPos pos) {

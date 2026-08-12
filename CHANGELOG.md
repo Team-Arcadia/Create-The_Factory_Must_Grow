@@ -63,6 +63,14 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **The pipe lock no longer replaces Create's own connection logic** — Locked pipes were implemented by overwriting `FluidPipeBlock.updateBlockState` wholesale, which shuts out every other mod touching that method and silently drifts from Create on each update. It is a targeted wrapper around the single connection test now, and a locked neighbour whose blockstate has no matching side no longer throws.
 
+- **The flarestack and the gas lamp stop rewriting their own block twenty times a second** — Both called `setBlock` on every tick whether or not the lit state had changed. Each call is a block update packet to every player in range and a light engine recalculation, for a value that changes twice in a burn. They write it only when it differs now.
+
+- **The flarestack and the gas lamp burn their fuel on the server only** — Both drained their own client-side copy of the tank as well. The flarestack takes up to 100 mB a tick, so the client ran a full 2500 mB tank dry in twenty-five ticks: the goggle readout collapsed to zero and jumped back on every sync. The flarestack keeps its flame and smoke on the client, where the particles are, and reads the fuel level from the synced tank instead of consuming it.
+
+- **The gas lamp keeps its afterglow** — It holds a five second timer meant to keep it lit after the last drop, but the empty-tank test returned early and switched the light off before the timer could ever run.
+
+- **The voltage observer stops waking its neighbours for nothing** — Its update flag is raised whenever the network's voltage or power moves, which on a live network is most ticks, and it then rewrote its blockstate and issued a redstone update to all six neighbours even when neither the powered state nor the comparator reading had changed. Both are now published only when they actually change, and the powered state is compared against the real block rather than a cached copy.
+
 ### Changed
 
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
@@ -124,6 +132,14 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **Le polariseur annonce sa charge sous forme de nombre** — La fonction de pourcentage concaténait un objet constructeur de texte avec le signe au lieu d'un nombre formaté : la ligne des lunettes affichait `LangBuilder@6f2b958e%`.
 
 - **Le verrouillage des tuyaux ne remplace plus la logique de connexion de Create** — Les tuyaux verrouillés étaient implémentés en réécrivant intégralement `FluidPipeBlock.updateBlockState`, ce qui exclut tout autre mod touchant à cette méthode et s'écarte silencieusement de Create à chaque mise à jour. C'est désormais un adaptateur ciblé autour du seul test de connexion, et un voisin verrouillé dont l'état de bloc n'a pas la face correspondante ne provoque plus d'exception.
+
+- **La torchère et la lampe à gaz cessent de réécrire leur propre bloc vingt fois par seconde** — Toutes deux appelaient `setBlock` à chaque tick, que l'état allumé ait changé ou non. Chaque appel est un paquet de mise à jour de bloc envoyé à tous les joueurs à portée et un recalcul du moteur d'éclairage, pour une valeur qui change deux fois par combustion. Elles ne l'écrivent plus que lorsqu'elle diffère.
+
+- **La torchère et la lampe à gaz brûlent leur carburant côté serveur uniquement** — Toutes deux vidaient aussi leur copie client du réservoir. La torchère consomme jusqu'à 100 mB par tick : le client asséchait un réservoir plein de 2500 mB en vingt-cinq ticks, si bien que l'affichage des lunettes tombait à zéro et remontait à chaque synchronisation. La torchère garde sa flamme et sa fumée côté client, là où sont les particules, et lit le niveau de carburant sur le réservoir synchronisé au lieu de le consommer.
+
+- **La lampe à gaz conserve sa rémanence** — Elle porte une minuterie de cinq secondes censée la maintenir allumée après la dernière goutte, mais le test de réservoir vide sortait avant et éteignait la lumière sans jamais laisser la minuterie s'écouler.
+
+- **L'observateur de tension cesse de réveiller ses voisins pour rien** — Son drapeau de mise à jour est levé dès que la tension ou la puissance du réseau bouge, ce qui sur un réseau vivant arrive presque à chaque tick, et il réécrivait alors son état de bloc et envoyait une mise à jour redstone aux six voisins même quand ni l'état alimenté ni la lecture du comparateur n'avaient changé. Les deux ne sont désormais publiés que lorsqu'ils changent réellement, et l'état alimenté est comparé au bloc réel plutôt qu'à une copie en cache.
 
 ### Modifications
 

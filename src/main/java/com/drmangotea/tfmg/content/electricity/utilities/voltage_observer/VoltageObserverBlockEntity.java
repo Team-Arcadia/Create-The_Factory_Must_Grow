@@ -19,6 +19,12 @@ public class VoltageObserverBlockEntity extends ElectricBlockEntity {
 
     boolean update = false;
 
+    // Last values actually published to the world. onNetworkChanged fires on
+    // every voltage or power move, which on a live network is most ticks, and
+    // the observer used to rewrite its blockstate and poke all six neighbours
+    // each time even when nothing it exposes had changed.
+    private int lastComparatorLevel = -1;
+
     ObservedElectricBehaviour observedElectricBehaviour;
 
     public VoltageObserverBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -46,8 +52,21 @@ public class VoltageObserverBlockEntity extends ElectricBlockEntity {
         super.tick();
         if(update){
             if (!level.isClientSide) {
-                level.setBlock(getBlockPos(),getBlockState().setValue(POWERED,getData().getVoltage() != 0),2);
-                level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
+                boolean powered = getData().getVoltage() != 0;
+                int comparatorLevel = getComparatorOutput();
+
+                // Write the blockstate only when the redstone output flips.
+                // Read the real state rather than a cached copy, so a state
+                // changed from outside is still corrected.
+                if (getBlockState().getValue(POWERED) != powered)
+                    level.setBlock(getBlockPos(), getBlockState().setValue(POWERED, powered), 2);
+                // Still poke the neighbours when only the comparator reading
+                // moved: a comparator tracks the voltage continuously and has
+                // no other way to learn it changed.
+                if (comparatorLevel != lastComparatorLevel) {
+                    level.updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
+                    lastComparatorLevel = comparatorLevel;
+                }
             }
             update = false;
         }

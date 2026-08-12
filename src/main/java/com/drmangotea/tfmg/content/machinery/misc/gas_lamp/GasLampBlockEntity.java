@@ -75,24 +75,34 @@ public class GasLampBlockEntity extends SmartBlockEntity implements IHaveGoggleI
     public void tick() {
         super.tick();
 
-        if (tankInventory.isEmpty() || !tankInventory.isFluidValid(tankInventory.getFluid())) {
-            level.setBlock(getBlockPos(), this.getBlockState()
-                    .setValue(GasLampBlock.LIT, false), 2);
+        // Burning the fuel and owning the lit state are server business. The
+        // client used to drain its own copy of the tank, so the goggle readout
+        // slid below the real level between syncs.
+        if (level == null || (level.isClientSide && !isVirtual()))
             return;
-        }
 
+        boolean fuelled = !tankInventory.isEmpty() && tankInventory.isFluidValid(tankInventory.getFluid());
 
-        if (tankInventory.getFluidAmount() > 0) {
+        if (fuelled) {
             if (level.random.nextInt(20) == 0)
                 tankInventory.drain(1, IFluidHandler.FluidAction.EXECUTE);
             lightTimer = 100;
+        } else if (lightTimer > 0) {
+            lightTimer--;
         }
 
-        if (lightTimer > 0) {
-            lightTimer--;
-            level.setBlock(getBlockPos(), this.getBlockState()
-                    .setValue(GasLampBlock.LIT, true), 2);
-        }
+        setLit(fuelled || lightTimer > 0);
+    }
+
+    // setBlock was called unconditionally on every tick, lit or not. Each call
+    // is a block update packet to every player in range and a light engine
+    // recalculation, twenty times a second per lamp, for a value that changes
+    // once. Only write the state when it actually differs.
+    private void setLit(boolean lit) {
+        BlockState state = getBlockState();
+        if (!state.hasProperty(GasLampBlock.LIT) || state.getValue(GasLampBlock.LIT) == lit)
+            return;
+        level.setBlock(getBlockPos(), state.setValue(GasLampBlock.LIT, lit), 2);
     }
 
     @Override
