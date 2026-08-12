@@ -2031,6 +2031,14 @@ public class TFMGBlocks {
     public static final Map<String, MaterialSet> COLORED_CONCRETE = generateColoredConcrete(false);
     public static final Map<String, MaterialSet> COLORED_REBAR_CONCRETE = generateColoredConcrete(true);
 
+    // Coloured counterparts of the two shapes above. Every other coloured
+    // concrete shape already existed - block, slab, stairs, wall - and the floor
+    // and the pillar were the only ones a player could not colour.
+    public static final Map<String, BlockEntry<RebarConcreteFloorBlock>> COLORED_REBAR_CONCRETE_FLOOR =
+            generateColoredRebarConcreteFloors();
+    public static final Map<String, BlockEntry<RebarConcretePillarBlock>> COLORED_REBAR_CONCRETE_PILLAR =
+            generateColoredRebarConcretePillars();
+
 
     public static final BlockEntry<Block> ASPHALT = REGISTRATE.block("asphalt", Block::new)
             .initialProperties(() -> Blocks.STONE)

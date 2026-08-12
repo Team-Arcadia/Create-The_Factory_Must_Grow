@@ -6,6 +6,8 @@ import com.drmangotea.tfmg.base.blocks.TFMGHorizontalDirectionalBlock;
 import com.drmangotea.tfmg.base.blocks.TFMGVanillaBlockStates;
 import com.drmangotea.tfmg.config.TFMGStress;
 import com.drmangotea.tfmg.content.decoration.FrameBlock;
+import com.drmangotea.tfmg.content.decoration.concrete.RebarConcreteFloorBlock;
+import com.drmangotea.tfmg.content.decoration.concrete.RebarConcretePillarBlock;
 import com.drmangotea.tfmg.content.decoration.TrussBlock;
 import com.drmangotea.tfmg.content.decoration.doors.TFMGSlidingDoorBlock;
 import com.drmangotea.tfmg.content.decoration.kinetics.encased.TFMGEncasedCogwheelBlock;
@@ -27,6 +29,9 @@ import com.simibubi.create.foundation.data.recipe.CommonMetal;
 import com.tterrag.registrate.builders.BlockBuilder;
 import com.tterrag.registrate.providers.DataGenContext;
 import com.tterrag.registrate.providers.RegistrateBlockstateProvider;
+import com.simibubi.create.foundation.data.BlockStateGen;
+import java.util.HashMap;
+import java.util.Map;
 import com.tterrag.registrate.util.DataIngredient;
 import com.tterrag.registrate.util.entry.BlockEntry;
 import com.tterrag.registrate.util.nullness.NonNullFunction;
@@ -469,5 +474,60 @@ public class TFMGBuilderTransformers {
                 .register();
 
         return materialSet;
+    }
+
+    /**
+     * Coloured rebar concrete floors.
+     *
+     * The block, slab, stairs and wall all had their sixteen colours; the floor
+     * and the pillar did not, so a player building in coloured rebar concrete
+     * hit a wall the moment they wanted either shape. Same geometry as the
+     * uncoloured block, same strength, and the model only swaps which concrete
+     * texture it points at - all sixteen already ship with the mod.
+     *
+     * Obtained by cutting the matching coloured rebar concrete, the way its
+     * slab, stairs and wall already are.
+     */
+    public static Map<String, BlockEntry<RebarConcreteFloorBlock>> generateColoredRebarConcreteFloors() {
+        Map<String, BlockEntry<RebarConcreteFloorBlock>> list = new HashMap<>();
+        for (String color : COLORS) {
+            list.put(color, REGISTRATE.block(color + "_rebar_concrete_floor", RebarConcreteFloorBlock::new)
+                    .initialProperties(() -> Blocks.STONE)
+                    .properties(BlockBehaviour.Properties::noOcclusion)
+                    .properties(BlockBehaviour.Properties::requiresCorrectToolForDrops)
+                    .properties(p -> p.strength(12f, 1200f))
+                    .transform(pickaxeOnly())
+                    .tag(BlockTags.NEEDS_STONE_TOOL)
+                    .blockstate((ctx, prov) -> prov.simpleBlock(ctx.getEntry(), AssetLookup.partialBaseModel(ctx, prov)))
+                    .recipe((c, p) -> p.stonecutting(
+                            DataIngredient.items(TFMGBlocks.COLORED_REBAR_CONCRETE.get(color).block.asItem()),
+                            RecipeCategory.BUILDING_BLOCKS, c, 1))
+                    .item()
+                    .transform(customItemModel())
+                    .register());
+        }
+        return list;
+    }
+
+    /** Coloured rebar concrete pillars. See the floors above. */
+    public static Map<String, BlockEntry<RebarConcretePillarBlock>> generateColoredRebarConcretePillars() {
+        Map<String, BlockEntry<RebarConcretePillarBlock>> list = new HashMap<>();
+        for (String color : COLORS) {
+            list.put(color, REGISTRATE.block(color + "_rebar_concrete_pillar", RebarConcretePillarBlock::new)
+                    .initialProperties(() -> Blocks.STONE)
+                    .properties(BlockBehaviour.Properties::noOcclusion)
+                    .properties(BlockBehaviour.Properties::requiresCorrectToolForDrops)
+                    .properties(p -> p.strength(12f, 1200f))
+                    .transform(pickaxeOnly())
+                    .tag(BlockTags.NEEDS_STONE_TOOL)
+                    .blockstate(BlockStateGen.directionalBlockProvider(true))
+                    .recipe((c, p) -> p.stonecutting(
+                            DataIngredient.items(TFMGBlocks.COLORED_REBAR_CONCRETE.get(color).block.asItem()),
+                            RecipeCategory.BUILDING_BLOCKS, c, 1))
+                    .item()
+                    .transform(customItemModel())
+                    .register());
+        }
+        return list;
     }
 }
