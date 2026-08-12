@@ -6,7 +6,28 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ## [Unreleased]
 
-Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompted.
+---
+
+## [1.2.7] - 2026-08-12
+
+50 fixes, from two sources. First the 156-test pass on 1.2.6 and the sweeps it
+prompted. Then a review of the 27 commits upstream has published since this fork
+branched: nine of them were fixes this fork did not have, and they pointed at a
+family worth chasing on our own - machines doing authoritative work on both
+sides, so the client converts, smelts or pumps against its own copy of the tanks
+and the numbers slide away from the server between packets. The blast stove, the
+blast furnace, the pumpjack base, the flarestack, the gas lamp and the large
+generator all carried a form of it.
+
+50 correctifs, de deux origines. D'abord la passe de 156 tests sur la 1.2.6 et
+les balayages qu'elle a déclenchés. Ensuite l'examen des 27 commits publiés par
+upstream depuis la divergence de ce fork : neuf étaient des correctifs que ce
+fork n'avait pas, et ils ont désigné une famille à traquer de notre côté - des
+machines qui font un travail autoritaire des deux côtés, le client convertissant,
+fondant ou pompant sur sa propre copie des réservoirs, si bien que les nombres
+s'écartent de ceux du serveur entre deux paquets. Le blast stove, le haut
+fourneau, la base du pumpjack, la torchère, la lampe à gaz et le grand
+générateur en portaient chacun une forme.
 
 ### Added
 
