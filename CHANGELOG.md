@@ -95,6 +95,10 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **The pumpjack base pumps on the server only** — The deposit bookkeeping in its process step was already server-side, but the tank fill right below it was not, so the client pumped crude oil into its own copy of the tank at the mining rate every tick. The amount shown climbed away from the server and snapped back on each sync.
 
+- **The coke oven keeps its controller across a load** — `read` guards the stored size with a presence check but read the controller position straight through, and a missing key there yields 0, which is the position (0,0,0). Every oven in the world would then have failed to recognise itself as its own controller. The key is always written, so this never fired, but the line right below it was already written the safe way.
+
+- **The winding machine stops scanning the recipe manager for an empty slot** — Its recipe lookup runs from the lazy tick on both sides whether or not the machine holds anything, and it performs two scans: the plain winding recipe and the sequenced assembly one. An idle machine paid four scans a second to learn what an empty slot already told it. The coke oven caches its own lookup for the same reason.
+
 ### Changed
 
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
@@ -188,6 +192,10 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **Le haut fourneau fond côté serveur uniquement** — Son tick brûlait le coke, réduisait les piles d'entrée et de fondant et remplissait les deux réservoirs de résultat des deux côtés : un four à portée de vue exécutait donc toute la recette sur les copies du client, avec sa propre minuterie, jusqu'à ce qu'une synchronisation écrase le résultat. Le compteur de carburant, les inventaires, les réservoirs et la minuterie sont tous envoyés au client ; seule l'animation du tas de coke lui revient, et elle lit ces valeurs synchronisées.
 
 - **La base du pumpjack pompe côté serveur uniquement** — La gestion du gisement dans son étape de traitement était déjà côté serveur, mais le remplissage du réservoir juste en dessous ne l'était pas : le client pompait du pétrole brut dans sa propre copie du réservoir, au débit d'extraction, à chaque tick. La quantité affichée s'éloignait de celle du serveur et revenait d'un coup à chaque synchronisation.
+
+- **Le four à coke conserve son contrôleur au rechargement** — Son `read` protège la taille enregistrée par un test de présence mais lisait la position du contrôleur directement, et une clé absente y vaut 0, c'est-à-dire la position (0,0,0). Tous les fours du monde auraient alors cessé de se reconnaître comme leur propre contrôleur. La clé est toujours écrite, donc le cas ne s'est jamais produit, mais la ligne juste en dessous était déjà écrite de la manière sûre.
+
+- **La machine à bobiner cesse de scanner le gestionnaire de recettes à vide** — Sa recherche de recette part du lazy tick des deux côtés, que la machine contienne quelque chose ou non, et elle fait deux scans : la recette de bobinage et celle d'assemblage séquentiel. Une machine à l'arrêt payait quatre scans par seconde pour apprendre ce qu'un emplacement vide lui disait déjà. Le four à coke met la sienne en cache pour la même raison.
 
 ### Modifications
 
