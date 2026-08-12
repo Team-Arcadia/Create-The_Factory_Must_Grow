@@ -81,6 +81,8 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **The engine controller's wheel and pedals keep animating** — The renderer decided whether to animate by comparing the block entity's position against the driver's with `==`, which tests object identity, not coordinates. It matched only because the handler happened to be handed the very same object; the moment the chunk reloaded, the client rebuilt the block entity with a fresh position object and the wheel and pedals froze for a player still at the controls.
 
+- **The segmented display initialises like every other block** — Its `initialize` override was the only one of the six in the mod that did not call `super`, so the block skipped the behaviour attachment event and the first lazy tick, which is where it evaluates its electricity.
+
 ### Changed
 
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
@@ -160,6 +162,8 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **La traduction allemande ne porte plus chaque clé en double** — 250 entrées étaient dupliquées avec des valeurs identiques : éditer la première copie de l'une d'elles n'aurait eu aucun effet.
 
 - **Le volant et les pédales du contrôleur de moteur continuent de s'animer** — Le rendu décidait d'animer ou non en comparant la position de la block entity à celle du conducteur avec `==`, ce qui teste l'identité des objets et non les coordonnées. Ça ne fonctionnait que parce que le gestionnaire recevait justement le même objet ; dès le rechargement du chunk, le client reconstruisait la block entity avec un nouvel objet de position et le volant comme les pédales se figeaient pour un joueur toujours aux commandes.
+
+- **L'afficheur segmenté s'initialise comme tous les autres blocs** — Sa redéfinition d'`initialize` était la seule des six du mod à ne pas appeler `super` : le bloc sautait l'événement d'attachement des comportements et le premier lazy tick, là où il évalue son électricité.
 
 ### Modifications
 

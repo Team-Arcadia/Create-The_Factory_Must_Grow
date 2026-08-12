@@ -105,6 +105,11 @@ public class SegmentedDisplayBlockEntity extends ElectricBlockEntity {
 
     @Override
     public void initialize() {
+        // The five other initialize() overrides in the mod all call super, and
+        // this one has to as well: that is what posts the behaviour attachment
+        // event and runs the first lazy tick, which is where this block
+        // evaluates its electricity.
+        super.initialize();
         if (level.isClientSide)
             updateDisplayedStrings();
     }
