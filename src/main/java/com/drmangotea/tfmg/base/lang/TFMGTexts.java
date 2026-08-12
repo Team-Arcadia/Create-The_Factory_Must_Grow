@@ -3,6 +3,7 @@ package com.drmangotea.tfmg.base.lang;
 import com.drmangotea.tfmg.base.TFMGUtils;
 import com.simibubi.create.content.processing.recipe.HeatCondition;
 import net.createmod.catnip.lang.LangBuilder;
+import net.createmod.catnip.lang.LangNumberFormat;
 import net.createmod.catnip.theme.Color;
 import net.minecraft.ChatFormatting;
 import net.minecraft.world.item.ItemStack;
@@ -13,7 +14,10 @@ import net.minecraft.world.item.ItemStack;
  */
 public class TFMGTexts {
     public static String percent(double value) {
-        return TFMGLang.number(value) + "%";
+        // TFMGLang.number returns a LangBuilder, so the old concatenation put
+        // that object's identity string in front of the sign: the polarizer's
+        // charge line read "LangBuilder@6f2b958e%". Format the number itself.
+        return LangNumberFormat.format(value) + "%";
     }
     // Electricity info
     public static String power(double value) {

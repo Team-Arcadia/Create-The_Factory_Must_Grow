@@ -39,8 +39,6 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **The casting basin shows the metal it holds** — Its fill animation sat at the end of tick(), below the server-only early return added when casting was moved off the client. Nothing drove the chaser after that, so the renderer read a fluid level frozen at zero and the basin looked empty however full it was. The animation runs before the guard now.
 
-- **The casting basin shows the metal it holds** — Its fill animation sat at the end of tick(), below the server-only early return added when casting was moved off the client. Nothing drove the chaser after that, so the renderer read a fluid level frozen at zero and the basin looked empty however full it was. The animation runs before the guard now.
-
 - **Pulling a part off an engine no longer leaves a ghost item** — Create's wrench forwards onWrenched and onSneakWrenched to the block without a side check, and useItemOn runs on the client too, so the client spawned its own copy of the component, shaft or upgrade being removed. That copy belongs to no server entity, cannot be picked up, and stays next to the real drop until the chunk reloads. Affected the wrench on an upgrade, the wrench on the output shaft, and the screwdriver pulling components back out.
 
 - **The distillation tower stops pouring into stages that are gone** — Its list of output stages is rebuilt on a 20-tick timer, so for up to a second after a stage was broken — or after the stages' chunk unloaded while the controller stayed loaded, which a tower straddling a chunk border does — the controller still counted the missing stage and pushed its fraction into a block entity detached from the world, where the fluid disappeared. The cached references are checked before use.
@@ -50,6 +48,20 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **Pick-block works on blocks that have no item of their own** — A glass pipe, a concreted cable tube and a concreted electric post all exist only when placed and drop their plain counterpart when broken, but middle-clicking one asked for an item that does not exist and handed back an empty stack. They answer with what their loot tables already drop, as the encased pipe has always done.
 
 - **Concrete filling skips its own root** — The root position was compared by reference against a fresh `BlockPos` built on every call, so it almost never matched itself.
+
+- **An empty oil can or cooling fluid bottle no longer crashes the game on an engine** — The engine unboxed the item's stored amount without checking it was there, and a container that has never been filled carries no amount at all.
+
+- **An engine takes what it can hold and no more** — The fill code measured the room left against the block that was clicked rather than the controller, so a can emptied into any block but the first read a level of zero and poured its whole contents in, past the 2000 mB ceiling. The two bucket paths went further and wrote into the clicked block itself, where the number was read by nothing and lost on the next save.
+
+- **A multi-block blast stove still takes fluid after a chunk reload** — Its fluid handler was handed out from whichever block a pipe happened to touch. A part block keeps empty local tanks, so once the stove had been reloaded and the parts came back before the controller, every attached pipe was talking to an inventory that led nowhere.
+
+- **A blast stove cannot be built wider than two blocks** — The size limit was declared and never read, so the width fell through to Create's fluid tank setting and a three-wide stove could form.
+
+- **The voltmeter names its network usage mode** — The measurement modes build their translation key from their own name, and the key file spelled that one `network_power_use` where the mode is `NETWORK_POWER_USAGE`. Set to it, the dial showed the raw key. Corrected in every language.
+
+- **The polarizer states its charge as a number** — The percentage helper concatenated a text builder object with the sign instead of a formatted number, so the goggle line read `LangBuilder@6f2b958e%`.
+
+- **The pipe lock no longer replaces Create's own connection logic** — Locked pipes were implemented by overwriting `FluidPipeBlock.updateBlockState` wholesale, which shuts out every other mod touching that method and silently drifts from Create on each update. It is a targeted wrapper around the single connection test now, and a locked neighbour whose blockstate has no matching side no longer throws.
 
 ### Changed
 
@@ -89,8 +101,6 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **Le bassin de coulée montre le métal qu'il contient** — Son animation de remplissage se trouvait à la fin de tick(), sous le retour anticipé côté serveur ajouté quand la coulée a été retirée du client. Plus rien ne faisait avancer l'interpolation : le rendu lisait un niveau de fluide figé à zéro et le bassin paraissait vide quel que soit son contenu. L'animation passe avant le garde.
 
-- **Le bassin de coulée montre le métal qu'il contient** — Son animation de remplissage se trouvait à la fin de tick(), sous le retour anticipé côté serveur ajouté quand la coulée a été retirée du client. Plus rien ne faisait avancer l'interpolation : le rendu lisait un niveau de fluide figé à zéro et le bassin paraissait vide quel que soit son contenu. L'animation passe avant le garde.
-
 - **Retirer une pièce d'un moteur ne laisse plus d'item fantôme** — La clé de Create transmet onWrenched et onSneakWrenched au bloc sans test de côté, et useItemOn tourne aussi côté client : le client faisait donc apparaître sa propre copie du composant, de l'axe ou de l'amélioration retirée. Cette copie n'appartient à aucune entité serveur, ne peut pas être ramassée, et reste à côté du vrai butin jusqu'au rechargement du chunk. Concernait la clé sur une amélioration, la clé sur l'axe de sortie, et le tournevis qui ressort les composants.
 
 - **La tour de distillation ne verse plus dans des étages disparus** — Sa liste d'étages de sortie est reconstruite sur une minuterie de 20 ticks : pendant une seconde après la casse d'un étage — ou après le déchargement du chunk des étages alors que le contrôleur reste chargé, ce que fait une tour à cheval sur une frontière de chunk — le contrôleur comptait toujours l'étage manquant et y poussait sa fraction, dans une block entity détachée du monde où le fluide disparaissait. Les références en cache sont vérifiées avant usage.
@@ -100,6 +110,20 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **Le clic-molette fonctionne sur les blocs qui n'ont pas d'item** — Un tuyau vitré, une gaine de câble bétonnée et un poteau électrique bétonné n'existent que posés et rendent leur version simple à la casse, mais le clic-molette réclamait un item inexistant et ne rendait rien. Ils répondent désormais ce que leur table de butin donne déjà, comme le fait le tuyau coffré depuis toujours.
 
 - **Le remplissage de béton ignore sa propre racine** — La position racine était comparée par référence à un `BlockPos` reconstruit à chaque appel, donc elle ne se reconnaissait presque jamais.
+
+- **Un bidon d'huile ou une bouteille de liquide de refroidissement vide ne plante plus le jeu sur un moteur** — Le moteur déréférençait la quantité stockée sans vérifier qu'elle existait, alors qu'un contenant jamais rempli n'en porte aucune.
+
+- **Un moteur prend ce qu'il peut contenir, pas davantage** — Le code de remplissage mesurait la place restante sur le bloc cliqué et non sur le contrôleur : un bidon vidé dans n'importe quel bloc autre que le premier lisait un niveau de zéro et déversait tout son contenu, au-delà du plafond de 2000 mB. Les deux chemins par seau allaient plus loin et écrivaient dans le bloc cliqué lui-même, où la valeur n'était lue par personne et perdue à la sauvegarde suivante.
+
+- **Un four à vent multi-bloc accepte encore les fluides après un rechargement de chunk** — Son gestionnaire de fluides était fourni par le bloc que le tuyau touchait, quel qu'il soit. Un bloc secondaire conserve des réservoirs locaux vides : une fois le four rechargé et les parties revenues avant le contrôleur, chaque tuyau raccordé parlait à un inventaire qui ne menait nulle part.
+
+- **Un four à vent ne peut plus être construit sur plus de deux blocs de large** — La limite de taille était déclarée et jamais lue : la largeur retombait sur le réglage des réservoirs de Create et un four de trois blocs de large pouvait se former.
+
+- **Le voltmètre nomme son mode de consommation réseau** — Les modes de mesure construisent leur clé de traduction à partir de leur propre nom, et le fichier de clés écrivait `network_power_use` là où le mode s'appelle `NETWORK_POWER_USAGE`. Réglé dessus, le cadran affichait la clé brute. Corrigé dans toutes les langues.
+
+- **Le polariseur annonce sa charge sous forme de nombre** — La fonction de pourcentage concaténait un objet constructeur de texte avec le signe au lieu d'un nombre formaté : la ligne des lunettes affichait `LangBuilder@6f2b958e%`.
+
+- **Le verrouillage des tuyaux ne remplace plus la logique de connexion de Create** — Les tuyaux verrouillés étaient implémentés en réécrivant intégralement `FluidPipeBlock.updateBlockState`, ce qui exclut tout autre mod touchant à cette méthode et s'écarte silencieusement de Create à chaque mise à jour. C'est désormais un adaptateur ciblé autour du seul test de connexion, et un voisin verrouillé dont l'état de bloc n'a pas la face correspondante ne provoque plus d'exception.
 
 ### Modifications
 

@@ -1001,7 +1001,7 @@
   "tfmg.goggles.voltmeter.mode.fallback": "Резерв",
   "tfmg.goggles.voltmeter.mode.high_voltage": "Напруга (висока)",
   "tfmg.goggles.voltmeter.mode.network_power_generation": "Творення енергії мережею",
-  "tfmg.goggles.voltmeter.mode.network_power_use": "Споживання енергії мережею",
+  "tfmg.goggles.voltmeter.mode.network_power_usage": "Споживання енергії мережею",
   "tfmg.goggles.voltmeter.mode.power": "Потужність",
   "tfmg.goggles.voltmeter.mode.resistance": "Опір",
   "tfmg.goggles.voltmeter.mode.voltage": "Напруга",

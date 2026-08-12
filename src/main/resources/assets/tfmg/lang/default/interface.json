@@ -218,7 +218,7 @@
   "tfmg.goggles.voltmeter.mode.current": "Current",
   "tfmg.goggles.voltmeter.mode.resistance": "Resistance",
   "tfmg.goggles.voltmeter.mode.power": "Power",
-  "tfmg.goggles.voltmeter.mode.network_power_use": "Network Power Usage",
+  "tfmg.goggles.voltmeter.mode.network_power_usage": "Network Power Usage",
   "tfmg.goggles.voltmeter.mode.network_power_generation": "Network Power Generation",
   "tfmg.goggles.voltmeter.mode.capacity": "Capacity",
   "tfmg.goggles.voltmeter.mode.fallback": "Fallback",

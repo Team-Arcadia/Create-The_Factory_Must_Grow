@@ -992,7 +992,7 @@
   "tfmg.goggles.voltmeter.mode.fallback": "Reserva",
   "tfmg.goggles.voltmeter.mode.high_voltage": "Tensão (Alta)",
   "tfmg.goggles.voltmeter.mode.network_power_generation": "Geração de Energia da Rede",
-  "tfmg.goggles.voltmeter.mode.network_power_use": "Uso de Energia da Rede",
+  "tfmg.goggles.voltmeter.mode.network_power_usage": "Uso de Energia da Rede",
   "tfmg.goggles.voltmeter.mode.power": "Potência",
   "tfmg.goggles.voltmeter.mode.resistance": "Resistência",
   "tfmg.goggles.voltmeter.mode.voltage": "Tensão",

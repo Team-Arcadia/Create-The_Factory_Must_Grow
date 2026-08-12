@@ -430,38 +430,64 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
 
             if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be) {
 
-                int toDrain = Math.min(2000 - coolingFluid, itemStack.get(TFMGDataComponents.AMOUNT));
-                itemStack.set(TFMGDataComponents.AMOUNT, itemStack.get(TFMGDataComponents.AMOUNT) - toDrain);
+                // A bottle that has never been filled carries no AMOUNT at all,
+                // and unboxing it crashed the game. The capacity check also has
+                // to read the controller's level, not this block's copy of it,
+                // or the engine takes far more than the 2000 mB it can hold.
+                Integer amount = itemStack.get(TFMGDataComponents.AMOUNT);
+                if (amount == null)
+                    return false;
+
+                int toDrain = Math.min(2000 - be.coolingFluid, amount);
+                itemStack.set(TFMGDataComponents.AMOUNT, amount - toDrain);
                 be.coolingFluid += toDrain;
                 level.playSound(null, getBlockPos(), SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
+                be.setChanged();
+                be.sendData();
                 return true;
             }
         }
         if (itemStack.is(TFMGItems.OIL_CAN.get())) {
             if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be) {
-                int toDrain = Math.min(2000 - oil, itemStack.get(TFMGDataComponents.AMOUNT));
-                itemStack.set(TFMGDataComponents.AMOUNT, itemStack.get(TFMGDataComponents.AMOUNT) - toDrain);
+                Integer amount = itemStack.get(TFMGDataComponents.AMOUNT);
+                if (amount == null)
+                    return false;
+
+                int toDrain = Math.min(2000 - be.oil, amount);
+                itemStack.set(TFMGDataComponents.AMOUNT, amount - toDrain);
                 be.oil += toDrain;
                 level.playSound(null, getBlockPos(), SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
                 updateRotation();
+                be.setChanged();
+                be.sendData();
                 return true;
             }
         }
+        // The bucket branches used to fill this block instead of the controller,
+        // so a bucket emptied into any block but the first was simply lost.
         if (itemStack.is(TFMGFluids.COOLING_FLUID.getBucket().get())) {
-            if (coolingFluid <= 1000) {
-                coolingFluid += 1000;
+            if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be) {
+                if (be.coolingFluid > 1000)
+                    return false;
+                be.coolingFluid += 1000;
                 player.setItemInHand(hand, Items.BUCKET.getDefaultInstance());
                 level.playSound(null, getBlockPos(), SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
                 updateRotation();
+                be.setChanged();
+                be.sendData();
                 return true;
             }
         }
         if (itemStack.is(TFMGFluids.LUBRICATION_OIL.getBucket().get())) {
-            if (oil <= 1000) {
-                oil += 1000;
+            if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be) {
+                if (be.oil > 1000)
+                    return false;
+                be.oil += 1000;
                 player.setItemInHand(hand, Items.BUCKET.getDefaultInstance());
                 level.playSound(null, getBlockPos(), SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
                 updateRotation();
+                be.setChanged();
+                be.sendData();
                 return true;
             }
         }

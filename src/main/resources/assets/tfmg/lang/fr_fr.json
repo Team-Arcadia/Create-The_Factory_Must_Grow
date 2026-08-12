@@ -1502,7 +1502,7 @@
   "tfmg.goggles.voltmeter.mode.fallback": "Repli",
   "tfmg.goggles.voltmeter.mode.high_voltage": "Tension (haute)",
   "tfmg.goggles.voltmeter.mode.network_power_generation": "Production du réseau",
-  "tfmg.goggles.voltmeter.mode.network_power_use": "Consommation du réseau",
+  "tfmg.goggles.voltmeter.mode.network_power_usage": "Consommation du réseau",
   "tfmg.goggles.voltmeter.mode.power": "Puissance",
   "tfmg.goggles.voltmeter.mode.resistance": "Résistance",
   "tfmg.goggles.voltmeter.mode.voltage": "Tension",

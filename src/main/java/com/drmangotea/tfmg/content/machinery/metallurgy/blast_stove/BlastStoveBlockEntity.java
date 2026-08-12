@@ -458,8 +458,16 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
                 Capabilities.FluidHandler.BLOCK,
                 TFMGBlockEntities.BLAST_STOVE.get(),
                 (be, context) -> {
-                    if (be.primaryCapability == null || be.secondaryCapability == null)
-                        be.refreshCapability();
+                    // Hand out the controller's handlers, never this block's
+                    // own. A part block keeps empty local tanks, so after a
+                    // chunk reload every pipe attached to a multi-block stove
+                    // was talking to an inventory that led nowhere.
+                    BlastStoveBlockEntity controller = be.getControllerBE();
+                    if (controller == null)
+                        return null;
+
+                    if (controller.primaryCapability == null || controller.secondaryCapability == null)
+                        controller.refreshCapability();
 
                     // A null context means "no particular side" — e.g.
                     // ComputerCraft's peripheral scan queries the block
@@ -469,9 +477,9 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
                     // Treat null as the top/Y face and fall back to the
                     // primary handler.
                     if (context == null || context.getAxis() == Direction.Axis.Y)
-                        return be.primaryCapability;
+                        return controller.primaryCapability;
                     if (be.getController().getY() == be.getBlockPos().getY())
-                        return be.secondaryCapability;
+                        return controller.secondaryCapability;
 
                     return null;
                 }
@@ -531,6 +539,13 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
         if (longAxis == Direction.Axis.Y)
             return getMaxHeight();
         return getMaxWidth();
+    }
+
+    // MAX_SIZE was declared and never read, so the width fell through to
+    // Create's fluid tank config and a stove three blocks wide could form.
+    @Override
+    public int getMaxWidth() {
+        return MAX_SIZE;
     }
 }
 

@@ -1093,7 +1093,7 @@
   "tfmg.goggles.voltmeter.mode.fallback": "后备",
   "tfmg.goggles.voltmeter.mode.high_voltage": "电压 (高压)",
   "tfmg.goggles.voltmeter.mode.network_power_generation": "网络发电量",
-  "tfmg.goggles.voltmeter.mode.network_power_use": "网络耗电量",
+  "tfmg.goggles.voltmeter.mode.network_power_usage": "网络耗电量",
   "tfmg.goggles.voltmeter.mode.power": "功率",
   "tfmg.goggles.voltmeter.mode.resistance": "电阻",
   "tfmg.goggles.voltmeter.mode.voltage": "电压",
