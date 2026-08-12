@@ -91,6 +91,10 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **The blast stove converts its fluids on the server only** — Its tick drained the input tanks, filled the output ones and advanced the timer that paces them, on both sides. The client ran the whole recipe against its own copy of the tanks, on its own timer, so the amounts it displayed drifted from the server and jumped back on every sync. Both the tanks and the timer are already sent to the client, so it had nothing to compute. The casting basin, firebox, winding machine and polarizer had each been taken off the client for this exact reason; the blast stove was the one still left.
 
+- **The blast furnace smelts on the server only** — Its tick burned coke, shrank the input and flux stacks and filled both result tanks on both sides, so a furnace in view ran the whole recipe against the client's own copies on its own timer until a sync overwrote it. The fuel count, the inventories, the tanks and the timer are all sent to the client; only the coke pile animation belongs there, and it reads those synced values.
+
+- **The pumpjack base pumps on the server only** — The deposit bookkeeping in its process step was already server-side, but the tank fill right below it was not, so the client pumped crude oil into its own copy of the tank at the mining rate every tick. The amount shown climbed away from the server and snapped back on each sync.
+
 ### Changed
 
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
@@ -180,6 +184,10 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **L'anneau de stators du grand générateur n'est plus réécrit par le client** — Le rotor applique la forme de chaque stator avec `setBlock`, et il le faisait depuis son tick et son lazy tick des deux côtés. Au chargement d'un chunk, le client voit un anneau partiel : il écrivait donc ces états en local et laissait un générateur visuellement cassé jusqu'au rechargement du chunk. Seule l'écriture est désormais côté serveur ; le balayage et la liste des stators restent des deux côtés, puisque la production s'en déduit aussi là.
 
 - **Le blast stove convertit ses fluides côté serveur uniquement** — Son tick vidait les réservoirs d'entrée, remplissait ceux de sortie et faisait avancer la minuterie qui les cadence, des deux côtés. Le client exécutait donc toute la recette sur sa propre copie des réservoirs, avec sa propre minuterie : les quantités affichées s'écartaient de celles du serveur et revenaient d'un coup à chaque synchronisation. Les réservoirs comme la minuterie sont déjà envoyés au client, qui n'avait donc rien à calculer. Le bassin de coulée, le firebox, la machine à bobiner et le polariseur avaient chacun été retirés du client pour cette raison précise ; le blast stove était le dernier.
+
+- **Le haut fourneau fond côté serveur uniquement** — Son tick brûlait le coke, réduisait les piles d'entrée et de fondant et remplissait les deux réservoirs de résultat des deux côtés : un four à portée de vue exécutait donc toute la recette sur les copies du client, avec sa propre minuterie, jusqu'à ce qu'une synchronisation écrase le résultat. Le compteur de carburant, les inventaires, les réservoirs et la minuterie sont tous envoyés au client ; seule l'animation du tas de coke lui revient, et elle lit ces valeurs synchronisées.
+
+- **La base du pumpjack pompe côté serveur uniquement** — La gestion du gisement dans son étape de traitement était déjà côté serveur, mais le remplissage du réservoir juste en dessous ne l'était pas : le client pompait du pétrole brut dans sa propre copie du réservoir, au débit d'extraction, à chaque tick. La quantité affichée s'éloignait de celle du serveur et revenait d'un coup à chaque synchronisation.
 
 ### Modifications
 

@@ -181,6 +181,16 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
             coalCokeHeight.tickChaser();
         }
 
+        // Everything below burns fuel, shrinks the input stacks and fills the
+        // result tanks. The client ran all of it against its own copies, so a
+        // furnace in view consumed coke and produced metal locally on its own
+        // timer until the next sync overwrote it. Fuel, the inventories, the
+        // tanks and the timer are all written to the client, which therefore
+        // has nothing to compute here - only the coke pile animation above,
+        // which reads the synced values.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
+
         if (inputInventory.isEmpty())
             return;
         if (cachedSize < 3)

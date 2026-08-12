@@ -153,6 +153,14 @@ public class PumpjackBaseBlockEntity extends SmartBlockEntity implements IHaveGo
             }
 
 
+        // Pumping is authoritative. The deposit bookkeeping above is already
+        // server-only, but the fill below was not: the client pumped into its
+        // own copy of the tank at miningRate every tick, so the amount it
+        // showed climbed away from the server and snapped back on each sync.
+        // The tank reaches the client through its own change callback.
+        if (level.isClientSide)
+            return;
+
         if (tank.getFluidAmount() + miningRate > tank.getCapacity())
             return;
         int amountPumped = tank.fill(new FluidStack(TFMGFluids.CRUDE_OIL.get().getSource(), miningRate), IFluidHandler.FluidAction.EXECUTE);
