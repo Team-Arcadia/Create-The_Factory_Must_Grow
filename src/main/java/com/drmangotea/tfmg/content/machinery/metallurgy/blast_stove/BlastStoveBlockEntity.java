@@ -123,6 +123,16 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
             refreshCapability();
         }
 
+        // Running the recipe drains the input tanks and fills the output ones,
+        // and advances the timer that paces it. All of that is authoritative
+        // state: the client used to run it against its own copy of the tanks,
+        // on its own timer, so the amounts it showed drifted from the server
+        // and jumped back on every sync. Both the tanks and Timer are written
+        // to the client, so it has nothing to compute here. The casting basin,
+        // firebox, winding machine and polarizer were taken off the client for
+        // exactly this reason; the blast stove was missed.
+        if (level == null || (level.isClientSide && !isVirtual()))
+            return;
 
         if (isController() && !primaryInputInventory.isEmpty() && !secondaryInputInventory.isEmpty() && primaryOutputInventory.getSpace() != 0 && secondaryOutputInventory.getSpace() != 0) {
             HotBlastRecipe recipe = getMatchingRecipes();
