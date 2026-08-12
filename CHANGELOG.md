@@ -85,6 +85,8 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **A lone air intake stops rewriting its own block** — The branch that hides an intake once it joins a structure checked the current value before writing; the branch that reveals it again did not. Any intake that is neither a controller nor part of one, which is every intake before it is built into a 2x2, wrote its blockstate twenty times a second forever: a block update packet to every player in range and a light recalculation each time.
 
+- **A block can rejoin its electrical network** — `ElectricalNetwork.add` documents itself as adding a block if it is not in the network already, but it compared `getData().getId()`, which is the *network's* id and is shared by every member. Past the first member that test is true of everyone, so any block still carrying the network id was refused - which is exactly the case after a stale sweep or a re-key drops it from the member list. The grid only recovered because the repair in the lazy tick noticed the block was missing and rebuilt it from its own position. Membership is keyed on the block's position now, and a dead block entity left at a position by a chunk reload no longer keeps the seat. Networks that were quietly running with members missing will now count them, so a grid that looked adequately supplied may correctly report that it is not.
+
 ### Changed
 
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
@@ -168,6 +170,8 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **L'afficheur segmenté s'initialise comme tous les autres blocs** — Sa redéfinition d'`initialize` était la seule des six du mod à ne pas appeler `super` : le bloc sautait l'événement d'attachement des comportements et le premier lazy tick, là où il évalue son électricité.
 
 - **Une prise d'air isolée cesse de réécrire son propre bloc** — La branche qui masque une prise une fois intégrée à une structure vérifiait la valeur courante avant d'écrire ; celle qui la révèle à nouveau, non. Toute prise qui n'est ni contrôleur ni rattachée à un contrôleur, c'est-à-dire toute prise avant d'être montée en 2x2, écrivait son état de bloc vingt fois par seconde indéfiniment : un paquet de mise à jour à tous les joueurs à portée et un recalcul d'éclairage à chaque fois.
+
+- **Un bloc peut rejoindre son réseau électrique** — `ElectricalNetwork.add` se documente comme ajoutant un bloc s'il n'est pas déjà dans le réseau, mais il comparait `getData().getId()`, qui est l'identifiant *du réseau* et que tous les membres partagent. Passé le premier membre, ce test est vrai pour tout le monde : tout bloc portant encore l'identifiant du réseau était refusé, ce qui est précisément le cas après un nettoyage des entrées mortes ou un rekeyage qui l'a sorti de la liste. Le réseau ne s'en sortait que parce que la réparation du lazy tick remarquait l'absence et le reconstruisait depuis sa propre position. L'appartenance se fait désormais sur la position du bloc, et une block entity morte laissée à une position par un rechargement de chunk ne garde plus la place. Les réseaux qui tournaient discrètement avec des membres manquants vont maintenant les compter : une installation qui semblait suffisamment alimentée peut désormais signaler à juste titre qu'elle ne l'est pas.
 
 ### Modifications
 

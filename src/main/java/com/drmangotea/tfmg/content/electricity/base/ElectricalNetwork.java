@@ -32,10 +32,28 @@ public class ElectricalNetwork {
 
     //adds a new block to the network if it is not in it already
     public void add(IElectric be) {
-        long id = be.getData().getId();
-        for (IElectric member : members)
-            if (member.getData().getId() == id)
+        // Identity here is the BLOCK's position, not getData().getId(): that
+        // one is the NETWORK's id, which every member of a network shares. The
+        // old test therefore asked "does any member belong to this network",
+        // which is true of every member past the first, so a block already
+        // carrying the network id could never be added back once it had left
+        // the list - after a stale sweep or a re-key, for instance. It took the
+        // repair in lazyTickElectricity to notice and rebuild it from scratch.
+        long pos = be.getPos();
+        for (int i = 0; i < members.size(); i++) {
+            IElectric member = members.get(i);
+            if (member.getPos() != pos)
+                continue;
+            if (member == be)
                 return;
+            // Same position, different instance: after a chunk reload the old
+            // block entity is dead and must not keep the seat.
+            if (ElectricNetworkManager.isStale(member)) {
+                members.set(i, be);
+                return;
+            }
+            return;
+        }
         members.add(be);
     }
 
