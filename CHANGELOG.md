@@ -83,6 +83,8 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 
 - **The segmented display initialises like every other block** — Its `initialize` override was the only one of the six in the mod that did not call `super`, so the block skipped the behaviour attachment event and the first lazy tick, which is where it evaluates its electricity.
 
+- **A lone air intake stops rewriting its own block** — The branch that hides an intake once it joins a structure checked the current value before writing; the branch that reveals it again did not. Any intake that is neither a controller nor part of one, which is every intake before it is built into a 2x2, wrote its blockstate twenty times a second forever: a block update packet to every player in range and a light recalculation each time.
+
 ### Changed
 
 - **Pipes, valves, pumps and smart pipes moved to the main creative tab**, along with the encased shafts. They are machinery, not scenery. The debug cinder block no longer appears in the creative menu at all.
@@ -164,6 +166,8 @@ Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompt
 - **Le volant et les pédales du contrôleur de moteur continuent de s'animer** — Le rendu décidait d'animer ou non en comparant la position de la block entity à celle du conducteur avec `==`, ce qui teste l'identité des objets et non les coordonnées. Ça ne fonctionnait que parce que le gestionnaire recevait justement le même objet ; dès le rechargement du chunk, le client reconstruisait la block entity avec un nouvel objet de position et le volant comme les pédales se figeaient pour un joueur toujours aux commandes.
 
 - **L'afficheur segmenté s'initialise comme tous les autres blocs** — Sa redéfinition d'`initialize` était la seule des six du mod à ne pas appeler `super` : le bloc sautait l'événement d'attachement des comportements et le premier lazy tick, là où il évalue son électricité.
+
+- **Une prise d'air isolée cesse de réécrire son propre bloc** — La branche qui masque une prise une fois intégrée à une structure vérifiait la valeur courante avant d'écrire ; celle qui la révèle à nouveau, non. Toute prise qui n'est ni contrôleur ni rattachée à un contrôleur, c'est-à-dire toute prise avant d'être montée en 2x2, écrivait son état de bloc vingt fois par seconde indéfiniment : un paquet de mise à jour à tous les joueurs à portée et un recalcul d'éclairage à chaque fois.
 
 ### Modifications
 

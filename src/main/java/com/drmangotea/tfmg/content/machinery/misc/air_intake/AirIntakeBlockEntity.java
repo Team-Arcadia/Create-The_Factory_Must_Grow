@@ -156,7 +156,13 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
 
 
         }
-        if(!isController&&!isUsedByController)
+        // The branch above already checks the current value before writing;
+        // this one did not, so a lone air intake - neither a controller nor
+        // part of one, which is every intake before it is built into a 2x2 -
+        // rewrote its own blockstate twenty times a second forever. Each write
+        // is a block update packet to every player in range and a light engine
+        // recalculation.
+        if(!isController&&!isUsedByController&&this.getBlockState().getValue(INVISIBLE))
             level.setBlock(this.getBlockPos(),this.getBlockState().setValue(INVISIBLE,false),2);
 
         if(controller == null)
