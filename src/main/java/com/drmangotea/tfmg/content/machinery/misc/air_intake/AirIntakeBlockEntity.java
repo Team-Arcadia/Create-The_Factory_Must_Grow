@@ -322,7 +322,7 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
 
     public int getPossibleDiameter(){
 
-        if(controller !=this.getBlockPos())
+        if(controller == null || !controller.equals(this.getBlockPos()))
             return 1;
 
 
@@ -415,7 +415,7 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
                    // ((AirIntakeBlockEntity) level.getBlockEntity(pos)).controller = this.getBlockPos();
                 AirIntakeBlockEntity checkedBE = (AirIntakeBlockEntity) level.getBlockEntity(pos);
 
-                if(pos!=this.getBlockPos())
+                if(!pos.equals(this.getBlockPos()))
                     if(checkedBE.isController) {
                         canBeMedium = false;
                         break;
@@ -443,7 +443,7 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
                     //    return 1;
                     //}
 
-                    if((((AirIntakeBlockEntity) level.getBlockEntity(pos)).isUsedByController&&((AirIntakeBlockEntity) level.getBlockEntity(pos)).controller!=this.getBlockPos()&&pos!=this.getBlockPos())||isController) {
+                    if((((AirIntakeBlockEntity) level.getBlockEntity(pos)).isUsedByController&&!this.getBlockPos().equals(((AirIntakeBlockEntity) level.getBlockEntity(pos)).controller)&&!pos.equals(this.getBlockPos()))||isController) {
 
                         ((AirIntakeBlockEntity) level.getBlockEntity(pos)).isUsedByController = true;
                         ((AirIntakeBlockEntity) level.getBlockEntity(pos)).isController = false;
@@ -467,7 +467,7 @@ public class AirIntakeBlockEntity extends KineticBlockEntity implements IWrencha
 
 
             for(BlockPos pos : checkedPosses) {
-                if(((AirIntakeBlockEntity) level.getBlockEntity(pos)).isUsedByController&&((AirIntakeBlockEntity) level.getBlockEntity(pos)).controller!=this.getBlockPos()&&pos!=this.getBlockPos()) {
+                if(((AirIntakeBlockEntity) level.getBlockEntity(pos)).isUsedByController&&!this.getBlockPos().equals(((AirIntakeBlockEntity) level.getBlockEntity(pos)).controller)&&!pos.equals(this.getBlockPos())) {
                     controller = this.getBlockPos();
                     isController = false;
                     return 1;

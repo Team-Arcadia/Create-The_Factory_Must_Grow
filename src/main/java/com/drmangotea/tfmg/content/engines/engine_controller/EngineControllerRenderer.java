@@ -24,7 +24,11 @@ public class EngineControllerRenderer extends SafeBlockEntityRenderer<EngineCont
         BlockState state = be.getBlockState();
         Direction facing = state.getValue(FACING);
 
-        boolean move = be.getBlockPos() == EngineControllerClientHandler.controllerPos;
+        // Compare by value. The handler keeps a static BlockPos while the
+        // client rebuilds its block entity - and its worldPosition object -
+        // whenever the chunk reloads, so a reference test silently stopped
+        // animating the wheel and pedals for a player still driving.
+        boolean move = be.getBlockPos().equals(EngineControllerClientHandler.controllerPos);
 
 
         ms.pushPose();
