@@ -6,7 +6,7 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ## [Unreleased]
 
-Everything here comes from the full 169-test pass on 1.2.6.
+Everything here comes from the 156-test pass on 1.2.6, plus the sweeps it prompted.
 
 ### Added
 
