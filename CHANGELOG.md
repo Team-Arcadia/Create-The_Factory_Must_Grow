@@ -8,6 +8,10 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 Everything here comes from the full 169-test pass on 1.2.6.
 
+### Added
+
+- **The rebar concrete floor and pillar come in all sixteen colours** — Every other coloured concrete shape already existed, so building in coloured rebar concrete stopped the moment a floor or a pillar was wanted. Cut from the matching coloured rebar concrete on a stonecutter, like its slab, stairs and wall.
+
 ### Fixed
 
 - **The vat no longer crashes the game when its output fills up** — The item-output loop merged a result into any output slot holding the same item, with no stack-limit test, while the `canFitAllOutputs` pre-flight it mirrors does check the limit and had already reserved an empty slot for that stack. The result poured into the full slot instead, and the count grew past 64 and then past 99, where `ItemStack`'s codec range-checks it: the block entity could no longer serialise and the game crashed on the next sync. Reported on aluminium nuggets and on rubber sheets.
@@ -49,6 +53,10 @@ Everything here comes from the full 169-test pass on 1.2.6.
 - **The six cable hubs state their current rating** (16 A copper through 250 A steel) — that is the value that actually differs between them; every hub holds the same voltage.
 - **The concrete hose explains itself** — it fills concretable blocks below it once stopped, and only those.
 - **The segmented display says it is driven by a Display Link** — there is no direct interaction, which is why the number could not be changed by hand. The electrician's wrench now states plainly that the group number it stores is read by nothing in this version.
+
+### Ajouts
+
+- **Le sol et le pilier en béton armé existent dans les seize couleurs** — Toutes les autres formes de béton coloré existaient déjà, si bien qu'une construction en béton armé coloré s'arrêtait dès qu'il fallait un sol ou un pilier. Ils se découpent au tailleur de pierre depuis le béton armé de la même couleur, comme sa dalle, son escalier et son mur.
 
 ### Correctifs
 
