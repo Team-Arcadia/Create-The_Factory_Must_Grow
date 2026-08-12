@@ -139,9 +139,19 @@ public class ExhaustBlockEntity extends SmartBlockEntity implements IHaveGoggleI
         if (level == null || (level.isClientSide && !isVirtual()))
             return;
 
-            if(tankInventory.getSpace()>700) {
-                tankInventory.drain(100, IFluidHandler.FluidAction.EXECUTE);
-            }else tankInventory.drain(10, IFluidHandler.FluidAction.EXECUTE);
+        // Vent FAST when the tank is backing up, slow when it is nearly empty.
+        //
+        // The test was the wrong way round: getSpace() is the room left, so
+        // "space > 700" on a 1000 mB tank means it holds less than 300, and the
+        // exhaust ran at 100 mB/t while empty and collapsed to 10 mB/t the
+        // moment it had something to get rid of. An engine under load fills it
+        // faster than that, and once the tank is full canWork() fails on
+        // exhaustTank.getSpace() == 0 and the engine stalls with fuel still in
+        // it. The smokestack next door has the same two rates with the
+        // condition the right way round.
+        if (tankInventory.getSpace() < 300) {
+            tankInventory.drain(100, IFluidHandler.FluidAction.EXECUTE);
+        } else tankInventory.drain(10, IFluidHandler.FluidAction.EXECUTE);
 
 
 
