@@ -100,6 +100,17 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
 
     public void findRecipe() {
 
+        // An empty slot cannot match anything, and this runs from lazyTick on
+        // both sides whether or not the machine is doing something: two recipe
+        // manager scans every ten ticks per machine, per side, for a machine
+        // sitting idle. Clearing the recipe here is exactly what the two scans
+        // below would have concluded. The coke oven caches its lookup for the
+        // same reason.
+        if (inventory.isEmpty()) {
+            recipe = null;
+            return;
+        }
+
         Optional<RecipeHolder<WindingRecipe>> optional = TFMGRecipeTypes.WINDING.find(new RecipeWrapper(inventory), level);
         Optional<RecipeHolder<WindingRecipe>> assemblyRecipe = SequencedAssemblyRecipe.getRecipe(this.level, new RecipeWrapper(inventory), TFMGRecipeTypes.WINDING.getType(), WindingRecipe.class);
 
