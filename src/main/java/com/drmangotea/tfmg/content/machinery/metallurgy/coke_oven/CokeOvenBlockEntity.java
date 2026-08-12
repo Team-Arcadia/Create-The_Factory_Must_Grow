@@ -560,7 +560,11 @@ public class CokeOvenBlockEntity extends SmartBlockEntity implements IHaveGoggle
         inventory.deserializeNBT(registries,compound.getCompound("Inventory"));
         primaryTank.readFromNBT(registries,compound.getCompound("PrimaryTankContent"));
         secondaryTank.readFromNBT(registries,compound.getCompound("SecondaryTankContent"));
-        controller = BlockPos.of(compound.getLong("Controller"));
+        // Guarded like Size just below: getLong returns 0 for a missing key,
+        // which would point every oven at (0,0,0) and make isController false
+        // for all of them. The field already defaults to this block's position.
+        if (compound.contains("Controller"))
+            controller = BlockPos.of(compound.getLong("Controller"));
         if (compound.contains("Size"))
             size = Math.max(1, compound.getInt("Size"));
     }
