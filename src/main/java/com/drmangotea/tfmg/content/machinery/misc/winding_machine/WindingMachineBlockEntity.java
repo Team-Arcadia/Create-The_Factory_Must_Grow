@@ -289,7 +289,16 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
             // and the dedicated branch above would then drain extra spool
             // climbing back up to the player's target — the '+40 leak' the
             // testers reported. Bake the target into the result.
-            ItemStack result = recipe.rollResults(level.random).get(0);
+            // The declared-results guard above does not cover the rolled list:
+            // rollResults drops results whose chance roll failed, so a datapack
+            // recipe with a single sub-1.0 chance result can hand back an empty
+            // list, and get(0) would crash the server tick. An empty roll wins
+            // nothing this cycle; the wound turns stand and the next tick
+            // finishes the recipe with a fresh roll.
+            List<ItemStack> rolled = recipe.rollResults(level.random);
+            if (rolled.isEmpty())
+                return;
+            ItemStack result = rolled.get(0);
             if (result.is(TFMGBlocks.RESISTOR.asItem()))
                 result.set(TFMGDataComponents.RESISTANCE, target);
             else if (result.is(TFMGItems.ELECTROMAGNETIC_COIL.get())
