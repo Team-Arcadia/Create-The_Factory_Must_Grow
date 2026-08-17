@@ -84,7 +84,19 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
         // partial chain from the destroyed block's pos and never carried
         // this BE's energy anywhere — every break voided up to one slave's
         // worth of charge.
-        rebuildChainAround(getBlockPos(), energy.getEnergyStored());
+        //
+        // The block entity is still in the chunk's map while onRemove runs,
+        // so the sub-chain scans walk straight through this block and count
+        // its energy a second time on top of the donation. getDrops then
+        // stamped that doubled total onto the dropped item, and a plain
+        // break-and-replace of a charged controller duplicated the whole
+        // chain's charge. Zero it first so the donation is the only copy;
+        // if no sub-chain absorbed it (a lone accumulator), put it back so
+        // the dropped item carries the charge instead of voiding it.
+        int stored = energy.getEnergyStored();
+        energy.setEnergy(0);
+        if (!rebuildChainAround(getBlockPos(), stored))
+            energy.setEnergy(stored);
     }
 
     @Override
@@ -143,9 +155,9 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
         rebuildChainAround(getBlockPos(), donatedEnergy);
     }
 
-    private void rebuildChainAround(BlockPos seed, int donatedEnergy) {
+    private boolean rebuildChainAround(BlockPos seed, int donatedEnergy) {
         if (level == null)
-            return;
+            return false;
         Direction facing = getBlockState().getValue(FACING);
         // Find the tail (most-facing.opposite) and head (most-facing) of each
         // sub-chain neighbouring the seed. Scan each side starting one step
@@ -156,7 +168,8 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
         // The opposite-side sub-chain absorbs the donated energy (controller
         // side). If it didn't exist, donate to the head side instead so the
         // energy isn't voided.
-        rebuildSubChainStartingFrom(headSide, facing, rebuiltOpp ? 0 : donatedEnergy);
+        boolean rebuiltHead = rebuildSubChainStartingFrom(headSide, facing, rebuiltOpp ? 0 : donatedEnergy);
+        return rebuiltOpp || rebuiltHead;
     }
 
     /**
