@@ -333,14 +333,22 @@ public class TFMGUtils {
         VertexConsumer vertexconsumer = pBuffer.getBuffer(RenderType.leash());
         Matrix4f matrix4f = pMatrixStack.last().pose();
         // Horizontal span, used to build the offset that gives the wire its
-        // width. Two connectors stacked straight above one another have none of
-        // it, and fastInvSqrt(0) is infinity: f5 and f6 both came out NaN and
-        // the whole strip was dropped, so a purely vertical cable rendered
-        // nothing at all. Fall back to a fixed offset along one axis there.
-        float horizontal = f * f + f2 * f2;
+        // width. Two connectors stacked straight above one another have none
+        // of it, and the offset math degenerates there, so fall back to a
+        // fixed offset along one axis. The test must run on the raw span:
+        // f and f2 carry the +0.01 inflation from above, which puts even a
+        // perfectly vertical run at 2.0E-4 and made an epsilon test on them
+        // unreachable - the fallback never fired.
+        // Below one centimetre of horizontal span the wire is vertical for
+        // rendering purposes; only the animated held wire can even produce a
+        // fractional span, and feeding it to fastInvSqrt gives offsets that
+        // blow past the wire's own width.
+        float rawX = (float) pos2Local.x();
+        float rawZ = (float) pos2Local.z();
+        float horizontal = rawX * rawX + rawZ * rawZ;
         float f5;
         float f6;
-        if (horizontal < 1.0E-6F) {
+        if (horizontal < 1.0E-4F) {
             f5 = 0.025F / 2.0F;
             f6 = 0;
         } else {
