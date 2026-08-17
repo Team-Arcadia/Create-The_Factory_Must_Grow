@@ -1,6 +1,7 @@
 package com.drmangotea.tfmg.registry;
 
 import com.drmangotea.tfmg.TFMG;
+import com.drmangotea.tfmg.base.TFMGCreativeTabs;
 import com.drmangotea.tfmg.base.TFMGUtils;
 import com.drmangotea.tfmg.base.fluid.AcidFluidType;
 import com.drmangotea.tfmg.base.fluid.AsphaltFluid;
@@ -30,6 +31,15 @@ import static com.drmangotea.tfmg.base.TFMGUtils.toHumanReadable;
 
 public class TFMGFluids {
 
+    // The registrate's creative tab is a mutable global, and this class used
+    // to inherit whatever tab the previous class left behind. That holds only
+    // for one exact class-load order, and a pack mod touching tfmg classes
+    // early reorders it, sending every bucket and gas tank to the decoration
+    // tab or to no tab at all. The tab the buckets belong to is pinned here
+    // instead, before the first fluid registers.
+    static {
+        REGISTRATE.setCreativeTab(TFMGCreativeTabs.TFMG_MAIN);
+    }
 
     public static final FluidEntry<VirtualFluid>
             LPG = gasFuel("lpg", 0xfff5e687, TFMGTags.TFMGFluidTags.LPG.tag, TFMGTags.TFMGFluidTags.FIREBOX_FUEL.tag),

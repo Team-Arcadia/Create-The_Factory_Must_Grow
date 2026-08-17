@@ -4,6 +4,16 @@ Session-discovered errors, root causes, and prevention rules for TFMG (Arcadia f
 
 ---
 
+## [2026-08-17 15:10] — 1.2.7 server startup crash: duplicate steel_encased_shaft in the creative search tab
+
+**Context:** Modpack report: every dedicated server start on tfmg-1.2.7-arcadia-fix dies with `ModLoadingException` before any player connects. Reproduced in dev by forcing `CreativeModeTabs.tryRebuildTabContents` on `ServerStartedEvent` (pack mods request tab contents server-side; a bare dev server never builds tabs, which is why 1.2.7 QA missed it).
+**Error:** `java.lang.IllegalArgumentException: Itemstack 1 tfmg:steel_encased_shaft already exists in the tab's list` while dispatching `BuildCreativeModeTabContentsEvent`.
+**Root cause:** Two independent adders collide in the *vanilla search tab*, not in tfmg's own tabs. (1) `customAdditions()` (new in 1.2.7, d095d2d5) listed the two encased shafts as component-less stacks with default `PARENT_AND_SEARCH_TABS` visibility, so they enter tfmg_main's search entries; the vanilla search tab aggregates every tab's search entries when it builds (after all category tabs). (2) Registrate's `AbstractRegistrate.item()` auto-tabs *every* item into `CreativeModeTabs.SEARCH` (`defaultCreativeModeTab`), and its own event listener then accepts a plain stack of each item into the search tab — the second plain `steel_encased_shaft` throws. Every other `customAdditions` stack carries data components and never equals Registrate's plain stack, which is why 1.2.6 was safe. A second, load-order-dependent duplicate also existed: the encased blocks register under whatever tab `CreateRegistrate`'s mutable `currentTab` global holds at class-load time, so a pack mod loading tfmg classes early lands them in TFMG_MAIN and the main-tab loop re-adds what customAdditions already listed.
+**Fix:** In `TFMGCreativeTabs.addCreative`: component-less customAdditions stacks are accepted `PARENT_TAB_ONLY` (Registrate already lists every plain item in the search tab once); component-carrying stacks keep search visibility; both tab loops now filter the encased shaft and cogwheel families so their placement no longer depends on class-load order; customAdditions skips stacks another mod already listed.
+**Prevention:** Never `accept` a component-less ItemStack with search visibility from a Registrate-managed mod — Registrate's default-tab listener will add the plain stack again and the search tab build throws on duplicates. When adding items to creative tabs manually, remember the search tab is built *last* from every tab's search entries plus Registrate's auto-additions. Creative-tab placement must never rely on `setCreativeTab` ordering across classes: any block a pack mod can class-load early needs an explicit filter or an explicit tab.
+
+---
+
 ## [2026-07-01 12:00] — Stale datagen output silently overriding 1.2.3 fixes
 
 **Context:** Session start audit of the working tree (3355 modified files).

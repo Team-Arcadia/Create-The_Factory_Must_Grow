@@ -49,19 +49,45 @@ public class TFMGCreativeTabs {
 
 
         if(event.getTab() == TFMGCreativeTabs.TFMG_MAIN.get()){
-            event.acceptAll(customAdditions());
+            for(ItemStack stack : customAdditions()){
+                // A component-less stack must stay out of the search entries.
+                // The vanilla search tab copies every tab's search entries and
+                // registrate's own listener then adds a plain stack of every
+                // registered item on top, so a plain stack listed here with
+                // search visibility is accepted twice over there, and that
+                // duplicate is an IllegalArgumentException that kills server
+                // startup. Stacks with components never equal the plain stack
+                // registrate adds, so they keep their search entry.
+                acceptOnce(event, stack, stack.getComponentsPatch().isEmpty()
+                        ? CreativeModeTab.TabVisibility.PARENT_TAB_ONLY
+                        : CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+            }
             for(RegistryEntry<Item, ?> item : REGISTRATE.getAll(Registries.ITEM)){
 
                 if(!CreateRegistrate.isInCreativeTab(item,TFMG_MAIN))
                     continue;
                 if(blacklist().contains(item))
                     continue;
+                // The encased blocks register under whichever creative tab the
+                // registrate's mutable tab global holds when their class loads,
+                // and a pack mod touching tfmg classes early moves that moment
+                // before the pipes restore the decoration tab. The shafts are
+                // already listed once through customAdditions above, so letting
+                // this loop see them again crashed servers at startup with
+                // "already exists in the tab's list". Both loops filter both
+                // encased families, so their placement no longer depends on
+                // class load order: shafts through customAdditions, cogwheels
+                // hidden, matching upstream.
+                if(item.get() instanceof BlockItem blockItem && blockItem.getBlock() instanceof TFMGEncasedCogwheelBlock)
+                    continue;
+                if(item.get() instanceof BlockItem blockItem2 && blockItem2.getBlock() instanceof TFMGEncasedShaftBlock)
+                    continue;
                 if(item.get() instanceof SequencedAssemblyItem)
                     continue;
                 if(item.get() instanceof SpoolItem&&!item.is(TFMGItems.EMPTY_SPOOL.get())){
                     continue;
                 }
-                event.accept(item.get(), CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
+                acceptOnce(event, new ItemStack(item.get()), CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
             }
 
         }
@@ -82,11 +108,31 @@ public class TFMGCreativeTabs {
                 if(item.get() instanceof SequencedAssemblyItem)
                     continue;
 
-                event.accept(item.get(), CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
+                acceptOnce(event, new ItemStack(item.get()), CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
 
             }
 
         }
+    }
+
+    // Accepts the stack only into the entry lists it is not already in,
+    // checked per list because a stack can sit in one and not the other.
+    // Another mod's listener can run before this one and list the same
+    // stack, and accepting it again is a hard IllegalArgumentException
+    // that kills the whole tab build - on a dedicated server that is a
+    // startup crash - so every accept in this class goes through here.
+    private static void acceptOnce(BuildCreativeModeTabContentsEvent event, ItemStack stack,
+                                   CreativeModeTab.TabVisibility visibility) {
+        boolean parent = visibility != CreativeModeTab.TabVisibility.SEARCH_TAB_ONLY
+                && !event.getParentEntries().contains(stack);
+        boolean search = visibility != CreativeModeTab.TabVisibility.PARENT_TAB_ONLY
+                && !event.getSearchEntries().contains(stack);
+        if (parent && search)
+            event.accept(stack, CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+        else if (parent)
+            event.accept(stack, CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
+        else if (search)
+            event.accept(stack, CreativeModeTab.TabVisibility.SEARCH_TAB_ONLY);
     }
 
 
