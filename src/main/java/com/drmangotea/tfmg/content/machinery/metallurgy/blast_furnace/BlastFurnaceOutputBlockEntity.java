@@ -179,6 +179,12 @@ public class BlastFurnaceOutputBlockEntity extends SmartBlockEntity implements I
         if (level.isClientSide) {
             coalCokeHeight.chase(Math.min(fuel + inputInventory.getStackInSlot(0).getCount(), 24), 0.1f, LerpedFloat.Chaser.EXP);
             coalCokeHeight.tickChaser();
+            // The smoke used to be spawned from the smelting loop below, which
+            // the client no longer runs. Timer, fuel and the input inventory
+            // are all synced, so an actively smelting furnace is read right
+            // here; the virtual (ponder) path still smokes from the loop.
+            if (!isVirtual() && timer > 0 && fuel > 0 && !inputInventory.isEmpty() && cachedSize >= 3)
+                makeParticles();
         }
 
         // Everything below burns fuel, shrinks the input stacks and fills the
