@@ -8,6 +8,52 @@ All notable changes to Create: The Factory Must Grow are documented here.
 
 ---
 
+## [1.2.8] - 2026-08-17
+
+Emergency release. 1.2.7 crashed every dedicated server whose modpack builds
+the creative tabs at startup, before any player could connect. The fix was
+followed by a full audit of everything shipped since 1.2.6; the audit surfaced
+seven more defects, all fixed here, including an energy duplication on the
+accumulator.
+
+Version d'urgence. La 1.2.7 faisait crasher au demarrage tout serveur dedie
+dont le modpack construit les onglets creatifs, avant meme qu'un joueur puisse
+se connecter. Le correctif a ete suivi d'un audit complet de tout ce qui a ete
+livre depuis la 1.2.6 ; l'audit a revele sept autres defauts, tous corriges
+ici, dont une duplication d'energie sur l'accumulateur.
+
+### Fixed
+
+- **Servers no longer crash at startup on `tfmg:steel_encased_shaft already exists in the tab's list`** — 1.2.7 listed the two encased shafts in the main tab as plain stacks with search visibility. The vanilla search tab aggregates every tab's search entries when it builds, and Registrate's own listener then adds a plain stack of every registered item on top: the second plain shaft stack is a hard `IllegalArgumentException` inside `CreativeModeTab.buildContents`, and on a dedicated server whose pack requests tab contents at startup that is a `ModLoadingException` before the first player joins. Component-less custom stacks now stay out of the search entries (Registrate already lists every plain item there once); stacks with components keep their search entry, since they never collide with the plain ones.
+- **Every creative tab accept is now guarded against duplicates** — Any listener dispatched before ours (pack mods, tweak scripts) that lists a TFMG stack first used to turn our own accept into the same fatal duplicate exception. All accepts now go through a single helper that checks the tab's parent and search entry lists separately and only adds what is missing.
+- **Encased shafts and cogwheels no longer gamble their tab on class-load order** — Their registration inherits whichever creative tab the registrate's mutable global holds when the class initializes, and a pack mod touching tfmg classes early flips it from decoration to main, which is what armed the duplicate crash. Both tab loops now filter both encased families outright: the shafts are listed once through the explicit additions, the cogwheels stay hidden, whatever the load order.
+- **Fluid buckets and gas tanks are pinned to the main tab** — Same mutable-global pattern: the ~29 buckets and tanks relied on `TFMGItems` having set the main tab a few init calls earlier, and an early class load would have sent them all to the decoration tab or hidden them entirely. The tab is now set explicitly before the first fluid registers.
+- **A working blast furnace smokes again** — 1.2.7 made the smelting loop server-only but left the smoke-particle call inside it, where the client never reaches it and the server spawns nothing. The client now reads the synced timer, fuel and input and spawns the campfire smoke itself; the Ponder scene path is untouched.
+- **Breaking and replacing a charged accumulator no longer duplicates its energy** — The block entity is still in the chunk's map while the break handler runs, so the chain rebuild walked straight through the dying block and counted its energy on top of the donation it had just made; the dropped item was then stamped with the doubled total, and placing it back added it to a chain that had kept the original. One break-and-replace cycle filled a half-charged column for free. The dying block's storage is zeroed before the donation, and restored only when no surviving chain absorbed it, so a lone accumulator still drops with its charge.
+- **The winding machine survives a datapack recipe with a chance-based result** — The completion path indexed the first rolled result, but Create drops results whose chance roll failed, so a single sub-1.0-chance result could hand back an empty list and crash the server tick. An empty roll now simply retries next tick; the wound turns are kept.
+- **The vertical-cable render fallback actually runs** — The 1.2.7 guard tested the horizontal span after a +0.01 inflation on both axes, so a perfectly vertical wire measured 2.0E-4 against a 1.0E-6 threshold and the fallback was unreachable. The test now runs on the raw span, and anything under one centimetre of horizontal run takes the fixed-offset path, which also keeps the animated held wire from degenerate offsets.
+
+### Known issues
+
+- **Blacklisted or hidden items can still be found through the creative search bar** — Registrate adds every registered item to the vanilla search tab on its own, so the debug cinder block and the encased cogwheels are browsable there even though the TFMG tabs hide them. Create silences that Registrate default and populates the search tab itself; adopting the same architecture touches the visibility of every item and is too invasive for an emergency release. Inherited from upstream, present in every previous version.
+
+### Correctifs
+
+- **Les serveurs ne crashent plus au demarrage sur `tfmg:steel_encased_shaft already exists in the tab's list`** — La 1.2.7 listait les deux arbres blindes dans l'onglet principal comme stacks nus avec visibilite recherche. L'onglet recherche vanilla agrege les entrees de recherche de tous les onglets a sa construction, puis le listener de Registrate ajoute par-dessus un stack nu de chaque item enregistre : le second stack nu est une `IllegalArgumentException` fatale dans `CreativeModeTab.buildContents`, et sur un serveur dedie dont le pack demande le contenu des onglets au demarrage, une `ModLoadingException` avant la premiere connexion. Les stacks sans components restent desormais hors des entrees de recherche (Registrate y liste deja chaque item nu une fois) ; les stacks avec components gardent leur entree, puisqu'ils n'entrent jamais en collision avec les nus.
+- **Chaque ajout aux onglets creatifs est desormais garde contre les doublons** — Un listener passe avant le notre (mod de pack, script) qui liste un stack TFMG en premier transformait notre propre ajout en la meme exception fatale. Tous les ajouts passent par un unique helper qui verifie separement les listes d'entrees navigation et recherche de l'onglet et n'ajoute que ce qui manque.
+- **Les arbres et engrenages blindes ne jouent plus leur onglet a l'ordre de chargement** — Leur enregistrement herite de l'onglet que la globale mutable du registrate contient au moment ou la classe s'initialise, et un mod de pack touchant les classes tfmg tot le fait basculer de decoration a principal, ce qui armait le crash au doublon. Les deux boucles d'onglet filtrent desormais les deux familles blindees : les arbres sont listes une fois via les ajouts explicites, les engrenages restent caches, quel que soit l'ordre.
+- **Les seaux de fluide et bonbonnes de gaz sont epingles a l'onglet principal** — Meme motif de globale mutable : les ~29 seaux et bonbonnes comptaient sur le fait que `TFMGItems` avait fixe l'onglet principal quelques init plus tot, et un chargement de classe precoce les aurait tous envoyes dans l'onglet decoration ou caches. L'onglet est desormais fixe explicitement avant le premier fluide.
+- **Un haut fourneau en marche fume de nouveau** — La 1.2.7 a rendu la boucle de fonte server-only mais y a laisse l'appel des particules de fumee, ou le client ne l'atteint plus et ou le serveur ne genere rien. Le client lit desormais le timer, le combustible et l'entree synchronises et genere lui-meme la fumee ; le chemin des scenes Ponder est intact.
+- **Casser puis reposer un accumulateur charge ne duplique plus son energie** — Le block entity est encore dans la map du chunk pendant le traitement de la casse, donc la reconstruction de chaine traversait le bloc mourant et comptait son energie en plus de la donation qu'il venait de faire ; l'item lache etait alors estampille du total double, et le reposer l'ajoutait a une chaine qui avait garde l'original. Un cycle casse-repose remplissait gratuitement une colonne a moitie chargee. Le stockage du bloc mourant est mis a zero avant la donation, et restaure seulement si aucune chaine survivante ne l'a absorbee, si bien qu'un accumulateur isole tombe toujours avec sa charge.
+- **La machine a bobiner survit a une recette de datapack au resultat probabiliste** — Le chemin de completion indexait le premier resultat tire, mais Create ecarte les resultats dont le jet de chance a echoue : un resultat unique de chance inferieure a 1 pouvait rendre une liste vide et crasher le tick serveur. Un tirage vide reessaie simplement au tick suivant ; les tours bobines sont conserves.
+- **Le repli de rendu des cables verticaux s'execute vraiment** — La garde de la 1.2.7 testait le span horizontal apres une inflation de +0.01 sur les deux axes : un cable parfaitement vertical mesurait 2.0E-4 face a un seuil de 1.0E-6 et le repli etait inatteignable. Le test porte desormais sur le span brut, et tout ce qui est sous un centimetre de course horizontale prend le chemin a decalage fixe, ce qui evite aussi les decalages degeneres du cable anime tenu en main.
+
+### Problèmes connus
+
+- **Les items blacklistes ou caches restent trouvables via la barre de recherche creative** — Registrate ajoute de lui-meme chaque item enregistre a l'onglet recherche vanilla, donc le parpaing de debug et les engrenages blindes y sont navigables alors que les onglets TFMG les cachent. Create fait taire ce defaut Registrate et peuple lui-meme l'onglet recherche ; adopter la meme architecture touche la visibilite de chaque item et est trop invasif pour une version d'urgence. Herite d'upstream, present dans toutes les versions precedentes.
+
+---
+
 ## [1.2.7] - 2026-08-12
 
 50 fixes, from two sources. First the 156-test pass on 1.2.6 and the sweeps it
