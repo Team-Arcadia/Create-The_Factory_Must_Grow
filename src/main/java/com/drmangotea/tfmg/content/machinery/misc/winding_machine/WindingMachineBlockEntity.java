@@ -47,6 +47,9 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
     public ItemStack spool = ItemStack.EMPTY;
     public WindingRecipe recipe;
     public int amountWinded = 0;
+    // Turns already paid for by a consumed wire but not yet wound onto the
+    // mounted spool. One wire buys 125 turns, the crafting recipe's ratio.
+    public int wireTurnsPending = 0;
     public boolean update = false;
 
     protected ScrollValueBehaviour turnPercentage;
@@ -222,6 +225,13 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
             return;
 
         ItemStack slotItem = inventory.getItem(0);
+
+        // Winding a spool: wire in the workpiece slot, an empty or matching
+        // spool mounted. The machine could previously only UNWIND spools,
+        // which made a winding machine that cannot wind one.
+        if (windSpool(slotItem))
+            return;
+
         int target = turnPercentage.getValue() * 10;
         boolean isResistor = slotItem.is(TFMGBlocks.RESISTOR.asItem());
         boolean isCoil = slotItem.is(TFMGItems.ELECTROMAGNETIC_COIL.get())
@@ -341,6 +351,52 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
         sendData();
     }
 
+    /** The spool a wire winds onto, or empty if the stack is not a wire. */
+    private ItemStack spoolForWire(ItemStack stack) {
+        if (stack.is(TFMGTags.TFMGItemTags.WIRES_COPPER.tag))
+            return TFMGItems.COPPER_SPOOL.asStack();
+        if (stack.is(TFMGTags.TFMGItemTags.WIRES_ALUMINUM.tag))
+            return TFMGItems.ALUMINUM_SPOOL.asStack();
+        if (stack.is(TFMGTags.TFMGItemTags.WIRES_CONSTANTAN.tag))
+            return TFMGItems.CONSTANTAN_SPOOL.asStack();
+        return ItemStack.EMPTY;
+    }
+
+    /**
+     * Wind wire from the workpiece slot onto the mounted spool, one turn per
+     * tick. A wire is consumed UP FRONT for each 125-turn tranche (the
+     * crafting recipe binds 8 wires per 1000-turn spool), so pulling the wire
+     * stack back out never yields free turns. Returns true when the slot
+     * holds a wire, whether or not a turn was wound, so the recipe paths
+     * below never see wire items.
+     */
+    private boolean windSpool(ItemStack wire) {
+        ItemStack spoolType = spoolForWire(wire);
+        if (spoolType.isEmpty())
+            return false;
+
+        boolean emptyMounted = spool.is(TFMGItems.EMPTY_SPOOL.get());
+        if (!emptyMounted && !spool.is(spoolType.getItem()))
+            return true;
+        int turns = emptyMounted ? 0 : spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0);
+        // Full spools hold 1000 turns (see SpoolItem's durability bar).
+        if (turns >= 1000)
+            return true;
+
+        if (wireTurnsPending <= 0) {
+            wire.shrink(1);
+            inventory.setStackInSlot(0, wire.isEmpty() ? ItemStack.EMPTY : wire);
+            wireTurnsPending = 125;
+        }
+        if (emptyMounted)
+            spool = spoolType;
+        spool.set(TFMGDataComponents.SPOOL_AMOUNT, Math.min(1000, turns + 1));
+        wireTurnsPending--;
+        setChanged();
+        sendData();
+        return true;
+    }
+
     /** Promote a depleted SpoolItem to an empty_spool. */
     private void convertEmptyIfDrained() {
         if (!spool.has(TFMGDataComponents.SPOOL_AMOUNT))
@@ -375,6 +431,7 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
 
         compound.put("Spool", spool.saveOptional(registries));
         compound.putInt("AmountWinded", amountWinded);
+        compound.putInt("WireTurnsPending", wireTurnsPending);
     }
 
     @Override
@@ -387,6 +444,7 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
             ItemStack.parse(registries, compound.getCompound("Spool")).ifPresent(i -> spool = i);
         }
         amountWinded = compound.getInt("AmountWinded");
+        wireTurnsPending = compound.getInt("WireTurnsPending");
         if (clientPacket)
             spoolSpeed.chase(getGeneratedSpeed(), 1 / 16f, LerpedFloat.Chaser.EXP);
     }
