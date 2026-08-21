@@ -2,6 +2,7 @@ package com.drmangotea.tfmg.content.electricity.connection.diagonal;
 
 
 import com.drmangotea.tfmg.base.TFMGShapes;
+import com.drmangotea.tfmg.content.decoration.concrete.ConcreteloggedBlock;
 import com.drmangotea.tfmg.content.electricity.base.IElectric;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
 import com.mojang.serialization.MapCodec;
@@ -10,9 +11,14 @@ import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -37,7 +43,7 @@ import java.util.Objects;
 @SuppressWarnings({"unused","deprecation"})
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class DiagonalCableBlock extends DirectionalBlock implements SimpleWaterloggedBlock, IWrenchable, IBE<DiagonalCableBlockEntity> {
+public class DiagonalCableBlock extends DirectionalBlock implements SimpleWaterloggedBlock, ConcreteloggedBlock, IWrenchable, IBE<DiagonalCableBlockEntity> {
 
 
     public static final MapCodec<DiagonalCableBlock> CODEC = simpleCodec(DiagonalCableBlock::new);
@@ -46,7 +52,7 @@ public class DiagonalCableBlock extends DirectionalBlock implements SimpleWaterl
     public static final BooleanProperty FACING_UP = BooleanProperty.create("facing_up");
     public DiagonalCableBlock(Properties p_54120_) {
         super(p_54120_);
-        this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.FALSE).setValue(FACING, Direction.NORTH).setValue(FACING_UP, false));
+        this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, Boolean.FALSE).setValue(CONCRETELOGGED, Boolean.FALSE).setValue(FACING, Direction.NORTH).setValue(FACING_UP, false));
     }
 
     @Override
@@ -55,14 +61,24 @@ public class DiagonalCableBlock extends DirectionalBlock implements SimpleWaterl
     }
 
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> p_55125_) {
-        p_55125_.add(WATERLOGGED,FACING, FACING_UP);
+        p_55125_.add(WATERLOGGED, CONCRETELOGGED, FACING, FACING_UP);
     }
 
 
 
     @Override
     public FluidState getFluidState(BlockState p_51475_) {
+        // Liquid concrete and water are exclusive; concrete wins, like the
+        // straight cable tube. Without this property the block did not just
+        // refuse concrete - it walled off the hose's spread through a run.
+        if (p_51475_.getValue(CONCRETELOGGED))
+            return fluidState(p_51475_);
         return p_51475_.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(p_51475_);
+    }
+
+    @Override
+    public ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+        return onClicked(level, pos, state, player, hand);
     }
     @Override
     public void onPlace(BlockState pState, Level level, BlockPos pos, BlockState pOldState, boolean pIsMoving) {
@@ -105,6 +121,7 @@ public class DiagonalCableBlock extends DirectionalBlock implements SimpleWaterl
         if (p_51461_.getValue(WATERLOGGED)) {
             p_51464_.scheduleTick(p_51465_, Fluids.WATER, Fluids.WATER.getTickDelay(p_51464_));
         }
+        updateConcrete(p_51464_, p_51461_, p_51465_);
 
         return super.updateShape(p_51461_, p_51462_, p_51463_, p_51464_, p_51465_, p_51466_);
     }
@@ -118,17 +135,13 @@ public class DiagonalCableBlock extends DirectionalBlock implements SimpleWaterl
         Direction facing = Objects.requireNonNull(context.getPlayer()).getDirection();
         Direction clickedFace = context.getClickedFace();
 
+        BlockState state;
         if (context.getPlayer() != null && context.getPlayer().isShiftKeyDown()) {
-            if (clickedFace == Direction.DOWN)
-                return defaultBlockState().setValue(FACING, facing.getOpposite()).setValue(FACING_UP,true).setValue(WATERLOGGED, flag);
-                else
-            return defaultBlockState().setValue(FACING, facing.getOpposite()).setValue(FACING_UP,false).setValue(WATERLOGGED, flag);
+            state = defaultBlockState().setValue(FACING, facing.getOpposite()).setValue(FACING_UP, clickedFace == Direction.DOWN).setValue(WATERLOGGED, flag);
+        } else {
+            state = defaultBlockState().setValue(FACING, facing).setValue(FACING_UP, clickedFace == Direction.DOWN).setValue(WATERLOGGED, flag);
         }
-        if (clickedFace == Direction.DOWN)
-            return defaultBlockState().setValue(FACING, facing).setValue(FACING_UP,true).setValue(WATERLOGGED, flag);
-
-
-    return defaultBlockState().setValue(FACING, facing).setValue(FACING_UP,false).setValue(WATERLOGGED, flag);
+        return withConcrete(state, context);
     }
 
     @Override
