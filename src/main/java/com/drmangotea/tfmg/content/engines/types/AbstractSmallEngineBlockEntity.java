@@ -495,12 +495,16 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         }
         // The bucket branches used to fill this block instead of the controller,
         // so a bucket emptied into any block but the first was simply lost.
+        // consumeBucket takes ONE bucket and hands back the empty: replacing
+        // the whole held stack destroyed up to 15 buckets in one click.
         if (itemStack.is(TFMGFluids.COOLING_FLUID.getBucket().get())) {
+            if (player == null)
+                return false;
             if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be) {
                 if (be.coolingFluid > 1000)
                     return false;
                 be.coolingFluid += 1000;
-                player.setItemInHand(hand, Items.BUCKET.getDefaultInstance());
+                consumeBucket(itemStack, player, hand);
                 level.playSound(null, getBlockPos(), SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
                 updateRotation();
                 be.setChanged();
@@ -509,11 +513,13 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
             }
         }
         if (itemStack.is(TFMGFluids.LUBRICATION_OIL.getBucket().get())) {
+            if (player == null)
+                return false;
             if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be) {
                 if (be.oil > 1000)
                     return false;
                 be.oil += 1000;
-                player.setItemInHand(hand, Items.BUCKET.getDefaultInstance());
+                consumeBucket(itemStack, player, hand);
                 level.playSound(null, getBlockPos(), SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
                 updateRotation();
                 be.setChanged();
@@ -539,7 +545,11 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
 
                                     this.getControllerBE().updateGeneratedRotation();
 
-                                    getControllerBE().controller = pos;
+                                    // The multiblock master pointer and the linked
+                                    // engine controller are different fields; writing
+                                    // the controller block's position into `controller`
+                                    // detached this engine from its own multiblock.
+                                    getControllerBE().engineController = pos;
                                     engineControllerBE.enginePos = this.getBlockPos();
                                     getControllerBE().highestSignal = 0;
                                 }
@@ -626,6 +636,17 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         TFMGUtils.createFluidTooltip(this, tooltip);
 
         return true;
+    }
+
+    private static void consumeBucket(ItemStack itemStack, Player player, InteractionHand hand) {
+        if (player.getAbilities().instabuild)
+            return;
+        itemStack.shrink(1);
+        ItemStack empty = Items.BUCKET.getDefaultInstance();
+        if (itemStack.isEmpty())
+            player.setItemInHand(hand, empty);
+        else if (!player.getInventory().add(empty))
+            player.drop(empty, false);
     }
 
     public boolean isUpgradeFirst(EngineUpgrade itemUpgrade) {
