@@ -78,6 +78,7 @@ import com.drmangotea.tfmg.content.machinery.misc.air_intake.AirIntakeBlockEntit
 import com.drmangotea.tfmg.content.machinery.misc.air_intake.AirIntakeRenderer;
 import com.drmangotea.tfmg.content.machinery.misc.concrete_hose.ConcreteHoseBlockEntity;
 import com.drmangotea.tfmg.content.machinery.misc.concrete_hose.ConcreteHoseRenderer;
+import com.drmangotea.tfmg.content.machinery.misc.concrete_hose.ConcreteHoseVisual;
 import com.drmangotea.tfmg.content.machinery.misc.exhaust.ExhaustBlockEntity;
 import com.drmangotea.tfmg.content.machinery.misc.firebox.FireboxBlockEntity;
 import com.drmangotea.tfmg.content.machinery.misc.flarestack.FlarestackBlockEntity;
@@ -199,7 +200,9 @@ public class TFMGBlockEntities {
             .register();
     public static final BlockEntityEntry<ConcreteHoseBlockEntity> CONCRETE_HOSE = REGISTRATE
             .blockEntity("concrete_hose", ConcreteHoseBlockEntity::new)
-            //.instance(() -> ConcreteHoseInstance::new)
+            // The renderer stands down when Flywheel visualization is active,
+            // so without a visual the hose rope was never drawn at all.
+            .visual(() -> ConcreteHoseVisual::new)
             .validBlocks(TFMGBlocks.CONCRETE_HOSE)
             .renderer(() -> ConcreteHoseRenderer::new)
             .register();
