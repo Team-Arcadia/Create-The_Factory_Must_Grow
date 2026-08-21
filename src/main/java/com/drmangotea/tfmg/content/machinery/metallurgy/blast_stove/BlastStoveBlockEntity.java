@@ -138,22 +138,31 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
             HotBlastRecipe recipe = getMatchingRecipes();
             if (recipe != null) {
                 if (timer >= getSpeedModifier() / (getTotalTankSize() * 0.3f)) {
-                    if ((primaryOutputInventory.isEmpty() || primaryOutputInventory.getFluid().isFluidEqual(recipe.getPrimaryResult())) && (secondaryOutputInventory.isEmpty() || secondaryOutputInventory.getFluid().isFluidEqual(recipe.getSecondaryResult()))
-                            // Require room for the FULL result before writing:
-                            // setFluid() does not clamp to capacity, so a near-
-                            // full tank (getSpace() != 0 but < result amount)
-                            // would be pushed past 8000 mB.
-                            && primaryOutputInventory.getSpace() >= recipe.getPrimaryResult().getAmount()
-                            && secondaryOutputInventory.getSpace() >= recipe.getSecondaryResult().getAmount()) {
+                    if ((primaryOutputInventory.isEmpty() || primaryOutputInventory.getFluid().isFluidEqual(recipe.getPrimaryResult())) && (secondaryOutputInventory.isEmpty() || secondaryOutputInventory.getFluid().isFluidEqual(recipe.getSecondaryResult()))) {
+
+                        // Every block of the stove converts its own share of the
+                        // recipe per cycle; the flat single share of before could
+                        // not keep up with one blast furnace whatever the stove
+                        // size. The batch is clamped to what the input tanks can
+                        // back and the output tanks can absorb, so a partly
+                        // supplied stove processes what it can instead of
+                        // stalling: setFluid() does not clamp to capacity, so a
+                        // near-full tank must never be handed a full batch.
+                        int batch = getTotalTankSize();
+                        batch = clampBatch(batch, primaryInputInventory.getFluidAmount(), recipe.getPrimaryIngredient().amount());
+                        batch = clampBatch(batch, secondaryInputInventory.getFluidAmount(), recipe.getSecondaryIngredient().amount());
+                        batch = clampBatch(batch, primaryOutputInventory.getSpace(), recipe.getPrimaryResult().getAmount());
+                        batch = clampBatch(batch, secondaryOutputInventory.getSpace(), recipe.getSecondaryResult().getAmount());
+
+                        if (batch >= 1) {
+                            primaryInputInventory.setFluid(new FluidStack(primaryInputInventory.getFluid().copy().getFluidHolder(), primaryInputInventory.getFluidAmount() - recipe.getPrimaryIngredient().amount() * batch));
+                            secondaryInputInventory.setFluid(new FluidStack(secondaryInputInventory.getFluid().copy().getFluidHolder(), secondaryInputInventory.getFluidAmount() - recipe.getSecondaryIngredient().amount() * batch));
 
 
-                        primaryInputInventory.setFluid(new FluidStack(primaryInputInventory.getFluid().copy().getFluidHolder(), primaryInputInventory.getFluidAmount() - recipe.getPrimaryIngredient().amount()));
-                        secondaryInputInventory.setFluid(new FluidStack(secondaryInputInventory.getFluid().copy().getFluidHolder(), secondaryInputInventory.getFluidAmount() - recipe.getSecondaryIngredient().amount()));
-
-
-                        primaryOutputInventory.setFluid(new FluidStack(recipe.getPrimaryResult().getFluidHolder(), primaryOutputInventory.getFluidAmount() + recipe.getPrimaryResult().getAmount()));
-                        secondaryOutputInventory.setFluid(new FluidStack(recipe.getSecondaryResult().getFluidHolder(), secondaryOutputInventory.getFluidAmount() + recipe.getSecondaryResult().getAmount()));
-                        timer = 0;
+                            primaryOutputInventory.setFluid(new FluidStack(recipe.getPrimaryResult().getFluidHolder(), primaryOutputInventory.getFluidAmount() + recipe.getPrimaryResult().getAmount() * batch));
+                            secondaryOutputInventory.setFluid(new FluidStack(recipe.getSecondaryResult().getFluidHolder(), secondaryOutputInventory.getFluidAmount() + recipe.getSecondaryResult().getAmount() * batch));
+                            timer = 0;
+                        }
                     }
                 } else {
                     timer++;
@@ -166,6 +175,14 @@ public class BlastStoveBlockEntity extends FluidTankBlockEntity implements IHave
 
     public int getSpeedModifier() {
         return 100;
+    }
+
+    // How many recipe shares an amount of fluid (or of tank space) can back.
+    // A zero recipe amount backs any batch; datapacks may omit a side.
+    private static int clampBatch(int batch, int available, int perShare) {
+        if (perShare <= 0)
+            return batch;
+        return Math.min(batch, available / perShare);
     }
 
 
