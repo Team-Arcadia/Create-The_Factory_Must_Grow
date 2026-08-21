@@ -167,6 +167,9 @@ public class TFMGTexts {
         public static LangBuilder torque(float torque) {
             return TFMGLang.translate("goggles.engine.torque", TFMGLang.number(torque)).color(0xa36f00);
         }
+        public static LangBuilder stressCapacity(double value) {
+            return TFMGLang.translate("goggles.engine.stress_capacity", TFMGLang.number(value)).color(0xa36f00);
+        }
         public static LangBuilder signal(int signal) {
             return TFMGLang.translate("goggles.engine.signal", TFMGLang.number(signal)).color(0xfcad03);
         }

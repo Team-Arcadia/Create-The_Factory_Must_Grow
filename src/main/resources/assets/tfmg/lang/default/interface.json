@@ -79,6 +79,7 @@
   "tfmg.goggles.engine.rpm": "Speed: %s RPM",
   "tfmg.goggles.engine.signal": "Signal: %s",
   "tfmg.goggles.engine.torque": "Torque: %s",
+  "tfmg.goggles.engine.stress_capacity": "Output: %s su",
   "tfmg.goggles.engine.fuel_consumption": "Fuel Consumption: %s mB/s",
   "tfmg.goggles.engine.oil": "Oil: %s",
   "tfmg.goggles.engine.cooling_fluid": "Cooling Fluid: %s",

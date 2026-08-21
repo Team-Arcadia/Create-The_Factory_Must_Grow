@@ -92,7 +92,12 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
 
             String id = fuelsToAllow.getString(key);
 
-            TagKey<Fluid> tag = FluidTags.create(ResourceLocation.fromNamespaceAndPath("c",id.replace("c:","")));
+            // Fuel tags live in the c: namespace. Turbine blades crafted from
+            // the sequenced assembly recipe used to carry "forge:kerosene",
+            // which the old namespace-stripping turned into an invalid path
+            // and crashed on; map the legacy namespace instead of parsing it.
+            String path = id.substring(id.indexOf(':') + 1);
+            TagKey<Fluid> tag = FluidTags.create(ResourceLocation.fromNamespaceAndPath("c", path));
 
             fuelsFound.add(tag);
         }
@@ -395,10 +400,12 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
         }
 
         TFMGTexts.Engine.type(type.langKey).forGoggles(tooltip, 1);
-        TFMGTexts.Engine.rpm(rpm).forGoggles(tooltip, 1);
+        TFMGTexts.Engine.rpm(outputSpeed()).forGoggles(tooltip, 1);
         TFMGTexts.Engine.signal((int) (highestSignal*15)).forGoggles(tooltip, 1);
         TFMGTexts.Engine.torque(torque).forGoggles(tooltip, 1);
-        TFMGTexts.Engine.fuelConsumption(getFuelConsumption()/1.5f).forGoggles(tooltip, 1);
+        TFMGTexts.Engine.stressCapacity(outputStress()).forGoggles(tooltip, 1);
+        // The drain fires every 4th lazy tick, i.e. every 2 seconds.
+        TFMGTexts.Engine.fuelConsumption(getFuelConsumption()/2f).forGoggles(tooltip, 1);
         if(oil>0){
             TFMGTexts.Engine.oil(oil).forGoggles(tooltip);
         }

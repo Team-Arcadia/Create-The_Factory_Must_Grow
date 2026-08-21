@@ -1449,6 +1449,7 @@
   "tfmg.goggles.engine.rpm": "Vitesse : %s RPM",
   "tfmg.goggles.engine.signal": "Signal : %s",
   "tfmg.goggles.engine.torque": "Couple : %s",
+  "tfmg.goggles.engine.stress_capacity": "Production : %s su",
   "tfmg.goggles.engine.turbines_missing": "Turbines manquantes",
   "tfmg.goggles.engine.type": "Type : %s",
   "tfmg.goggles.engine.unfinished": "Moteur inachevé",
