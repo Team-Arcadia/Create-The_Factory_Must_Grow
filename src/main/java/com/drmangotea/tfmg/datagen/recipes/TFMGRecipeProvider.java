@@ -551,7 +551,7 @@ public class TFMGRecipeProvider extends RecipeProvider {
             ItemStack stack = TFMGItems.TURBINE_BLADE.asStack();
 
             CompoundTag keroseneTag = new CompoundTag();
-            keroseneTag.putString("kerosene", "forge:kerosene");
+            keroseneTag.putString("kerosene", "c:kerosene");
             CompoundTag keroseneTagName = new CompoundTag();
             keroseneTagName.putString("kerosene", "Kerosene");
 
