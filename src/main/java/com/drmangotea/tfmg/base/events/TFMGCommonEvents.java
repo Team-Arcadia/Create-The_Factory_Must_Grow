@@ -9,6 +9,7 @@ import com.drmangotea.tfmg.content.electricity.base.IElectric;
 import com.drmangotea.tfmg.content.electricity.storage.AccumulatorBlockEntity;
 import com.drmangotea.tfmg.content.electricity.utilities.converter.ConverterBlockEntity;
 import com.drmangotea.tfmg.content.electricity.utilities.polarizer.PolarizerBlockEntity;
+import com.drmangotea.tfmg.content.engines.FluidContainingItem;
 import com.drmangotea.tfmg.content.engines.base.AbstractEngineBlockEntity;
 import com.drmangotea.tfmg.content.engines.fuels.EngineFuelTypeManager;
 import com.drmangotea.tfmg.content.engines.types.large_engine.LargeEngineBlockEntity;
@@ -128,6 +129,7 @@ public class TFMGCommonEvents {
             CokeOvenBlockEntity.registerCapabilities(event);
             AirIntakeBlockEntity.registerCapabilities(event);
             WindingMachineBlockEntity.registerCapabilities(event);
+            FluidContainingItem.registerCapabilities(event);
         }
 
         @SubscribeEvent
