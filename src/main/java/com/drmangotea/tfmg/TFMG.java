@@ -54,6 +54,7 @@ public class TFMG {
         TFMGElectrodes.init();
         TFMGCableTypes.init();
         TFMGDisplaySources.init();
+        TFMGDisplayTargets.init();
         TFMGCreativeTabs.register(modEventBus);
         TFMGBlocks.init();
         TFMGPipes.init();

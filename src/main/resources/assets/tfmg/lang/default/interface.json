@@ -236,6 +236,7 @@
   "tfmg.display_source.electricity.network_generation": "Network Power Generation",
   "tfmg.display_source.electricity.power_generation": "Power Generation",
   "tfmg.display_source.electricity.voltage_generation": "Voltage Generation",
+  "tfmg.display_source.segmented_display": "Displayed Text",
 
   "item.minecraft.potion.effect.hellfire_potion": "Potion of Hellfire",
   "item.minecraft.splash_potion.effect.hellfire_potion": "Splash Potion of Hellfire",

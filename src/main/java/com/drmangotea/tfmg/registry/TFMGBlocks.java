@@ -119,6 +119,8 @@ import com.drmangotea.tfmg.content.machinery.vat.electrode_holder.ElectrodeHolde
 import com.drmangotea.tfmg.content.machinery.vat.freezer.FreezerBlock;
 import com.drmangotea.tfmg.content.machinery.vat.industrial_mixer.IndustrialMixerBlock;
 import com.simibubi.create.AllTags;
+import com.simibubi.create.api.behaviour.display.DisplaySource;
+import com.simibubi.create.api.behaviour.display.DisplayTarget;
 import com.simibubi.create.api.stress.BlockStressValues;
 import com.simibubi.create.content.contraptions.bearing.StabilizedBearingMovementBehaviour;
 import com.simibubi.create.content.decoration.MetalLadderBlock;
@@ -1331,6 +1333,11 @@ public class TFMGBlocks {
                     .initialProperties(SharedProperties::softMetal)
                     .transform(pickaxeOnly())
                     .onRegister(connectedTextures(SegmentedDisplayCTBehavior::new))
+                    // The target and source classes shipped since the port, but
+                    // their registration was lost with Create 6's new display
+                    // API, so every display link answered "Not a Display Target".
+                    .transform(DisplayTarget.displayTarget(TFMGDisplayTargets.SEGMENTED_DISPLAY))
+                    .transform(DisplaySource.displaySource(TFMGDisplaySources.SEGMENTED_DISPLAY))
                     .blockstate(BlockStateGen.horizontalBlockProvider(true))
                     .item()
                     .transform(customItemModel())

@@ -1378,6 +1378,7 @@
   "tfmg.display_source.electricity.resistance": "Résistance",
   "tfmg.display_source.electricity.voltage": "Tension",
   "tfmg.display_source.electricity.voltage_generation": "Génération de tension",
+  "tfmg.display_source.segmented_display": "Texte affiché",
   "tfmg.distillation_output.mode.keep_fluid": "Arrêter la distillation",
   "tfmg.distillation_output.mode.void_when_full": "Vider l'excédent de fluide",
   "tfmg.distillation_output.when_tank_is_full": "Quand la cuve interne est pleine",
