@@ -1,6 +1,7 @@
 package com.drmangotea.tfmg.content.engines.types.regular_engine;
 
 import com.drmangotea.tfmg.base.TFMGUtils;
+import com.drmangotea.tfmg.base.lang.TFMGLang;
 import com.drmangotea.tfmg.base.lang.TFMGTexts;
 import com.drmangotea.tfmg.config.TFMGConfigs;
 import com.drmangotea.tfmg.content.engines.types.AbstractSmallEngineBlockEntity;
@@ -436,6 +437,13 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
         }
         if(coolingFluid>0){
             TFMGTexts.Engine.coolingFluid(coolingFluid).forGoggles(tooltip);
+        }
+        // Which controller drives this engine was stored and never shown,
+        // so a dead transmission link could only be diagnosed by rebuilding.
+        if (engineController != null) {
+            TFMGLang.translate("engine.linked_controller",
+                    engineController.getX() + " " + engineController.getY() + " " + engineController.getZ())
+                    .style(ChatFormatting.AQUA).forGoggles(tooltip, 1);
         }
 
         TFMGUtils.createFluidTooltip(this,tooltip);

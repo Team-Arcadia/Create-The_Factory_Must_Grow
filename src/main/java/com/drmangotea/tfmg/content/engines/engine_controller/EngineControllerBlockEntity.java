@@ -1,6 +1,8 @@
 package com.drmangotea.tfmg.content.engines.engine_controller;
 
 import com.drmangotea.tfmg.TFMG;
+import com.drmangotea.tfmg.base.lang.TFMGLang;
+import com.drmangotea.tfmg.base.lang.TFMGTexts;
 import com.drmangotea.tfmg.content.engines.types.AbstractSmallEngineBlockEntity;
 import com.drmangotea.tfmg.content.engines.upgrades.TransmissionUpgrade;
 import com.simibubi.create.api.equipment.goggles.IHaveGoggleInformation;
@@ -10,6 +12,7 @@ import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour
 import net.createmod.catnip.animation.LerpedFloat;
 import net.createmod.catnip.data.Couple;
 import net.createmod.catnip.platform.CatnipServices;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -240,31 +243,38 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
     @Override
     public void remove() {
         super.remove();
+        // Breaking the controller under a seated player must release them,
+        // or the persistent flag locks them out of every other controller.
+        if (level != null && !level.isClientSide && user != null && level instanceof ServerLevel serverLevel) {
+            Player seated = serverLevel.getServer().getPlayerList().getPlayer(user);
+            if (seated != null)
+                seated.getPersistentData().remove("IsUsingEngineController");
+        }
         disconnectEngine();
     }
 
-    //@Override
-    //public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
-//
-    //    if (engine != null) {
-    //        CreateLang.text("Linked").forGoggles(tooltip);
-    //    }
-//
-//
-    //    CreateLang.text(shift.name()).forGoggles(tooltip);
-    //    CreateLang.text(engineStarted ? "Engine Started" : "Engine Stopped").forGoggles(tooltip);
-    //    CreateLang.text("Acceleration: " + accelerationRate).forGoggles(tooltip);
-//
-//
-    //    if (clutch)
-    //        CreateLang.text("CLUTCH").forGoggles(tooltip);
-    //    if (brake)
-    //        CreateLang.text("BRAKE").forGoggles(tooltip);
-    //    if (gas)
-    //        CreateLang.text("GAS").forGoggles(tooltip);
-//
-    //    return true;
-    //}
+    @Override
+    public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
+
+        TFMGTexts.header("engine_controller").forGoggles(tooltip);
+
+        // Whether a transmission actually bound an engine here was invisible:
+        // "start" on an unlinked controller is a silent no-op, which read as
+        // a controller that just does not work.
+        if (enginePos != null) {
+            TFMGLang.translate("engine_controller.linked_engine",
+                    enginePos.getX() + " " + enginePos.getY() + " " + enginePos.getZ())
+                    .style(ChatFormatting.AQUA).forGoggles(tooltip);
+            TFMGLang.translate(engineStarted ? "engine_controller.engine_started" : "engine_controller.engine_stopped")
+                    .style(engineStarted ? ChatFormatting.GREEN : ChatFormatting.GOLD).forGoggles(tooltip);
+            TFMGTexts.Engine.shift(shift.langKey).forGoggles(tooltip);
+        } else {
+            TFMGLang.translate("engine_controller.no_engine")
+                    .style(ChatFormatting.GRAY).forGoggles(tooltip);
+        }
+
+        return true;
+    }
 
 
     @Override
@@ -302,7 +312,10 @@ public class EngineControllerBlockEntity extends SmartBlockEntity implements IHa
 
             Entity entity = ((ServerLevel) level).getEntity(user);
             if (!(entity instanceof Player)) {
-                stopUsing(null);
+                // The seated player left this dimension: resolve them through
+                // the player list so their persistent flag is cleared too, or
+                // every controller rejects them until they relog.
+                stopUsing(((ServerLevel) level).getServer().getPlayerList().getPlayer(user));
                 return;
             }
 

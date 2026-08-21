@@ -1,5 +1,6 @@
 package com.drmangotea.tfmg.content.engines.engine_controller.packets;
 
+import com.drmangotea.tfmg.base.lang.TFMGLang;
 import com.drmangotea.tfmg.content.engines.engine_controller.EngineControllerBlockEntity;
 import com.drmangotea.tfmg.registry.TFMGPackets;
 import io.netty.buffer.ByteBuf;
@@ -27,7 +28,15 @@ public class EngineStartPacket extends EngineControllerPacketBase {
 
     @Override
     protected void handleLectern(ServerPlayer player, EngineControllerBlockEntity controller) {
+        // Starting an unlinked controller was a silent no-op; say why nothing
+        // happens instead of leaving the key looking broken.
+        if (controller.engine == null) {
+            player.displayClientMessage(TFMGLang.translateDirect("engine_controller.no_engine"), true);
+            return;
+        }
         controller.toggleEngine();
+        player.displayClientMessage(TFMGLang.translateDirect(
+                controller.engineStarted ? "engine_controller.engine_started" : "engine_controller.engine_stopped"), true);
     }
 
 

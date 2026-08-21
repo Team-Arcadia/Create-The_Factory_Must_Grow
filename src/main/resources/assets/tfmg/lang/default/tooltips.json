@@ -1,4 +1,6 @@
 {
+  "tfmg.tooltip.transmission_linked": "Linked controller: %s",
+  "tfmg.tooltip.transmission_unlinked": "Right-click an engine controller to bind it",
   "OwO": "UwU",
   "item.tfmg.multimeter.tooltip.summary": "Shows data about an electrical block and its network",
   "item.tfmg.multimeter.tooltip.condition1": "When looking at an electric component NOTE: It does not work while wearing Engineers Goggles",

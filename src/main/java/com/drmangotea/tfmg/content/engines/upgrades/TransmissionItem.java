@@ -55,13 +55,21 @@ public class TransmissionItem extends Item {
     @OnlyIn(Dist.CLIENT)
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
 
-        if(stack.get(TFMGDataComponents.POSITION)==null)
+        // Say what the stored coordinates ARE: a bare "128 64 -30" line gave
+        // no hint that this item was bound to an engine controller, and a
+        // fresh transmission said nothing about how to bind one.
+        if(stack.get(TFMGDataComponents.POSITION)==null) {
+            tooltip.add(TFMGLang.translateDirect("tooltip.transmission_unlinked")
+                    .withStyle(ChatFormatting.GRAY));
+            super.appendHoverText(stack, context, tooltip, flag);
             return;
+        }
 
 
         BlockPos pos = BlockPos.of(stack.get(TFMGDataComponents.POSITION));
         if(pos.asLong()!=0)
-            tooltip.add(TFMGLang.text(pos.getX() + " " + pos.getY() + " " + pos.getZ()).component()
+            tooltip.add(TFMGLang.translateDirect("tooltip.transmission_linked",
+                    pos.getX() + " " + pos.getY() + " " + pos.getZ())
                     .withStyle(ChatFormatting.AQUA)
             );
         super.appendHoverText(stack, context, tooltip, flag);

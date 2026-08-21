@@ -187,6 +187,13 @@
   "tfmg.electricity.max_capacity": "Max Capacity: %s",
 
   "tfmg.engine_controller.header": "Engine Controller",
+  "tfmg.engine_controller.linked_engine": "Engine: %s",
+  "tfmg.engine_controller.engine_started": "Engine running",
+  "tfmg.engine_controller.engine_stopped": "Engine stopped",
+  "tfmg.engine_controller.no_engine": "No engine linked. Bind a transmission to this controller, then install it in an engine",
+  "tfmg.engine_controller.frequency_slot_1": "Redstone frequency #1, transmitted while %1$s is held",
+  "tfmg.engine_controller.frequency_slot_2": "Redstone frequency #2, transmitted while %1$s is held",
+  "tfmg.engine.linked_controller": "Controller: %s",
   "tfmg.engine.shift": "Shift: %s",
   "tfmg.engine.speed_efficiency": "Speed Efficiency: %s",
   "tfmg.engine.efficiency": "Efficiency: %s",

@@ -2,11 +2,12 @@ package com.drmangotea.tfmg.content.engines.engine_controller;
 
 import com.drmangotea.tfmg.base.lang.TFMGLang;
 import com.drmangotea.tfmg.registry.TFMGGuiTextures;
+import com.drmangotea.tfmg.registry.TFMGKeys;
+import net.minecraft.client.KeyMapping;
 import com.google.common.collect.ImmutableList;
 import com.simibubi.create.foundation.gui.AllIcons;
 import com.simibubi.create.foundation.gui.menu.AbstractSimiContainerScreen;
 import com.simibubi.create.foundation.gui.widget.IconButton;
-import com.simibubi.create.foundation.utility.ControlsUtil;
 import net.createmod.catnip.gui.element.GuiGameElement;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -100,10 +101,17 @@ public class EngineControllerScreen extends AbstractSimiContainerScreen<EngineCo
 	}
 
 	private List<Component> addToTooltip(List<Component> list, int slot) {
-		if (slot < 0 || slot >= 12)
+		if (slot < 0 || slot >= 6)
 			return list;
-		list.add(TFMGLang.translateDirect("engine_controller0.frequency_slot_" + ((slot % 2) + 1), ControlsUtil.getControls()
-			.get(slot / 2)
+		// The server maps pair 0 to the steer-left key, pair 1 to steer-right
+		// and pair 2 to the custom button; the old code labelled them with
+		// Create's movement keys through a lang key that never existed.
+		KeyMapping key = switch (slot / 2) {
+			case 0 -> minecraft.options.keyLeft;
+			case 1 -> minecraft.options.keyRight;
+			default -> TFMGKeys.ENGINE_CONTROLLER_CUSTOM_BUTTON.getKeybind();
+		};
+		list.add(TFMGLang.translateDirect("engine_controller.frequency_slot_" + ((slot % 2) + 1), key
 			.getTranslatedKeyMessage()
 			.getString())
 			.withStyle(ChatFormatting.GOLD));
