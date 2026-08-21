@@ -81,8 +81,14 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
 
         float coolingFluidModifier = coolingFluid > 0 ? 0.7f : 1f;
 
-
-        return (int) (12.5f * (1 / efficiencyModifier()) * getSpeedEfficiency() * highestSignal / 15 * oilModifier * coolingFluidModifier) * (engineLength() + 1);
+        // Truncate after the length multiply, not before: the per-cylinder
+        // term sits between 0.4 and 8, and casting it alone floored the most
+        // efficient type/fuel pairs (boxer and radial on gasoline, kerosene,
+        // propane) to a flat zero whatever the engine length. The floor keeps
+        // a running engine burning at least 1 mB per drain even under the
+        // oil and cooling discounts - no rotation from an empty tank.
+        float consumption = 12.5f * (1 / efficiencyModifier()) * getSpeedEfficiency() * highestSignal / 15 * oilModifier * coolingFluidModifier * (engineLength() + 1);
+        return Math.max(1, (int) consumption);
     }
 
     public void detashEngines() {
@@ -394,6 +400,30 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         return 0;
     }
 
+    // What the shaft actually turns at, as a Create multimeter would read it.
+    // The raw rpm field is an internal figure 40 times larger; showing it in
+    // the goggles made a 181 RPM engine claim 7280.
+    public float outputSpeed() {
+        for (Long l : getAllEngines())
+            if (level.getBlockEntity(BlockPos.of(l)) instanceof AbstractSmallEngineBlockEntity be) {
+                float speed = be.getGeneratedSpeed();
+                if (speed != 0)
+                    return Math.abs(speed);
+            }
+        return 0;
+    }
+
+    // Total stress capacity the whole engine feeds the network: Create scales
+    // each generating block's capacity by its speed, and turbines and radials
+    // generate from every block, not just the shafted one.
+    public float outputStress() {
+        float total = 0;
+        for (Long l : getAllEngines())
+            if (level.getBlockEntity(BlockPos.of(l)) instanceof AbstractSmallEngineBlockEntity be)
+                total += be.calculateAddedStressCapacity() * Math.abs(be.getGeneratedSpeed());
+        return total;
+    }
+
     @Override
     public void tankUpdated(FluidStack stack, boolean fuel) {
         if (stack.getFluid().isSame(TFMGFluids.CARBON_DIOXIDE.get()) && stack.getAmount() >= exhaustTank.getSpace())
@@ -571,10 +601,12 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         TFMGTexts.Engine.shift(shift.langKey).forGoggles(tooltip);
         TFMGTexts.Engine.speedEfficiency(getSpeedEfficiency()).forGoggles(tooltip);
         TFMGTexts.Engine.efficiency(efficiencyModifier()).forGoggles(tooltip);
-        TFMGTexts.Engine.fuelConsumption(getFuelConsumption()).forGoggles(tooltip);
-        TFMGTexts.Engine.rpm(rpm).forGoggles(tooltip);
+        // The drain fires every 4th lazy tick, i.e. every 2 seconds.
+        TFMGTexts.Engine.fuelConsumption(getFuelConsumption()/2f).forGoggles(tooltip);
+        TFMGTexts.Engine.rpm(outputSpeed()).forGoggles(tooltip);
         TFMGTexts.Engine.length(engineLength()).forGoggles(tooltip);
         TFMGTexts.Engine.torque(torque).forGoggles(tooltip);
+        TFMGTexts.Engine.stressCapacity(outputStress()).forGoggles(tooltip);
         TFMGTexts.Engine.signal((int) (highestSignal*15)).forGoggles(tooltip);
         TFMGLang.number(engineNumber).style(ChatFormatting.DARK_GREEN).forGoggles(tooltip);
         // A missing component silently blocks canWork, so say so instead of
