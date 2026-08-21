@@ -60,10 +60,12 @@ public class GoldenTurboUpgradeData extends EngineUpgrade {
         if (be instanceof RegularEngineBlockEntity blockEntity) {
             side = blockEntity.type.upgradesOnSide;
         }
+        float lift = turboLift(be);
         CachedBuffers.partial(getModel(), state)
                 .center()
                 .rotateYDegrees(facing.toYRot())
                 .translateX(side ? -4/16f : 0)
+                .translateY(side ? 0 : lift)
                 .rotateZDegrees(side ? 90 : 0)
                 .uncenter()
                 .light(light)
@@ -73,6 +75,7 @@ public class GoldenTurboUpgradeData extends EngineUpgrade {
                 .center()
                 .rotateYDegrees(facing.toYRot())
                 .translateX(side ? -4/16f : 0)
+                .translateY(side ? 0 : lift)
                 .rotateZDegrees(side ? 90 : 0)
                 .rotateYDegrees(angle)
                 .uncenter()

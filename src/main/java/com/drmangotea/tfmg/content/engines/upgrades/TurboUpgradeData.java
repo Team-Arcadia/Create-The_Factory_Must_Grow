@@ -68,11 +68,15 @@ public class TurboUpgradeData extends EngineUpgrade {
         if (be instanceof RegularEngineBlockEntity blockEntity) {
             side = blockEntity.type.upgradesOnSide;
         }
+        // The turbine blocks are tall enough to swallow a top-mounted turbo;
+        // lift it clear of their casing so a multiblock's turbos stay visible.
+        float lift = turboLift(be);
 
         CachedBuffers.partial(getModel(), state)
                 .center()
                 .rotateYDegrees(facing.toYRot())
                 .translateX(side ? -4/16f : 0)
+                .translateY(side ? 0 : lift)
                 .rotateZDegrees(side ? 90 : 0)
                 .uncenter()
                 .light(light)
@@ -82,6 +86,7 @@ public class TurboUpgradeData extends EngineUpgrade {
                 .center()
                 .rotateYDegrees(facing.toYRot())
                 .translateX(side ? -4/16f : 0)
+                .translateY(side ? 0 : lift)
                 .rotateZDegrees(side ? 90 : 0)
                 .rotateYDegrees(angle)
                 .uncenter()
