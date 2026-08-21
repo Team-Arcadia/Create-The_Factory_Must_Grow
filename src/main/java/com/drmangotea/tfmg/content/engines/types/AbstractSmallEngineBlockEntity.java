@@ -8,6 +8,7 @@ import com.drmangotea.tfmg.content.engines.base.AbstractEngineBlockEntity;
 import com.drmangotea.tfmg.content.engines.base.EngineComponentsInventory;
 import com.drmangotea.tfmg.content.engines.base.EngineProperties;
 import com.drmangotea.tfmg.content.engines.engine_controller.EngineControllerBlockEntity;
+import com.drmangotea.tfmg.content.engines.types.regular_engine.RegularEngineBlockEntity;
 import com.drmangotea.tfmg.content.engines.upgrades.EnginePipingUpgrade;
 import com.drmangotea.tfmg.content.engines.upgrades.EngineUpgrade;
 import com.drmangotea.tfmg.content.engines.upgrades.TransmissionUpgrade;
@@ -239,12 +240,30 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         return super.canWork();
     }
 
-    public Ingredient nextComponent() {
+    // Every block of a multiblock engine carries and requires its own set of
+    // components: five engines joined end to end used to cost the same five
+    // items as one, because only the master's inventory existed. Per-block
+    // progress also survives the master re-election a merge triggers, which
+    // used to strand the old master's items in an inventory nothing read.
+    public AbstractSmallEngineBlockEntity nextIncompleteEngine() {
         if (!isController())
+            return null;
+        for (AbstractSmallEngineBlockEntity be : getEngines()) {
+            for (int i = 0; i < be.componentsInventory.getSlots(); i++) {
+                if (be.componentsInventory.getStackInSlot(i).isEmpty())
+                    return be;
+            }
+        }
+        return null;
+    }
+
+    public Ingredient nextComponent() {
+        AbstractSmallEngineBlockEntity be = nextIncompleteEngine();
+        if (be == null)
             return Ingredient.EMPTY;
-        for (int i = 0; i < componentsInventory.getSlots(); i++) {
-            if (componentsInventory.getStackInSlot(i).isEmpty()) {
-                return componentsInventory.components.get(i);
+        for (int i = 0; i < be.componentsInventory.getSlots(); i++) {
+            if (be.componentsInventory.getStackInSlot(i).isEmpty()) {
+                return be.componentsInventory.components.get(i);
             }
         }
 
@@ -564,11 +583,14 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         if (!isController())
             return false;
         if (nextComponent().test(itemStack)) {
-            if (componentsInventory.insertItem(itemStack)) {
+            AbstractSmallEngineBlockEntity target = nextIncompleteEngine();
+            if (target != null && target.componentsInventory.insertItem(itemStack)) {
                 if (!itemStack.is(TFMGItems.SCREWDRIVER.get()))
                     itemStack.shrink(1);
                 playInsertionSound();
                 updateRotation();
+                target.setChanged();
+                target.sendData();
                 setChanged();
                 sendData();
                 return true;
@@ -690,13 +712,28 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         super.tick();
     }
 
+    // Two adjacent engine blocks belong to one chain only when they share the
+    // block, the facing AND the engine type. Mixed-type chains used to form on
+    // merge (the old guard was commented out), leaving a multiblock that could
+    // never change type again; and the forward delegation recursed forever on
+    // two engines facing each other.
+    public boolean canChainWith(AbstractSmallEngineBlockEntity other) {
+        if (other.getBlockState().getBlock() != this.getBlockState().getBlock())
+            return false;
+        if (this instanceof RegularEngineBlockEntity a && other instanceof RegularEngineBlockEntity b)
+            return a.type == b.type;
+        return true;
+    }
+
     public void connect() {
 
         try {
             Direction facing = getBlockState().getValue(HORIZONTAL_FACING);
             Direction updateDirection = facing.getOpposite();
 
-            if (level.getBlockEntity(getBlockPos().relative(facing)) instanceof AbstractSmallEngineBlockEntity be && be.getBlockState().getBlock() == this.getBlockState().getBlock()) {
+            if (level.getBlockEntity(getBlockPos().relative(facing)) instanceof AbstractSmallEngineBlockEntity be
+                    && be.getBlockState().getValue(HORIZONTAL_FACING) == facing
+                    && canChainWith(be)) {
                 be.connect();
                 return;
             }
@@ -709,14 +746,15 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
                     if (be.getBlockState().getValue(HORIZONTAL_FACING) != facing) {
                         return;
                     }
+                    if (i != 0 && !canChainWith(be)) {
+                        // The chain ends where the type or the block changes;
+                        // the far side keeps forming its own engine.
+                        setBlockStates(this, getBlockPos().relative(updateDirection, i - 1));
+                        break;
+                    }
 
                     level.setBlock(be.getBlockPos(), be.getBlockState().setValue(SHAFT_FACING, be.getBlockPos().equals(this.getBlockPos()) ? facing : updateDirection), 2);
 
-                    //if (be instanceof RegularEngineBlockEntity be1 && this instanceof RegularEngineBlockEntity be2 && be1.type != be2.type) {
-                    //    setBlockStates(this, getBlockPos().relative(updateDirection, i - 1));
-                    //    TFMG.LOGGER.debug("set blockstates");
-                    //    return;
-                    //}
                     be.detashEngines();
                     engines.add(pos.asLong());
 
@@ -753,6 +791,17 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
 
         }
 
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        // Each block owns its share of the build cost now, so breaking one
+        // must give that share back; it used to vanish with the block.
+        for (int i = 0; i < componentsInventory.getSlots(); i++) {
+            if (!componentsInventory.getStackInSlot(i).isEmpty())
+                dropItem(componentsInventory.getStackInSlot(i));
+        }
     }
 
     @Override

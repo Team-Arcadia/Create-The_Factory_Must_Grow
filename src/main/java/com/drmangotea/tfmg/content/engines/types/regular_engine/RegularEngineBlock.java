@@ -3,7 +3,6 @@ package com.drmangotea.tfmg.content.engines.types.regular_engine;
 import com.drmangotea.tfmg.content.engines.base.EngineBlock;
 import com.drmangotea.tfmg.content.engines.types.AbstractSmallEngineBlockEntity;
 import com.drmangotea.tfmg.registry.TFMGBlockEntities;
-import com.drmangotea.tfmg.registry.TFMGItems;
 import com.simibubi.create.foundation.block.IBE;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
@@ -38,35 +37,11 @@ public class RegularEngineBlock extends EngineBlock implements IBE<RegularEngine
         ItemStack itemStack = player.getItemInHand(hand);
 
         if (level.getBlockEntity(pos) instanceof RegularEngineBlockEntity be && !be.isController() && level.getBlockEntity(be.controller) instanceof AbstractSmallEngineBlockEntity controller) {
+            // Components live on each block now; the master routes the item
+            // into the first incomplete block of the chain.
             if (controller.nextComponent().test(itemStack))
-                if (controller.componentsInventory.insertItem(itemStack)) {
-                    if (!itemStack.is(TFMGItems.SCREWDRIVER.get()))
-                        itemStack.shrink(1);
-                    controller.playInsertionSound();
-                    controller.updateRotation();
-                    controller.setChanged();
-                    controller.sendData();
+                if (controller.insertItem(itemStack, player.isShiftKeyDown(), player, hand))
                     return ItemInteractionResult.SUCCESS;
-                }
-
-            if(controller instanceof RegularEngineBlockEntity be1&&!be1.pistonInventory.isEmpty()&&!((RegularEngineBlockEntity) controller).pistonInventory.isEmpty())
-                return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
-
-            if (itemStack.is(TFMGItems.SCREWDRIVER.get())&&be.pistonInventory.isEmpty()) {
-                for (int i = controller.componentsInventory.components.size() - 1; i >= 0; i--) {
-                    if (!controller.componentsInventory.getItem(i).isEmpty()) {
-                        controller.dropItem(controller.componentsInventory.getItem(i));
-                        controller.componentsInventory.setStackInSlot(i, ItemStack.EMPTY);
-                        controller.playRemovalSound();
-                        controller.updateRotation();
-                        controller.setChanged();
-                        controller.sendData();
-                        return ItemInteractionResult.SUCCESS;
-                    }
-                }
-
-            }
-
         }
 
         return super.useItemOn(stack, state, level, pos, player, hand, hitResult);

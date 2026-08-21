@@ -229,9 +229,12 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
                         }
                     }
                 }
-        if (nextComponent().test(itemStack) && !isController()) {
+        // nextComponent() answers EMPTY on a non-master, so this delegation
+        // never fired and clicking a satellite with a component did nothing;
+        // ask the master which component is due instead.
+        if (!isController() && getControllerBE().nextComponent().test(itemStack)) {
 
-            if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be) {
+            if (level.getBlockEntity(controller) instanceof AbstractSmallEngineBlockEntity be && be != this) {
                 return be.insertItem(itemStack, shifting, player, hand);
             }
 
@@ -320,27 +323,49 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
     public boolean updateEngineType(EngineType newType) {
 
         Direction updateDirection = getBlockState().getValue(HORIZONTAL_FACING);
-        if (level.getBlockEntity(getBlockPos().relative(updateDirection)) instanceof RegularEngineBlockEntity be) {
+        // Delegate to the front-most block of OUR chain only. The old
+        // unconditional delegation recursed forever on two engines facing
+        // each other (connect() catches its StackOverflowError, this did not),
+        // and walked into foreign chains.
+        if (level.getBlockEntity(getBlockPos().relative(updateDirection)) instanceof RegularEngineBlockEntity be
+                && be.getBlockState().getValue(HORIZONTAL_FACING) == updateDirection
+                && canChainWith(be)) {
             return be.updateEngineType(newType);
         }
         for (int i = 0; i <= engineLength(); i++) {
             BlockPos pos = getBlockPos().relative(updateDirection.getOpposite(), i);
             if (level.getBlockEntity(pos) instanceof RegularEngineBlockEntity be) {
-                //be.type = EngineType.I;
-                if (!be.pistonInventory.isEmpty())
-                    return false;
-            }
-        }
-        for (int i = 0; i <= engineLength(); i++) {
-            BlockPos pos = getBlockPos().relative(updateDirection.getOpposite(), i);
-            if (level.getBlockEntity(pos) instanceof RegularEngineBlockEntity be) {
+                // Cylinders no longer freeze the type: they are handed back
+                // instead, since updateInventory() would silently discard them.
+                for (int slot = 0; slot < be.pistonInventory.getSlots(); slot++) {
+                    if (!be.pistonInventory.getItem(slot).isEmpty()) {
+                        be.dropItem(be.pistonInventory.getItem(slot));
+                        be.pistonInventory.setItem(slot, ItemStack.EMPTY);
+                    }
+                }
                 be.type = newType;
                 be.updateInventory();
                 level.setBlockAndUpdate(pos, be.getBlockState().setValue(EXTENDED, newType == EngineType.I || newType == EngineType.U));
+                be.setChanged();
+                be.sendData();
             }
         }
 
+        // A type change can merge this chain with a same-typed neighbour or
+        // split it; re-run formation from here.
+        connect();
+        updateRotation();
+
         return true;
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        for (int i = 0; i < pistonInventory.getSlots(); i++) {
+            if (!pistonInventory.getItem(i).isEmpty())
+                dropItem(pistonInventory.getItem(i));
+        }
     }
 
     @Override
