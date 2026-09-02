@@ -91,3 +91,22 @@ Session-discovered errors, root causes, and prevention rules for TFMG (Arcadia f
 **Root cause:** Windows PowerShell 5.1's `utf8` encoding always emits a BOM (there is no `utf8NoBOM` in 5.1), and `Get-Content -Raw` decoded the existing file as the ANSI codepage rather than UTF-8, so every non-ASCII byte was re-encoded wrong on the way back out.
 **Fix:** Restored the comment text by hand and stripped the three BOM bytes with `[System.IO.File]::ReadAllBytes` / `WriteAllBytes`.
 **Prevention:** Never rewrite a source file through a PowerShell text pipeline. Use the Edit tool for targeted replacements; if a scripted pass is unavoidable, verify the first three bytes are not `239 187 191` afterwards and re-read any line containing non-ASCII characters.
+
+## [2026-09-01 16:05] - Scripted edit silently duplicated a whole source file
+
+**Context:** Removing two now-unused generator methods from `TFMGBuilderTransformers.java` after folding
+the coloured rebar floors and pillars into the colour loop (bug K2).
+**Error:** A throwaway python snippet searched for the method start with `src.find(name)` but computed the
+cut point from an unrelated earlier `find`, so instead of deleting a range it re-inserted one. The file went
+from 533 to 1966 lines with the class body duplicated; `git diff --stat` showed "1433 insertions" and the
+duplicated methods still matched a grep for their own name, which is what gave it away.
+**Root cause:** Index arithmetic across several independent `find` calls with no assertion that the computed
+end came after the computed start, and no check that the result was shorter than the input.
+**Fix:** `git checkout --` the file, then redo the edit with the exact old/new replacement helper used for
+every other change in the session, and delete the dead methods with a single anchored slice verified by a
+line count and a grep for the removed names.
+**Prevention:** Never delete a code range by composing several `find` offsets. Use one exact-string
+replacement, or slice between two anchors verified in the same expression, and always check the file got
+SHORTER (`wc -l`) plus `git diff --stat` before compiling. A compile alone would not have caught this:
+duplicated private methods in the same class do fail, but duplicating a whole class body can still compile
+in other shapes, and the file was only saved by the grep count.

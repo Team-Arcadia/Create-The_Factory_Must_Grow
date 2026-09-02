@@ -248,13 +248,56 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
     public AbstractSmallEngineBlockEntity nextIncompleteEngine() {
         if (!isController())
             return null;
-        for (AbstractSmallEngineBlockEntity be : getEngines()) {
+        for (AbstractSmallEngineBlockEntity be : getEnginesInOrder()) {
             for (int i = 0; i < be.componentsInventory.getSlots(); i++) {
                 if (be.componentsInventory.getStackInSlot(i).isEmpty())
                     return be;
             }
         }
         return null;
+    }
+
+    // The chain in build order: the master first, then each block behind it.
+    // getEngines() lists the satellites before the master, which made the
+    // components fill back to front for no visible reason.
+    public List<AbstractSmallEngineBlockEntity> getEnginesInOrder() {
+        List<AbstractSmallEngineBlockEntity> ordered = new ArrayList<>();
+        AbstractSmallEngineBlockEntity master = getControllerBE();
+        ordered.add(master);
+        for (Long l : master.engines)
+            if (level.getBlockEntity(BlockPos.of(l)) instanceof AbstractSmallEngineBlockEntity be && be != master)
+                ordered.add(be);
+        return ordered;
+    }
+
+    // 1-based position of the block still waiting for components, 0 when the
+    // whole chain is built. A five block engine asks for five sets now, and
+    // without saying which set it is on the repeats looked like a stuck machine.
+    public int nextIncompleteIndex() {
+        List<AbstractSmallEngineBlockEntity> ordered = getEnginesInOrder();
+        for (int i = 0; i < ordered.size(); i++) {
+            AbstractSmallEngineBlockEntity be = ordered.get(i);
+            for (int s = 0; s < be.componentsInventory.getSlots(); s++)
+                if (be.componentsInventory.getStackInSlot(s).isEmpty())
+                    return i + 1;
+        }
+        return 0;
+    }
+
+    // Does any block of the chain carry a shaft to export rotation? Without one
+    // the engine burns fuel and delivers nothing, with nothing on screen to say so.
+    public boolean hasAnyOutputShaft() {
+        for (Long l : getAllEngines())
+            if (level.getBlockEntity(BlockPos.of(l)) instanceof AbstractSmallEngineBlockEntity be && be.hasOutputShaft())
+                return true;
+        return false;
+    }
+
+    public boolean hasAnyUpgrade() {
+        for (AbstractSmallEngineBlockEntity be : getControllerBE().getEngines())
+            if (be.upgrade.isPresent())
+                return true;
+        return false;
     }
 
     public Ingredient nextComponent() {
@@ -268,6 +311,19 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         }
 
         return Ingredient.EMPTY;
+    }
+
+    // Re-read the chain's redstone signal from the world. Breaking a block in
+    // the middle of a row splits it into two engines, and neither half re-read
+    // its own signal: the half holding the lever dropped to zero while the
+    // other half kept a stale 15 and went on turning with nothing driving it.
+    public void refreshRedstoneSignal() {
+        if (!isController() || hasEngineController())
+            return;
+        int newSignal = level.getBestNeighborSignal(getBlockPos());
+        for (long posLong : engines)
+            newSignal = Math.max(level.getBestNeighborSignal(BlockPos.of(posLong)), newSignal);
+        highestSignal = newSignal / 15f;
     }
 
     protected void analogSignalChanged() {
@@ -432,15 +488,26 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         return 0;
     }
 
-    // Total stress capacity the whole engine feeds the network: Create scales
-    // each generating block's capacity by its speed, and turbines and radials
-    // generate from every block, not just the shafted one.
+    // Stress capacity this engine actually delivers. Create scales a source's
+    // capacity by its speed, but only a block carrying an output shaft sits on
+    // the network the player taps. A turbine answers canGenerateSpeed on every
+    // one of its blocks, so summing them all claimed five times the real figure
+    // on a five-block turbine, while a regular engine, which generates from the
+    // shafted block alone, happened to read correctly. Both ends of a two-shaft
+    // engine count, and each already carries half the capacity.
     public float outputStress() {
         float total = 0;
         for (Long l : getAllEngines())
-            if (level.getBlockEntity(BlockPos.of(l)) instanceof AbstractSmallEngineBlockEntity be)
+            if (level.getBlockEntity(BlockPos.of(l)) instanceof AbstractSmallEngineBlockEntity be
+                    && be.hasOutputShaft())
                 total += be.calculateAddedStressCapacity() * Math.abs(be.getGeneratedSpeed());
         return total;
+    }
+
+    // A block exports rotation only through an installed shaft.
+    public boolean hasOutputShaft() {
+        BlockState state = getBlockState();
+        return state.hasProperty(ENGINE_STATE) && state.getValue(ENGINE_STATE) == SHAFT;
     }
 
     @Override
@@ -551,6 +618,11 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
                 Optional<? extends EngineUpgrade> itemUpgrade = EngineUpgrade.getUpgrades().get(itemStack.getItem()).createUpgrade();
 
                 if (itemUpgrade.isPresent() && isUpgradeFirst(itemUpgrade.get())) {
+                    // Read the stored controller link BEFORE the stack is spent:
+                    // shrink(1) empties a lone transmission, and an empty stack
+                    // carries no data components, so the link read as absent and
+                    // the controller was never bound to the engine at all.
+                    Long linkedController = itemStack.get(TFMGDataComponents.POSITION);
                     upgrade = itemUpgrade;
                     playInsertionSound();
                     updateRotation();
@@ -558,8 +630,8 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
                     itemStack.shrink(1);
                     if (upgrade.isPresent())
                         if (upgrade.get() instanceof TransmissionUpgrade) {
-                            if (itemStack.has(TFMGDataComponents.POSITION) && itemStack.get(TFMGDataComponents.POSITION) != null) {
-                                BlockPos pos = BlockPos.of(itemStack.get(TFMGDataComponents.POSITION));
+                            if (linkedController != null) {
+                                BlockPos pos = BlockPos.of(linkedController);
                                 if (level.getBlockEntity(pos) instanceof EngineControllerBlockEntity engineControllerBE) {
 
                                     this.getControllerBE().updateGeneratedRotation();
@@ -569,7 +641,12 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
                                     // the controller block's position into `controller`
                                     // detached this engine from its own multiblock.
                                     getControllerBE().engineController = pos;
+                                    getControllerBE().setChanged();
+                                    getControllerBE().sendData();
                                     engineControllerBE.enginePos = this.getBlockPos();
+                                    engineControllerBE.engine = null;
+                                    engineControllerBE.setChanged();
+                                    engineControllerBE.sendData();
                                     getControllerBE().highestSignal = 0;
                                 }
                             }
@@ -639,6 +716,8 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
         TFMGTexts.Engine.length(engineLength()).forGoggles(tooltip);
         TFMGTexts.Engine.torque(torque).forGoggles(tooltip);
         TFMGTexts.Engine.stressCapacity(outputStress()).forGoggles(tooltip);
+        if (isController() && !hasAnyOutputShaft())
+            TFMGLang.translate("engine.no_shaft").style(ChatFormatting.GOLD).forGoggles(tooltip);
         TFMGTexts.Engine.signal((int) (highestSignal*15)).forGoggles(tooltip);
         TFMGLang.number(engineNumber).style(ChatFormatting.DARK_GREEN).forGoggles(tooltip);
         // A missing component silently blocks canWork, so say so instead of
@@ -673,7 +752,12 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
 
     public boolean isUpgradeFirst(EngineUpgrade itemUpgrade) {
 
-        for (AbstractSmallEngineBlockEntity be : getEngines()) {
+        // Ask the master for the chain. Called on a satellite, getEngines only
+        // ever saw the master, because a satellite keeps an empty engines list:
+        // the same one-per-engine upgrade could therefore be mounted on every
+        // block of a multiblock, which is how four golden turbos ended up on a
+        // single five block turbine.
+        for (AbstractSmallEngineBlockEntity be : getControllerBE().getEngines()) {
 
             if (be.upgrade.isPresent() && be.upgrade.get().getItem() == itemUpgrade.getItem())
                 return false;
@@ -782,6 +866,7 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
                 }
             }
 
+            refreshRedstoneSignal();
             updateGeneratedRotation();
             updateRotation();
             setChanged();
@@ -802,6 +887,25 @@ public abstract class AbstractSmallEngineBlockEntity extends AbstractEngineBlock
             if (!componentsInventory.getStackInSlot(i).isEmpty())
                 dropItem(componentsInventory.getStackInSlot(i));
         }
+        // A turbo, generator or transmission mounted on this block is part of
+        // what the player paid for. Only the wrench used to hand it back, so
+        // breaking the block simply ate it.
+        if (upgrade.isPresent()) {
+            dropItem(upgradeDropStack(getControllerBE().engineController));
+            upgrade = Optional.empty();
+        }
+    }
+
+    // The upgrade item as it should be handed back. A transmission keeps the
+    // controller it was bound to: a plain default instance came back blank, so
+    // the link had to be made again after every removal.
+    public ItemStack upgradeDropStack(BlockPos linkedController) {
+        if (upgrade.isEmpty())
+            return ItemStack.EMPTY;
+        ItemStack stack = upgrade.get().getItem().getDefaultInstance();
+        if (upgrade.get() instanceof TransmissionUpgrade && linkedController != null)
+            stack.set(TFMGDataComponents.POSITION, linkedController.asLong());
+        return stack;
     }
 
     @Override

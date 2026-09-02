@@ -119,8 +119,19 @@ public class SegmentedDisplayBlockEntity extends ElectricBlockEntity {
         if (tagElement == null)
             return;
         if (customText.filter(d -> d.sameAs(tagElement))
-                .isPresent())
+                .isPresent()) {
+            // The text has not changed, but this part's place in the row may
+            // have: adding or removing a display shifts every index along, and
+            // returning early here left each block rendering its old two
+            // characters, which is what doubled or cut the text.
+            if (partIndex != partPositionInRow) {
+                partIndex = partPositionInRow;
+                if (level != null && level.isClientSide)
+                    updateDisplayedStrings();
+                notifyUpdate();
+            }
             return;
+        }
 
         DynamicComponent component = customText.orElseGet(DynamicComponent::new);
         component.displayCustomText(level, worldPosition, tagElement);

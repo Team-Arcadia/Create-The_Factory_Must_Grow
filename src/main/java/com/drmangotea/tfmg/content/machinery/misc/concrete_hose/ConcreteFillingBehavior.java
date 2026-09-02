@@ -96,11 +96,16 @@ public class ConcreteFillingBehavior extends TFMGFluidManipulationBehaviour {
 
 	public boolean tryDeposit(Fluid fluid, BlockPos root, boolean simulate) {
 		if (!Objects.equals(root, rootPos)) {
+			// Seed the search at the new root and carry straight on into it.
+			// Returning here spent a whole call doing nothing, so a deposit
+			// always needed a second push from the pipe - a push that never
+			// comes once the internal tank is full and the pipe stops feeding.
+			// reset() leaves the queue alone, so clear it with the old root.
 			reset();
 			rootPos = root;
+			queue.clear();
 			queue.enqueue(new BlockPosEntry(root, 0));
 			affectedArea = BoundingBox.fromCorners(rootPos, rootPos);
-			return false;
 		}
 
 		if (counterpartActed) {
@@ -171,8 +176,14 @@ public class ConcreteFillingBehavior extends TFMGFluidManipulationBehaviour {
 			}
 
 			SpaceType spaceType = getAtPos(world, currentPos, fluid);
-			if (spaceType == SpaceType.BLOCKING)
+			if (spaceType == SpaceType.BLOCKING) {
+				// Drop it, or the very same position is judged again on the
+				// next pass: a simulated run adds nothing to visited, so the
+				// loop spent its whole budget re-testing one blocking block.
+				visited.add(currentPos);
+				queue.dequeue();
 				continue;
+			}
 			if (spaceType == SpaceType.FILLABLE) {
 				success = true;
 				if (!simulate) {

@@ -127,6 +127,19 @@ public class ConcreteHoseBlockEntity extends KineticBlockEntity {
 
         offset.setValue(newOffset);
         invalidateRenderBoundingBox();
+
+        // Pour from our own tick rather than only as a side effect of an
+        // incoming fill. A pipe stops pushing once the internal tank is full,
+        // and the deposit used to run only from that push, so a hose that had
+        // been lowered, filled and stopped just sat there holding its concrete.
+        if (!level.isClientSide && !isMoving && internalTank.getFluidAmount() >= 1000) {
+            FluidStack held = internalTank.getFluid();
+            BlockPos root = worldPosition.below((int) Math.ceil(offset.getValue()));
+            if (filler.tryDeposit(held.getFluid(), root, false)) {
+                internalTank.drain(1000, IFluidHandler.FluidAction.EXECUTE);
+                sendData();
+            }
+        }
     }
 
     @Override

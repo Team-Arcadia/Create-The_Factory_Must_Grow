@@ -353,6 +353,12 @@ public class AccumulatorBlockEntity extends ElectricBlockEntity implements IVolt
             // mod's own network, not Forge Energy.
             if (hasElectricitySlot(direction))
                 continue;
+            // Never push into another accumulator. A bank shares its charge
+            // through its own chain, along the facing axis; pushing Forge
+            // Energy sideways let two banks that were never wired together
+            // drain into each other through faces that carry no port.
+            if (level.getBlockEntity(worldPosition.relative(direction)) instanceof AccumulatorBlockEntity)
+                continue;
             if (energy.getEnergyStored() <= 0)
                 break;
             IEnergyStorage neighbour = level.getCapability(

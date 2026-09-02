@@ -85,6 +85,16 @@ public class FluidContainingItem extends Item {
         return Math.round( 13* ((float)stack.getOrDefault(TFMGDataComponents.AMOUNT, 0)/(float)CAPACITY));
     }
 
+    // Runs BEFORE the clicked block's own interaction. Create's tank answers
+    // the click first and, in creative, drains itself while throwing the filled
+    // item away, so the can came back empty however full the tank was; it also
+    // refuses to fill at all unless the tank holds the can's whole capacity.
+    // Taking the click first makes the can behave the same on every container.
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        return useOn(context);
+    }
+
     @Override
     public InteractionResult useOn(UseOnContext context) {
 
@@ -105,6 +115,12 @@ public class FluidContainingItem extends Item {
             // stays available on blocks that hold no fluid.
             int amount = stack.getOrDefault(TFMGDataComponents.AMOUNT, 0);
             if (handler != null) {
+                // Decide on both sides so the click is consumed consistently,
+                // but let the server own the change.
+                if (handler.fill(new FluidStack(sourceFluid(), amount), IFluidHandler.FluidAction.SIMULATE) <= 0)
+                    return InteractionResult.PASS;
+                if (level.isClientSide)
+                    return InteractionResult.SUCCESS;
                 int filled = handler.fill(new FluidStack(sourceFluid(), amount), IFluidHandler.FluidAction.EXECUTE);
                 if (filled <= 0)
                     return InteractionResult.PASS;
@@ -113,6 +129,8 @@ public class FluidContainingItem extends Item {
                 return InteractionResult.SUCCESS;
             }
 
+            if (level.isClientSide)
+                return InteractionResult.SUCCESS;
             level.playSound(null, pos, SoundEvents.BUCKET_FILL, SoundSource.BLOCKS, 1f, 1f);
             stack.set(TFMGDataComponents.AMOUNT, 0);
             return InteractionResult.SUCCESS;
@@ -144,6 +162,9 @@ public class FluidContainingItem extends Item {
         FluidStack drained = handler.drain(new FluidStack(sourceFluid(), space), IFluidHandler.FluidAction.SIMULATE);
         if (drained.isEmpty())
             return InteractionResult.PASS;
+
+        if (level.isClientSide)
+            return InteractionResult.SUCCESS;
 
         drained = handler.drain(new FluidStack(sourceFluid(), space), IFluidHandler.FluidAction.EXECUTE);
         if (drained.isEmpty())

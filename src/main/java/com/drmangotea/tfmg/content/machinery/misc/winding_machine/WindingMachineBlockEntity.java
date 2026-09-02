@@ -50,6 +50,7 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
     // Turns already paid for by a consumed wire but not yet wound onto the
     // mounted spool. One wire buys 125 turns, the crafting recipe's ratio.
     public int wireTurnsPending = 0;
+    public static final int TURNS_PER_WIRE = 125;
     public boolean update = false;
 
     protected ScrollValueBehaviour turnPercentage;
@@ -372,21 +373,40 @@ public class WindingMachineBlockEntity extends KineticBlockEntity implements IHa
      */
     private boolean windSpool(ItemStack wire) {
         ItemStack spoolType = spoolForWire(wire);
-        if (spoolType.isEmpty())
+        boolean hasWire = !spoolType.isEmpty();
+        // Turns already paid for keep winding after the slot runs dry. Winding
+        // used to need wire in the slot to advance at all, so the last wire of
+        // a stack - or a single wire inserted on its own - delivered one turn
+        // and stranded the other 124.
+        boolean creditOnly = !hasWire && wire.isEmpty() && wireTurnsPending > 0;
+        if (!hasWire && !creditOnly)
             return false;
 
         boolean emptyMounted = spool.is(TFMGItems.EMPTY_SPOOL.get());
-        if (!emptyMounted && !spool.is(spoolType.getItem()))
+
+        if (creditOnly) {
+            // The credit belongs to the spool its wire was spent on. An empty
+            // or missing spool cannot say which metal that was, so it lapses
+            // rather than winding the wrong one.
+            if (emptyMounted || spool.isEmpty() || !(spool.getItem() instanceof SpoolItem)) {
+                wireTurnsPending = 0;
+                return false;
+            }
+        } else if (!emptyMounted && !spool.is(spoolType.getItem())) {
             return true;
+        }
+
         int turns = emptyMounted ? 0 : spool.getOrDefault(TFMGDataComponents.SPOOL_AMOUNT, 0);
-        // Full spools hold 1000 turns (see SpoolItem's durability bar).
+        // Full spools hold 1000 turns (see SpoolItem's durability bar). Credit
+        // that outlives a full spool waits for the next one instead of blocking
+        // the recipes below.
         if (turns >= 1000)
-            return true;
+            return !creditOnly;
 
         if (wireTurnsPending <= 0) {
             wire.shrink(1);
             inventory.setStackInSlot(0, wire.isEmpty() ? ItemStack.EMPTY : wire);
-            wireTurnsPending = 125;
+            wireTurnsPending = TURNS_PER_WIRE;
         }
         if (emptyMounted)
             spool = spoolType;

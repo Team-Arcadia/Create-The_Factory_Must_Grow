@@ -415,6 +415,13 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
 
         if(nextComponent()!= Ingredient.EMPTY){
             TFMGTexts.Engine.unfinished().forGoggles(tooltip);
+            // Name the block being equipped. Each block of a multiblock now
+            // wants its own set of components, and without this the repeated
+            // requests read as a machine refusing to finish.
+            int building = nextIncompleteIndex();
+            if (building > 0 && engineLength() > 0)
+                TFMGLang.translate("engine.building_block", TFMGLang.number(building),
+                        TFMGLang.number(engineLength() + 1)).style(ChatFormatting.GRAY).forGoggles(tooltip, 1);
             TFMGTexts.Engine.nextComponent(nextComponent().getItems()[0]).forGoggles(tooltip);
             TFMGTexts.Engine.type(type.langKey).forGoggles(tooltip, 1);
             return true;
@@ -430,6 +437,15 @@ public class RegularEngineBlockEntity extends AbstractSmallEngineBlockEntity {
         TFMGTexts.Engine.signal((int) (highestSignal*15)).forGoggles(tooltip, 1);
         TFMGTexts.Engine.torque(torque).forGoggles(tooltip, 1);
         TFMGTexts.Engine.stressCapacity(outputStress()).forGoggles(tooltip, 1);
+        // A built, fuelled, signalled engine with no shaft delivers nothing and
+        // said nothing about it.
+        if (!hasAnyOutputShaft())
+            TFMGLang.translate("engine.no_shaft").style(ChatFormatting.GOLD).forGoggles(tooltip, 1);
+        // What the mounted turbos, transmission and generator actually buy.
+        if (hasAnyUpgrade())
+            TFMGLang.translate("engine.upgrades", TFMGLang.number(getUpgradeSpeedModifier()),
+                    TFMGLang.number(getUpgradeTorqueModifier()), TFMGLang.number(getUpgradeEfficiencyModifier()))
+                    .style(ChatFormatting.AQUA).forGoggles(tooltip, 1);
         // The drain fires every 4th lazy tick, i.e. every 2 seconds.
         TFMGTexts.Engine.fuelConsumption(getFuelConsumption()/2f).forGoggles(tooltip, 1);
         if(oil>0){

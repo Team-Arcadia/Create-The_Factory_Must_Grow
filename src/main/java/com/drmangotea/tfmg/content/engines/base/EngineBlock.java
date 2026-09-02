@@ -57,6 +57,11 @@ public class EngineBlock extends HorizontalKineticBlock {
 
                 if (be.upgrade.isPresent()) {
 
+                    // Remember what this transmission pointed at before the
+                    // link below is torn down, so the item handed back is still
+                    // bound to its controller instead of coming out blank.
+                    BlockPos linkedController = be.getControllerBE().engineController;
+
                     if (be.upgrade.get() instanceof TransmissionUpgrade) {
                         if (be.getControllerBE().engineController != null) {
                             if (level.getBlockEntity(be.getControllerBE().engineController) instanceof EngineControllerBlockEntity engineController) {
@@ -81,7 +86,7 @@ public class EngineBlock extends HorizontalKineticBlock {
                     }
 
                     be.playRemovalSound();
-                    be.dropItem(be.upgrade.get().getItem().getDefaultInstance());
+                    be.dropItem(be.upgradeDropStack(linkedController));
 
                 }
                 be.upgrade = Optional.empty();
